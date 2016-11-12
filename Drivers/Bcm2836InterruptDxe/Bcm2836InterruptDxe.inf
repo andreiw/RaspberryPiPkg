@@ -1,0 +1,46 @@
+#/** @file
+#  Copyright (c) 2016, Linaro, Ltd. All rights reserved.<BR>
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x00010019
+  BASE_NAME                      = Bcm2836InterruptDxe
+  FILE_GUID                      = 3944f2d7-2e09-4fc0-9e98-008375641453
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = InterruptDxeInitialize
+
+[Sources]
+  Bcm2836InterruptDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  IoLib
+  UefiBootServicesTableLib
+  UefiLib
+  UefiDriverEntryPoint
+
+[Protocols]
+  gHardwareInterruptProtocolGuid
+  gEfiCpuArchProtocolGuid
+
+[FixedPcd]
+  gEmbeddedTokenSpaceGuid.PcdInterruptBaseAddress
+
+[Depex]
+  gEfiCpuArchProtocolGuid
