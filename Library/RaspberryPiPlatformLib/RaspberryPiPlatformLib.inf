@@ -1,0 +1,62 @@
+#/* @file
+#  Copyright (c) 2011-2014, ARM Limited. All rights reserved.
+#  Copyright (c) 2014-2016, Linaro Limited. All rights reserved.
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#*/
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = RaspberryPiPlatformLib
+  FILE_GUID                      = 050182ef-f708-4148-b4bc-256cabf74fea
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = ArmPlatformLib|SEC PEIM
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  ArmPkg/ArmPkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
+  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+
+[LibraryClasses]
+  ArmLib
+  FdtLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  PrintLib
+
+[Sources.common]
+  RaspberryPi.c
+  RaspberryPiMem.c
+
+[Sources.AARCH64]
+  AARCH64/RaspberryPiHelper.S
+
+[Sources.ARM]
+  ARM/RaspberryPiHelper.S          | GCC
+
+[FixedPcd]
+  gArmTokenSpaceGuid.PcdFdBaseAddress
+  gArmTokenSpaceGuid.PcdFvBaseAddress
+  gArmPlatformTokenSpaceGuid.PcdCoreCount
+  gArmTokenSpaceGuid.PcdArmPrimaryCoreMask
+  gArmTokenSpaceGuid.PcdArmPrimaryCore
+  gArmTokenSpaceGuid.PcdFdSize
+  gArmTokenSpaceGuid.PcdArmDmaDeviceOffset
+  gEmbeddedTokenSpaceGuid.PcdPrePiCpuMemorySize
+  gArmTokenSpaceGuid.PcdSystemMemoryBase
+  gArmTokenSpaceGuid.PcdSystemMemorySize
+
+[Ppis]
+  gArmMpCoreInfoPpiGuid
