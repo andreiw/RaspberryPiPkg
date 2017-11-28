@@ -1,4 +1,5 @@
 /*
+ * Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
  * Copyright (c) 2016, Linaro Limited. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,6 +28,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+/*
+ * Both "core" and SoC perpherals (1M each).
+ */
+#define BCM2836_SOC_REGISTERS                               0x3f000000
+#define BCM2836_SOC_REGISTER_LENGTH                         0x02000000
 
 /*
  * Offset between the CPU's view and the VC's view of system memory.

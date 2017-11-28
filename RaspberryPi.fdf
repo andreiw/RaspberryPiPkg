@@ -131,6 +131,7 @@ READ_LOCK_STATUS   = TRUE
   INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   INF MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
   INF MdeModulePkg/Universal/SerialDxe/SerialDxe.inf
+  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/DisplayDxe/DisplayDxe.inf
 
   INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
   INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf

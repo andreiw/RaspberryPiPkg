@@ -44,11 +44,38 @@ EFI_STATUS
   OUT UINT32    *ClockRate
   );
 
+typedef
+EFI_STATUS
+(EFIAPI *GET_FB) (
+  IN  UINT32 Width,
+  IN  UINT32 Height,
+  IN  UINT32 Depth,
+  OUT EFI_PHYSICAL_ADDRESS *FbBase,
+  OUT UINTN *FbSize,
+  OUT UINTN *Pitch
+  );
+
+typedef
+EFI_STATUS
+(EFIAPI *GET_FB_SIZE) (
+  OUT   UINT32 *Width,
+  OUT   UINT32 *Height
+  );
+
+typedef
+EFI_STATUS
+(EFIAPI *FREE_FB) (
+  VOID
+  );
+
 typedef struct {
   SET_POWER_STATE   SetPowerState;
   GET_MAC_ADDRESS   GetMacAddress;
   GET_COMMAND_LINE  GetCommandLine;
   GET_CLOCK_RATE    GetClockRate;
+  GET_FB            GetFB;
+  FREE_FB           FreeFB;
+  GET_FB_SIZE       GetFBSize;
 } RASPBERRY_PI_FIRMWARE_PROTOCOL;
 
 extern EFI_GUID gRaspberryPiFirmwareProtocolGuid;

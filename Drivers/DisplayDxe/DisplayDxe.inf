@@ -1,0 +1,59 @@
+## @file
+#
+#  Component description file for Graphics Output module
+#
+#  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
+#  Copyright (c), Microsoft Corporation. All rights reserved.
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = DisplayDxe
+  FILE_GUID                      = c5deae31-fad2-4030-841b-cfc9644d2c5b
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = DisplayDxeInitialize
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  DRIVER_BINDING                =  gGraphicsConsoleDriverBinding
+#  COMPONENT_NAME                =  gGraphicsConsoleComponentName
+#  COMPONENT_NAME2               =  gGraphicsConsoleComponentName2
+#
+
+[Sources]
+  DisplayDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  ArmPkg/ArmPkg.dec
+  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+
+[LibraryClasses]
+  BaseLib
+  UefiLib
+  MemoryAllocationLib
+  UefiDriverEntryPoint
+  IoLib
+  TimerLib
+
+[Protocols]
+  gEfiGraphicsOutputProtocolGuid ## PRODUCES
+  gRaspberryPiFirmwareProtocolGuid ## CONSUMES
+  gEfiCpuArchProtocolGuid
+
+[Guids]
+
+[Depex]
+  gEfiCpuArchProtocolGuid AND gRaspberryPiFirmwareProtocolGuid

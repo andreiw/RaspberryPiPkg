@@ -47,6 +47,50 @@ InitMmu (
   }
 }
 
+STATIC
+VOID
+AddAndReserved(ARM_MEMORY_REGION_DESCRIPTOR *Desc)
+{
+  BuildResourceDescriptorHob (
+                              EFI_RESOURCE_SYSTEM_MEMORY,
+                              EFI_RESOURCE_ATTRIBUTE_PRESENT |
+                              EFI_RESOURCE_ATTRIBUTE_INITIALIZED |
+                              EFI_RESOURCE_ATTRIBUTE_WRITE_COMBINEABLE |
+                              EFI_RESOURCE_ATTRIBUTE_WRITE_THROUGH_CACHEABLE |
+                              EFI_RESOURCE_ATTRIBUTE_WRITE_BACK_CACHEABLE |
+                              EFI_RESOURCE_ATTRIBUTE_TESTED,
+                              Desc->PhysicalBase,
+                              Desc->Length
+                              );
+
+  BuildMemoryAllocationHob (
+                            Desc->PhysicalBase,
+                            Desc->Length,
+                            EfiReservedMemoryType
+                            );
+}
+
+STATIC
+VOID
+AddAndMmio(ARM_MEMORY_REGION_DESCRIPTOR *Desc)
+{
+  BuildResourceDescriptorHob (
+                              EFI_RESOURCE_SYSTEM_MEMORY,
+                              (EFI_RESOURCE_ATTRIBUTE_PRESENT    |
+                               EFI_RESOURCE_ATTRIBUTE_INITIALIZED |
+                               EFI_RESOURCE_ATTRIBUTE_UNCACHEABLE |
+                               EFI_RESOURCE_ATTRIBUTE_TESTED),
+                              Desc->PhysicalBase,
+                              Desc->Length
+                              );
+
+  BuildMemoryAllocationHob (
+                            Desc->PhysicalBase,
+                            Desc->Length,
+                            EfiMemoryMappedIO
+                            );
+}
+
 /*++
 
 Routine Description:
@@ -71,7 +115,6 @@ MemoryPeim (
   )
 {
   ARM_MEMORY_REGION_DESCRIPTOR *MemoryTable;
-  EFI_RESOURCE_ATTRIBUTE_TYPE  ResourceAttributes;
 
   // Get Virtual Memory Map from the Platform Library
   ArmPlatformGetVirtualMemoryMap (&MemoryTable);
@@ -79,38 +122,25 @@ MemoryPeim (
   // Ensure PcdSystemMemorySize has been set
   ASSERT (PcdGet64 (PcdSystemMemorySize) != 0);
 
-  //
-  // Now, the permanent memory has been installed, we can call AllocatePages()
-  //
-  ResourceAttributes = (
-      EFI_RESOURCE_ATTRIBUTE_PRESENT |
-      EFI_RESOURCE_ATTRIBUTE_INITIALIZED |
-      EFI_RESOURCE_ATTRIBUTE_WRITE_COMBINEABLE |
-      EFI_RESOURCE_ATTRIBUTE_WRITE_THROUGH_CACHEABLE |
-      EFI_RESOURCE_ATTRIBUTE_WRITE_BACK_CACHEABLE |
-      EFI_RESOURCE_ATTRIBUTE_TESTED
-  );
+  // Reserved FD + Trusted Firmware region
+  AddAndReserved(&MemoryTable[0]);
+  AddAndReserved(&MemoryTable[1]);
 
-  // Reserved Trusted Firmware region
+  // Usable memory.
   BuildResourceDescriptorHob (
-    EFI_RESOURCE_SYSTEM_MEMORY,
-    ResourceAttributes,
-    0x0,
-    FixedPcdGet64 (PcdSystemMemoryBase)
-  );
+                              EFI_RESOURCE_SYSTEM_MEMORY,
+                              EFI_RESOURCE_ATTRIBUTE_PRESENT |
+                              EFI_RESOURCE_ATTRIBUTE_INITIALIZED |
+                              EFI_RESOURCE_ATTRIBUTE_WRITE_COMBINEABLE |
+                              EFI_RESOURCE_ATTRIBUTE_WRITE_THROUGH_CACHEABLE |
+                              EFI_RESOURCE_ATTRIBUTE_WRITE_BACK_CACHEABLE |
+                              EFI_RESOURCE_ATTRIBUTE_TESTED,
+                              MemoryTable[2].PhysicalBase,
+                              MemoryTable[2].Length
+                              );
 
-  BuildMemoryAllocationHob (
-    0x0,
-    FixedPcdGet64 (PcdSystemMemoryBase),
-    EfiReservedMemoryType
-  );
-
-  BuildResourceDescriptorHob (
-      EFI_RESOURCE_SYSTEM_MEMORY,
-      ResourceAttributes,
-      FixedPcdGet64 (PcdSystemMemoryBase),
-      mSystemMemoryEnd + 1 - FixedPcdGet64 (PcdSystemMemoryBase)
-  );
+  AddAndReserved(&MemoryTable[3]);
+  AddAndMmio(&MemoryTable[4]);
 
   // Build Memory Allocation Hob
   InitMmu (MemoryTable);

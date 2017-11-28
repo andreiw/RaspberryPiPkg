@@ -53,7 +53,7 @@
   gArmTokenSpaceGuid.PcdArmPrimaryCoreMask
   gArmTokenSpaceGuid.PcdArmPrimaryCore
   gArmTokenSpaceGuid.PcdFdSize
-  gArmTokenSpaceGuid.PcdArmDmaDeviceOffset
+  gEmbeddedTokenSpaceGuid.PcdDmaDeviceOffset
   gEmbeddedTokenSpaceGuid.PcdPrePiCpuMemorySize
   gArmTokenSpaceGuid.PcdSystemMemoryBase
   gArmTokenSpaceGuid.PcdSystemMemorySize

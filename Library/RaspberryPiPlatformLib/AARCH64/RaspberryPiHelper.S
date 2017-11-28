@@ -42,7 +42,7 @@
 
 ASM_FUNC(ArmPlatformPeiBootAction)
     adr     x0, .Lmeminfo_buffer
-    mov     x1, #FixedPcdGet64 (PcdArmDmaDeviceOffset)
+    mov     x1, #FixedPcdGet64 (PcdDmaDeviceOffset)
     orr     x0, x0, #RPI_FW_MBOX_CHANNEL
     add     x0, x0, x1
 
