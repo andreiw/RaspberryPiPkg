@@ -529,9 +529,9 @@
   #
   # SD/MMC support
   #
-  MdeModulePkg/Bus/Pci/SdMmcPciHcDxe/SdMmcPciHcDxe.inf
-  MdeModulePkg/Bus/Sd/SdDxe/SdDxe.inf
-  MdeModulePkg/Bus/Sd/EmmcDxe/EmmcDxe.inf
+  # OpenPlatformPkg/Platforms/RaspberryPi/Drivers/SdHostDxe/SdHostDxe.inf
+  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
+  EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
 
 [Components.common]
   #

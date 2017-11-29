@@ -1,0 +1,50 @@
+#
+#  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
+#  Copyright (c), Microsoft Corporation. All rights reserved.
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ArasanMMCHost
+  FILE_GUID                      = 100c2cfa-b586-4198-9b4c-1683d195b1da
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+
+  ENTRY_POINT                    = MMCInitialize
+
+
+[Sources.common]
+  ArasanMmcHostDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+
+[LibraryClasses]
+  PcdLib
+  UefiLib
+  UefiDriverEntryPoint
+  MemoryAllocationLib
+  IoLib
+  DmaLib
+  CacheMaintenanceLib
+
+[Guids]
+
+[Protocols]
+  gEfiMmcHostProtocolGuid ## PRODUCES
+  gRaspberryPiFirmwareProtocolGuid ## CONSUMES
+
+[Pcd]
+
+[Depex]
+  gRaspberryPiFirmwareProtocolGuid

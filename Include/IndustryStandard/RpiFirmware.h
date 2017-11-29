@@ -54,12 +54,13 @@
 #define RPI_FW_POWER_STATE_SPI                              0x00000007
 #define RPI_FW_POWER_STATE_CCP2TX                           0x00000008
 
-#define RPI_FW_GET_CLOCK_STATE                              0x00030002
+#define RPI_FW_GET_CLOCK_RATE                               0x00030002
 
 #define RPI_FW_GET_FB_GEOMETRY                              0x00040003
 #define RPI_FW_GET_FB_LINELENGTH                            0x00040008
 #define RPI_FW_GET_FB_COLOR_DEPTH                           0x00040005
 #define RPI_FW_GET_FB_REGION                                0x00040001
+#define RPI_FW_SET_GPIO                                     0x00038041
 #define RPI_FW_GET_COMMAND_LINE                             0x00050001
 
 #define RPI_FW_SET_FB_PGEOM                                 0x00048003

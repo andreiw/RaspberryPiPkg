@@ -38,11 +38,11 @@
 //
 #define MAX_TRIES   0x100000
 
-STATIC VOID                   *mDmaBuffer;
-STATIC VOID                   *mDmaBufferMapping;
-STATIC EFI_PHYSICAL_ADDRESS   mDmaBufferBusAddress;
+STATIC VOID  *mDmaBuffer;
+STATIC VOID  *mDmaBufferMapping;
+STATIC UINTN mDmaBufferBusAddress;
 
-STATIC SPIN_LOCK              mMailboxLock;
+STATIC SPIN_LOCK mMailboxLock;
 
 STATIC
 BOOLEAN
@@ -593,9 +593,9 @@ RpiFirmwareGetClockRate (
 
   Cmd->BufferHead.BufferSize  = sizeof *Cmd;
   Cmd->BufferHead.Response    = 0;
-  Cmd->TagHead.TagId          = RPI_FW_GET_MAC_ADDRESS;
+  Cmd->TagHead.TagId          = RPI_FW_GET_CLOCK_RATE;
   Cmd->TagHead.TagSize        = sizeof Cmd->TagBody;
-  Cmd->TagHead.TagValueSize   = sizeof Cmd->TagBody.ClockId;
+  Cmd->TagHead.TagValueSize   = 0;
   Cmd->TagBody.ClockId        = ClockId;
   Cmd->EndTag                 = 0;
 
@@ -615,6 +615,66 @@ RpiFirmwareGetClockRate (
   return EFI_SUCCESS;
 }
 
+#pragma pack()
+typedef struct {
+  UINT32 Pin;
+  UINT32 State;
+} RPI_FW_SET_GPIO_TAG;
+
+typedef struct {
+  RPI_FW_BUFFER_HEAD        BufferHead;
+  RPI_FW_TAG_HEAD           TagHead;
+  RPI_FW_SET_GPIO_TAG       TagBody;
+  UINT32                    EndTag;
+} RPI_FW_SET_GPIO_CMD;
+#pragma pack()
+
+STATIC
+VOID
+RpiFirmwareLedSet (
+  IN  BOOLEAN On
+  )
+{
+  RPI_FW_SET_GPIO_CMD *Cmd;
+  EFI_STATUS          Status;
+  UINT32              Result;
+
+  if (!AcquireSpinLockOrFail (&mMailboxLock)) {
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    return;
+  }
+
+  Cmd = mDmaBuffer;
+  ZeroMem (Cmd, sizeof *Cmd);
+
+  Cmd->BufferHead.BufferSize  = sizeof *Cmd;
+  Cmd->BufferHead.Response    = 0;
+  Cmd->TagHead.TagId          = RPI_FW_SET_GPIO;
+  Cmd->TagHead.TagSize        = sizeof Cmd->TagBody;
+  /*
+   * GPIO_PIN_2 = Activity LED
+   * GPIO_PIN_4 = HDMI Detect (Input / Active Low)
+   * GPIO_PIN_7 = Power LED (Input / Active Low)
+   *
+   * There's also a 128 pin offset.
+   */
+  Cmd->TagBody.Pin = 128 + 2;
+  Cmd->TagBody.State = On;
+  Cmd->TagHead.TagValueSize   = 0;
+  Cmd->EndTag                 = 0;
+
+  Status = MailboxTransaction (Cmd->BufferHead.BufferSize, RPI_FW_MBOX_CHANNEL, &Result);
+
+  ReleaseSpinLock (&mMailboxLock);
+
+  if (EFI_ERROR (Status) ||
+      Cmd->BufferHead.Response != RPI_FW_RESP_SUCCESS) {
+    DEBUG ((DEBUG_ERROR,
+      "%a: mailbox  transaction error: Status == %r, Response == 0x%x\n",
+      __FUNCTION__, Status, Cmd->BufferHead.Response));
+  }
+}
+
 STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL mRpiFirmwareProtocol = {
   RpiFirmwareSetPowerState,
   RpiFirmwareGetMacAddress,
@@ -622,7 +682,8 @@ STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL mRpiFirmwareProtocol = {
   RpiFirmwareGetClockRate,
   RpiFirmwareAllocFb,
   RpiFirmwareFreeFb,
-  RpiFirmwareGetFbSize
+  RpiFirmwareGetFbSize,
+  RpiFirmwareLedSet,
 };
 
 /**

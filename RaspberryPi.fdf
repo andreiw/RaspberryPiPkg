@@ -192,9 +192,9 @@ READ_LOCK_STATUS   = TRUE
   #
   # SD/MMC support
   #
-  INF MdeModulePkg/Bus/Pci/SdMmcPciHcDxe/SdMmcPciHcDxe.inf
-  INF MdeModulePkg/Bus/Sd/SdDxe/SdDxe.inf
-  INF MdeModulePkg/Bus/Sd/EmmcDxe/EmmcDxe.inf
+  # INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/SdHostDxe/SdHostDxe.inf
+  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
+  INF EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
 
   #
   # TianoCore logo (splash screen)
