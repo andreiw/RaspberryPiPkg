@@ -2,6 +2,7 @@
 #  Copyright (c) 2011-2015, ARM Limited. All rights reserved.
 #  Copyright (c) 2014, Linaro Limited. All rights reserved.
 #  Copyright (c) 2015 - 2016, Intel Corporation. All rights reserved.
+#  Copyright (c), 2017, Andrey Warkentin <andrey.warkentin@gmail.com>
 #
 #  This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -374,6 +375,12 @@
 
   # Size of the region used by UEFI in permanent memory (Reserved 64MB)
   gArmPlatformTokenSpaceGuid.PcdSystemMemoryUefiRegionSize|0x04000000
+  #
+  # This matches PcdFvBaseAddress, since everything less is ATF, and
+  # will be reserved away.
+  #
+  gArmTokenSpaceGuid.PcdSystemMemoryBase|0x00400000
+  gArmTokenSpaceGuid.PcdSystemMemorySize|0x3FC00000
 
   ## NS16550 compatible UART
   gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase|0x3f215040
@@ -392,15 +399,11 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x21, 0xaa, 0x2c, 0x46, 0x14, 0x76, 0x03, 0x45, 0x83, 0x6e, 0x8a, 0xb6, 0xf4, 0x66, 0x23, 0x31 }
   gEfiIntelFrameworkModulePkgTokenSpaceGuid.PcdShellFile|{ 0x83, 0xA5, 0x04, 0x7C, 0x3E, 0x9E, 0x1C, 0x4F, 0xAD, 0x65, 0xE0, 0x52, 0x68, 0xD0, 0xB4, 0xD1 }
 
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVendor|L"Raspberry Pi 3 64-bit UEFI"
+
   gEmbeddedTokenSpaceGuid.PcdPrePiCpuMemorySize|32
 
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|3
-
-  #
-  # This will be overridden in the code
-  #
-  gArmTokenSpaceGuid.PcdSystemMemoryBase|0x00400000
-  gArmTokenSpaceGuid.PcdSystemMemorySize|0x07c00000
 
 [PcdsFixedAtBuild.AARCH64]
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
@@ -499,6 +502,12 @@
   FatPkg/EnhancedFatDxe/Fat.inf
 
   #
+  # SMBIOS Support
+  #
+  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/PlatformSmbiosDxe/PlatformSmbiosDxe.inf
+  MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
+
+  #
   # Bds
   #
   MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
@@ -506,7 +515,7 @@
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
   MdeModulePkg/Universal/DriverHealthManagerDxe/DriverHealthManagerDxe.inf
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
-  MdeModulePkg/Logo/LogoDxe.inf
+  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/Logo/LogoDxe.inf
   MdeModulePkg/Application/UiApp/UiApp.inf {
     <LibraryClasses>
       NULL|MdeModulePkg/Library/DeviceManagerUiLib/DeviceManagerUiLib.inf

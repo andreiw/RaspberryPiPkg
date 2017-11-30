@@ -74,6 +74,12 @@ VOID
   BOOLEAN On
   );
 
+typedef
+EFI_STATUS
+(EFIAPI *GET_SERIAL) (
+  UINT64 *Serial
+  );
+
 typedef struct {
   SET_POWER_STATE   SetPowerState;
   GET_MAC_ADDRESS   GetMacAddress;
@@ -83,6 +89,7 @@ typedef struct {
   FREE_FB           FreeFB;
   GET_FB_SIZE       GetFBSize;
   SET_LED           SetLed;
+  GET_SERIAL        GetSerial;
 } RASPBERRY_PI_FIRMWARE_PROTOCOL;
 
 extern EFI_GUID gRaspberryPiFirmwareProtocolGuid;

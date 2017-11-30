@@ -153,6 +153,12 @@ READ_LOCK_STATUS   = TRUE
   INF ShellPkg/Application/Shell/Shell.inf
 
   #
+  # SMBIOS Support
+  #
+  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/PlatformSmbiosDxe/PlatformSmbiosDxe.inf
+  INF MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
+
+  #
   # Bds
   #
   INF MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
@@ -197,9 +203,9 @@ READ_LOCK_STATUS   = TRUE
   INF EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
 
   #
-  # TianoCore logo (splash screen)
+  # Pi logo (splash screen)
   #
-  INF MdeModulePkg/Logo/LogoDxe.inf
+  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/Logo/LogoDxe.inf
 
   #
   # FDT (GUID matches mRaspberryPiFfsFileGuid in RaspberryPiPlatformDxe)
