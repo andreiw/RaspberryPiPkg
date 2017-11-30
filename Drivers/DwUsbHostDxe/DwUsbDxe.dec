@@ -1,0 +1,45 @@
+#/** @file
+# Framework Module Development Environment Industry Standards
+#
+# This Package provides headers and libraries that conform to EFI/PI Industry standards.
+# Copyright (c) 2007, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2012-2014, ARM Ltd. All rights reserved.<BR>
+# Copyright (c) 2015-2016, Linaro. All rights reserved.<BR>
+#
+#    This program and the accompanying materials are licensed and made available under
+#    the terms and conditions of the BSD License which accompanies this distribution.
+#    The full text of the license may be found at
+#    http://opensource.org/licenses/bsd-license.php
+#
+#    THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#**/
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = OpenPlatformDriversUsbDwUsbDxePkg
+  PACKAGE_GUID                   = 114a3be9-10f7-4bf1-81ca-09ac52d4c3d5
+  PACKAGE_VERSION                = 0.1
+
+
+################################################################################
+#
+# Include Section - list of Include Paths that are provided by this package.
+#                   Comments are used for Keywords and Module Types.
+#
+# Supported Module Types:
+#  BASE SEC PEI_CORE PEIM DXE_CORE DXE_DRIVER DXE_RUNTIME_DRIVER DXE_SMM_DRIVER DXE_SAL_DRIVER UEFI_DRIVER UEFI_APPLICATION
+#
+################################################################################
+
+[Guids.common]
+  gAndroidFastbootUsbGuid       = { 0xf6bec3fe, 0x88fb, 0x11e3, { 0xae, 0x84, 0xe7, 0x3b, 0x77, 0x56, 0x1c, 0x35 }}
+  gDwUsbDxeTokenSpaceGuid	= { 0x131c4d02, 0x9449, 0x4ee9, { 0xba, 0x3d, 0x69, 0x50, 0x21, 0x89, 0x26, 0x0b }}
+
+[Protocols.common]
+  gDwUsbProtocolGuid            = { 0x109fa264, 0x7811, 0x4862, { 0xa9, 0x73, 0x4a, 0xb2, 0xef, 0x2e, 0xe2, 0xff }}
+
+[PcdsFixedAtBuild.common]
+  # DwUsb Driver PCDs
+  gDwUsbDxeTokenSpaceGuid.PcdDwUsbDxeBaseAddress|0x0|UINT32|0x00000001
