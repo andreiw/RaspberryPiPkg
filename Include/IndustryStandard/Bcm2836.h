@@ -35,6 +35,9 @@
 #define BCM2836_SOC_REGISTERS                               0x3f000000
 #define BCM2836_SOC_REGISTER_LENGTH                         0x02000000
 
+/* Synopsis DW2/DWC USB 2.0 OTG. */
+#define BCM2836_USB_DW2_BASE_ADDRESS                        0x3f980000
+
 /*
  * Offset between the CPU's view and the VC's view of system memory.
  */

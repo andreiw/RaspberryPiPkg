@@ -30,7 +30,6 @@
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/DwUsbHostDxe/DwUsbDxe.dec
 
 [LibraryClasses]
   MemoryAllocationLib
@@ -40,7 +39,6 @@
   UefiDriverEntryPoint
   BaseMemoryLib
   DebugLib
-  PcdLib
   ReportStatusCodeLib
   TimerLib
   DmaLib
@@ -52,7 +50,7 @@
 [Protocols]
   gEfiDriverBindingProtocolGuid
   gEfiUsb2HcProtocolGuid
-  gDwUsbProtocolGuid
+  gRaspberryPiFirmwareProtocolGuid
 
-[Pcd]
-  gDwUsbDxeTokenSpaceGuid.PcdDwUsbDxeBaseAddress
+[Depex]
+  gRaspberryPiFirmwareProtocolGuid
