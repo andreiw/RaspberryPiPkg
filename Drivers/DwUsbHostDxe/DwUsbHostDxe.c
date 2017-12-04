@@ -27,6 +27,18 @@ EFI_USB_PCIIO_DEVICE_PATH DwHcDevicePath =
     { END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE, { sizeof (EFI_DEVICE_PATH_PROTOCOL), 0} }
   };
 
+typedef enum {
+  XFER_DONE,
+  XFER_RETRY,
+  XFER_ERROR,
+  XFER_RESTART
+} CHANNEL_HALT_REASON;
+
+typedef struct {
+  BOOLEAN Splitting;
+  BOOLEAN SplitStart;
+} SPLIT_CONTROL;
+
 VOID DwHcInit (IN DWUSB_OTGHC_DEV *DwHc);
 VOID DwCoreInit (IN DWUSB_OTGHC_DEV *DwHc);
 
@@ -56,69 +68,104 @@ Wait4Bit (
   return 1;
 }
 
-UINT32
+CHANNEL_HALT_REASON
 Wait4Chhltd (
              IN DWUSB_OTGHC_DEV    *DwHc,
              IN UINT32             *Sub,
              IN UINT32             *Toggle,
-             IN BOOLEAN            IgnoreAck
+             IN BOOLEAN            IgnoreAck,
+             IN SPLIT_CONTROL     *Split
              )
 {
   UINT32  HcintCompHltAck = DWC2_HCINT_XFERCOMP | DWC2_HCINT_CHHLTD;
+  UINT32  HcintSplitStartAck = DWC2_HCINT_CHHLTD;
+  UINT32  HcintSplitNyet = DWC2_HCINT_CHHLTD | DWC2_HCINT_NYET;
   INT32   Ret;
   UINT32  Hcint, Hctsiz;
 
   MicroSecondDelay (100);
   Ret = Wait4Bit (DwHc->DwUsbBase + HCINT(DWC2_HC_CHANNEL), DWC2_HCINT_CHHLTD, 1);
-  if (Ret)
-    return Ret;
+  if (Ret) {
+    return XFER_ERROR;
+  }
 
   MicroSecondDelay (100);
   Hcint = MmioRead32 (DwHc->DwUsbBase + HCINT(DWC2_HC_CHANNEL));
   if (Hcint & (DWC2_HCINT_NAK | DWC2_HCINT_FRMOVRUN)) {
     DEBUG ((EFI_D_INFO, "Wait4Chhltd: ERROR\n"));
-    return 1;
+    return XFER_ERROR;
   }
 
-  if (IgnoreAck)
+  if (IgnoreAck) {
     Hcint &= ~DWC2_HCINT_ACK;
-  else
+  } else {
     HcintCompHltAck |= DWC2_HCINT_ACK;
+    HcintSplitStartAck |= DWC2_HCINT_ACK;
+  }
+
+  if (Split->Splitting) {
+    if (Split->SplitStart &&
+        Hcint == HcintSplitStartAck) {
+      Split->SplitStart = FALSE;
+      return XFER_RESTART;
+    } else if (!Split->SplitStart &&
+               Hcint == HcintSplitNyet) {
+      DEBUG((DEBUG_ERROR, "NYET, retry\n"));
+      return XFER_RETRY;
+    }
+  }
 
   if (Hcint != HcintCompHltAck) {
-    DEBUG ((EFI_D_ERROR, "Wait4Chhltd: HCINT Error 0x%x\n", Hcint));
-    return 1;
+    DEBUG ((EFI_D_ERROR, "Wait4Chhltd: HCINT Error 0x%x %a\n", Hcint,
+            Split->SplitStart ? "split start" :
+            (Split->Splitting ? "split complete" : "")));
+    return XFER_ERROR;
   }
 
   Hctsiz = MmioRead32 (DwHc->DwUsbBase + HCTSIZ(DWC2_HC_CHANNEL));
   *Sub = (Hctsiz & DWC2_HCTSIZ_XFERSIZE_MASK) >> DWC2_HCTSIZ_XFERSIZE_OFFSET;
   *Toggle = (Hctsiz & DWC2_HCTSIZ_PID_MASK) >> DWC2_HCTSIZ_PID_OFFSET;
 
-  return 0;
+  return XFER_DONE;
 }
 
 VOID
 DwOtgHcInit (
              IN DWUSB_OTGHC_DEV    *DwHc,
              IN UINT8              HcNum,
+             IN EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
+             IN UINT8              DeviceSpeed,
              IN UINT8              DevAddr,
              IN UINT8              Endpoint,
              IN UINT8              EpDir,
              IN UINT8              EpType,
-             IN UINT16             MaxPacket
+             IN UINT16             MaxPacket,
+             IN SPLIT_CONTROL *SplitControl
              )
 {
-  UINT32  Hcchar = (DevAddr << DWC2_HCCHAR_DEVADDR_OFFSET) |
+  UINT32 Split = 0;
+  UINT32 Hcchar = (DevAddr << DWC2_HCCHAR_DEVADDR_OFFSET) |
     (Endpoint << DWC2_HCCHAR_EPNUM_OFFSET) |
     (EpDir << DWC2_HCCHAR_EPDIR_OFFSET) |
     (EpType << DWC2_HCCHAR_EPTYPE_OFFSET) |
-    (MaxPacket << DWC2_HCCHAR_MPS_OFFSET);
+    (MaxPacket << DWC2_HCCHAR_MPS_OFFSET) |
+    ((DeviceSpeed == EFI_USB_SPEED_LOW) ? DWC2_HCCHAR_LSPDDEV : 0);
 
   MmioWrite32 (DwHc->DwUsbBase + HCINT(HcNum), 0x3FFF);
 
   MmioWrite32 (DwHc->DwUsbBase + HCCHAR(HcNum), Hcchar);
 
-  MmioWrite32 (DwHc->DwUsbBase + HCSPLT(HcNum), 0);
+  if (SplitControl->Splitting) {
+    Split = DWC2_HCSPLT_SPLTENA |
+      ((Translator->TranslatorPortNumber) << DWC2_HCSPLT_PRTADDR_OFFSET) |
+      ((Translator->TranslatorHubAddress) << DWC2_HCSPLT_HUBADDR_OFFSET);
+
+    if (!SplitControl->SplitStart) {
+      Split |= DWC2_HCSPLT_COMPSPLT;
+    }
+  }
+
+  MmioWrite32 (DwHc->DwUsbBase + HCSPLT(HcNum), Split);
 }
 
 VOID
@@ -144,6 +191,7 @@ DwCoreReset (
 EFI_STATUS
 DwHcTransfer (
               IN     DWUSB_OTGHC_DEV        *DwHc,
+              IN     EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
               IN     UINT8                  DeviceSpeed,
               IN     UINT8                  DeviceAddress,
               IN     UINTN                  MaximumPacketLength,
@@ -164,38 +212,48 @@ DwHcTransfer (
   UINT32                          Ret = 0;
   UINT32                          StopTransfer = 0;
   EFI_STATUS                      Status = EFI_SUCCESS;
+  SPLIT_CONTROL                   Split = { 0 };
 
-  if (DeviceSpeed == EFI_USB_SPEED_LOW ||
-      DeviceSpeed == EFI_USB_SPEED_FULL) {
-    DEBUG((EFI_D_ERROR, "\n\n\nThis shitty driver doesn't support LS/FS devices like HID keyboards\n\n\n"));
-    return EFI_UNSUPPORTED;
-  }
+  /* DEBUG((DEBUG_ERROR, "%u:%u> Transfer of size %u, MPL = %u\n", */
+  /*        DeviceAddress, */
+  /*        EpAddress, */
+  /*        *DataLength, */
+  /*        MaximumPacketLength)); */
 
-  do {
-    DwOtgHcInit (DwHc, DWC2_HC_CHANNEL, DeviceAddress, EpAddress,
-                 TransferDirection, EpType, MaximumPacketLength);
+ do {
+    if (DeviceSpeed == EFI_USB_SPEED_LOW ||
+        DeviceSpeed == EFI_USB_SPEED_FULL) {
+      Split.Splitting = TRUE;
+      Split.SplitStart = TRUE;
+    }
 
     TxferLen = *DataLength - Done;
 
-    if (TxferLen > DWC2_MAX_TRANSFER_SIZE)
+    if (TxferLen > DWC2_MAX_TRANSFER_SIZE) {
       TxferLen = DWC2_MAX_TRANSFER_SIZE - MaximumPacketLength + 1;
-    if (TxferLen > DWC2_DATA_BUF_SIZE)
-      TxferLen = DWC2_DATA_BUF_SIZE - MaximumPacketLength + 1;
+    }
 
-    if (TxferLen > 0) {
+    if (TxferLen > DWC2_DATA_BUF_SIZE) {
+      TxferLen = DWC2_DATA_BUF_SIZE - MaximumPacketLength + 1;
+    }
+
+    if (Split.Splitting ||
+        TxferLen == 0) {
+      NumPackets = 1;
+    } else {
       NumPackets = (TxferLen + MaximumPacketLength - 1) / MaximumPacketLength;
       if (NumPackets > DWC2_MAX_PACKET_COUNT) {
         NumPackets = DWC2_MAX_PACKET_COUNT;
         TxferLen = NumPackets * MaximumPacketLength;
       }
-    } else {
-      NumPackets = 1;
     }
 
-    if (TransferDirection)
+    if (TransferDirection) {
       TxferLen = NumPackets * MaximumPacketLength;
+    }
 
-    MmioWrite32 (DwHc->DwUsbBase + HCTSIZ(DWC2_HC_CHANNEL), (TxferLen << DWC2_HCTSIZ_XFERSIZE_OFFSET) |
+    MmioWrite32 (DwHc->DwUsbBase + HCTSIZ(DWC2_HC_CHANNEL),
+                 (TxferLen << DWC2_HCTSIZ_XFERSIZE_OFFSET) |
                  (NumPackets << DWC2_HCTSIZ_PKTCNT_OFFSET) |
                  (*Pid << DWC2_HCTSIZ_PID_OFFSET));
 
@@ -206,6 +264,12 @@ DwHcTransfer (
 
     MmioWrite32 (DwHc->DwUsbBase + HCDMA(DWC2_HC_CHANNEL), (UINTN)DwHc->AlignedBufferBusAddress);
 
+restart_channel:
+    DwOtgHcInit (DwHc, DWC2_HC_CHANNEL, Translator, DeviceSpeed,
+                 DeviceAddress, EpAddress,
+                 TransferDirection, EpType,
+                 MaximumPacketLength, &Split);
+
     MmioAndThenOr32 (DwHc->DwUsbBase + HCCHAR(DWC2_HC_CHANNEL),
                      ~(DWC2_HCCHAR_MULTICNT_MASK |
                        DWC2_HCCHAR_CHEN |
@@ -213,8 +277,12 @@ DwHcTransfer (
                      ((1 << DWC2_HCCHAR_MULTICNT_OFFSET) |
                       DWC2_HCCHAR_CHEN));
 
-    Ret = Wait4Chhltd (DwHc, &Sub, Pid, IgnoreAck);
-    if (Ret) {
+    Ret = Wait4Chhltd (DwHc, &Sub, Pid, IgnoreAck, &Split);
+    if (Ret == XFER_RESTART) {
+      goto restart_channel;
+    } else if (Ret == XFER_RETRY) {
+      continue;
+    } else if (Ret == XFER_ERROR) {
       *TransferResult = EFI_USB_ERR_STALL;
       Status = EFI_DEVICE_ERROR;
       break;
@@ -224,8 +292,9 @@ DwHcTransfer (
       ArmDataSynchronizationBarrier();
       TxferLen -= Sub;
       CopyMem (Data+Done, DwHc->AlignedBuffer, TxferLen);
-      if (Sub)
+      if (Sub) {
         StopTransfer = 1;
+      }
     }
 
     Done += TxferLen;
@@ -586,7 +655,7 @@ DwHcControlTransfer (
 
   Pid = DWC2_HC_PID_SETUP;
   Length = 8;
-  Status = DwHcTransfer (DwHc, DeviceSpeed, DeviceAddress, MaximumPacketLength, &Pid,
+  Status = DwHcTransfer (DwHc, Translator, DeviceSpeed, DeviceAddress, MaximumPacketLength, &Pid,
                          0, Request, &Length, 0, DWC2_HCCHAR_EPTYPE_CONTROL, TransferResult, 1);
 
   if (EFI_ERROR(Status)) {
@@ -602,7 +671,7 @@ DwHcControlTransfer (
     else
       Direction = 0;
 
-    Status = DwHcTransfer (DwHc, DeviceSpeed, DeviceAddress, MaximumPacketLength, &Pid,
+    Status = DwHcTransfer (DwHc, Translator, DeviceSpeed, DeviceAddress, MaximumPacketLength, &Pid,
                            Direction, Data, DataLength, 0, DWC2_HCCHAR_EPTYPE_CONTROL,
                            TransferResult, 0);
 
@@ -619,7 +688,7 @@ DwHcControlTransfer (
 
   Pid = DWC2_HC_PID_DATA1;
   Length = 0;
-  Status = DwHcTransfer (DwHc, DeviceSpeed, DeviceAddress, MaximumPacketLength, &Pid,
+  Status = DwHcTransfer (DwHc, Translator, DeviceSpeed, DeviceAddress, MaximumPacketLength, &Pid,
                          StatusDirection, DwHc->StatusBuffer, &Length, 0, DWC2_HCCHAR_EPTYPE_CONTROL,
                          TransferResult, 0);
 
@@ -679,7 +748,7 @@ DwHcBulkTransfer (
   EpAddress               = EndPointAddress & 0x0F;
   Pid                     = (*DataToggle << 1);
 
-  Status = DwHcTransfer (DwHc, DeviceSpeed, DeviceAddress, MaximumPacketLength,
+  Status = DwHcTransfer (DwHc, Translator, DeviceSpeed, DeviceAddress, MaximumPacketLength,
                          &Pid, TransferDirection, Data[0], DataLength,
                          EpAddress, DWC2_HCCHAR_EPTYPE_BULK, TransferResult, 1);
 
@@ -712,6 +781,11 @@ DwHcAsyncInterruptTransfer (
   UINT32                          Pid;
   UINT8                           TransferDirection;
   UINT8                           EpAddress;
+
+  if ((DeviceSpeed == EFI_USB_SPEED_LOW) || (DeviceSpeed == EFI_USB_SPEED_FULL)) {
+    DEBUG((DEBUG_ERROR, "\n\n\nSplit Interrupt Transfers are not yet supported\n\n\n"));
+    return EFI_UNSUPPORTED;
+  }
 
   /*
    * This is a workaround to allow USB hub on the RPi to settle after
@@ -758,7 +832,7 @@ DwHcAsyncInterruptTransfer (
   Pid                     = (*DataToggle << 1);
 
 
-  Status = DwHcTransfer (DwHc, DeviceSpeed, DeviceAddress, MaximumPacketLength, &Pid,
+  Status = DwHcTransfer (DwHc, Translator, DeviceSpeed, DeviceAddress, MaximumPacketLength, &Pid,
                          TransferDirection, Data, &DataLength,
                          EpAddress, DWC2_HCCHAR_EPTYPE_INTR, &TransferResult, 1);
 
