@@ -28,11 +28,11 @@
 
 [FD.RPI_EFI]
 BaseAddress   = 0x00000000|gArmTokenSpaceGuid.PcdFdBaseAddress
-Size          = 0x00180000|gArmTokenSpaceGuid.PcdFdSize
+Size          = 0x00190000|gArmTokenSpaceGuid.PcdFdSize
 ErasePolarity = 1
 
 BlockSize     = 0x00001000
-NumBlocks     = 0x180
+NumBlocks     = 0x190
 
 ################################################################################
 #
@@ -55,17 +55,22 @@ NumBlocks     = 0x180
 #
 0x00000000|0x00008000
 FILE = $(ATF_BUILD_DIR)/bl1.bin
+#
+# DTB.
+#
+0x00008000|0x00008000
+FILE = OpenPlatformPkg/Platforms/RaspberryPi/Binary/bcm2837-rpi-3-b.dtb
 
 #
 # ATF secondary boot image in FIP format (BL2 + BL31)
 #
-0x00008000|0x00018000
+0x00010000|0x00020000
 FILE = $(ATF_BUILD_DIR)/fip.bin
 
 #
 # UEFI image (BL33 in ATF speak)
 #
-0x00020000|0x00160000
+0x00030000|0x00160000
 gArmTokenSpaceGuid.PcdFvBaseAddress|gArmTokenSpaceGuid.PcdFvSize
 FV = FVMAIN_COMPACT
 

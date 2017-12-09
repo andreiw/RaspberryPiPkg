@@ -1,5 +1,6 @@
 /** @file
-  Copyright (c) 2016, Linaro, Ltd. All rights reserved.<BR>
+  Copyright (c), 2017, Andrey Warkentin <andrey.warkentin@gmail.com>
+  Copyright (c) 2016, Linaro, Ltd. All rights reserved.
 
   This program and the accompanying materials
   are licensed and made available under the terms and conditions of the BSD License
@@ -22,8 +23,6 @@
 #include <Protocol/RaspberryPiFirmware.h>
 
 #include <Guid/Fdt.h>
-
-#define FDT_MAX_PAGES                   16
 
 STATIC VOID                             *mFdtImage;
 
@@ -141,10 +140,11 @@ UpdateBootArgs (
     Prop = fdt_getprop (mFdtImage, Node, "bootargs", &Length);
     ASSERT (Prop != NULL);
 
-    DEBUG ((DEBUG_INFO, "%a: command line set from firmware (length %d)\n",
-      __FUNCTION__, Length));
-
+    DEBUG ((DEBUG_INFO, "Command line set from firmware (length %d)\n", Length));
+    DEBUG ((DEBUG_INFO, "'%a'\n", &CommandLine[3]));
   DEBUG_CODE_END ();
+
+  FreePool (CommandLine - 4);
 }
 
 
@@ -164,38 +164,54 @@ RpiFdtDxeInitialize (
   IN EFI_SYSTEM_TABLE   *SystemTable
   )
 {
-  EFI_STATUS      Status;
-  VOID            *FdtImage;
-  UINTN           FdtSize;
-  INT32           Retval;
+  EFI_STATUS Status;
+  VOID       *FdtImage;
+  UINTN      FdtSize;
+  INT32      Retval;
 
   Status = gBS->LocateProtocol (&gRaspberryPiFirmwareProtocolGuid, NULL,
                   (VOID **)&mFwProtocol);
   ASSERT_EFI_ERROR (Status);
 
-  Status = GetSectionFromAnyFv (&gRaspberryPiFdtFileGuid, EFI_SECTION_RAW, 0,
-             &FdtImage, &FdtSize);
+  FdtImage =  (VOID *) (UINTN) PcdGet32(PcdFdtBaseAddress);
+  Retval = fdt_check_header (FdtImage);
+  if (Retval == 0) {
+    /*
+     * Have FDT passed via config.txt.
+     */
+    FdtSize = fdt_totalsize (FdtImage);
+    DEBUG ((DEBUG_INFO, "DTB passed via config.txt of 0x%lx bytes\n", FdtSize));
+    Status = EFI_SUCCESS;
+  } else {
+    DEBUG ((DEBUG_INFO, "No/bad FDT at %p (%a), trying internal DTB...\n",
+            FdtImage, fdt_strerror (Retval)));
+    Status = GetSectionFromAnyFv (&gRaspberryPiFdtFileGuid, EFI_SECTION_RAW, 0,
+                                  &FdtImage, &FdtSize);
+    if (Status == EFI_SUCCESS) {
+      if (fdt_check_header (FdtImage) != 0) {
+        Status = EFI_INCOMPATIBLE_VERSION;
+      }
+    }
+  }
+
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to locate FFS file containing FDT blob\n",
-      __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "Failed to locate device tree: %r\n", Status));
     return Status;
   }
 
-  if (fdt_check_header (FdtImage) != 0) {
-    DEBUG ((DEBUG_ERROR, "%a: FDT blob header check failed\n",
-      __FUNCTION__));
-    return EFI_DEVICE_ERROR;
+  /*
+   * Probably overkill.
+   */
+  FdtSize += EFI_PAGE_SIZE * 2;
+  Status = gBS->AllocatePages (AllocateAnyPages, EfiRuntimeServicesData,
+                               EFI_SIZE_TO_PAGES(FdtSize),
+                               (EFI_PHYSICAL_ADDRESS *) &mFdtImage);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "Failed to allocate new device tree: %r\n", Status));
+    return Status;
   }
 
-  ASSERT (fdt_totalsize (FdtImage) <= EFI_PAGES_TO_SIZE (FDT_MAX_PAGES));
-
-  mFdtImage = AllocatePages (FDT_MAX_PAGES);
-  if (mFdtImage == NULL) {
-    return EFI_OUT_OF_RESOURCES;
-  }
-
-  Retval = fdt_open_into (FdtImage, mFdtImage,
-             EFI_PAGES_TO_SIZE (FDT_MAX_PAGES));
+  Retval = fdt_open_into (FdtImage, mFdtImage, FdtSize);
   ASSERT (Retval == 0);
 
   UpdateMacAddress ();

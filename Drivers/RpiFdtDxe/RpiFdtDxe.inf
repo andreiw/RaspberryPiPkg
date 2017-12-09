@@ -46,3 +46,6 @@
 
 [Depex]
   gRaspberryPiFirmwareProtocolGuid
+
+[FixedPcd]
+  gRaspberryPiTokenSpaceGuid.PcdFdtBaseAddress
