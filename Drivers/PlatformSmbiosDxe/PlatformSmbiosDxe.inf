@@ -40,7 +40,7 @@
   MdeModulePkg/MdeModulePkg.dec
   ArmPlatformPkg/ArmPlatformPkg.dec
   ArmPkg/ArmPkg.dec
-  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   UefiBootServicesTableLib

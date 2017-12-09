@@ -1,4 +1,6 @@
 #/* @file
+#
+#  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
 #  Copyright (c) 2011-2014, ARM Limited. All rights reserved.
 #  Copyright (c) 2014-2016, Linaro Limited. All rights reserved.
 #
@@ -26,7 +28,7 @@
   EmbeddedPkg/EmbeddedPkg.dec
   ArmPkg/ArmPkg.dec
   ArmPlatformPkg/ArmPlatformPkg.dec
-  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   ArmLib

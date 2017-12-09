@@ -28,7 +28,7 @@
   ArmPkg/ArmPkg.dec
   MdePkg/MdePkg.dec
   EmbeddedPkg/EmbeddedPkg.dec
-  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   PcdLib

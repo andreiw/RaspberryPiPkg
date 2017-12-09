@@ -24,11 +24,11 @@
   PLATFORM_GUID                  = 5d30c4fc-93cf-40c9-8486-3badc0410816
   PLATFORM_VERSION               = 0.1
   DSC_SPECIFICATION              = 0x00010005
-  OUTPUT_DIRECTORY               = Build/RaspberryPi-$(ARCH)
+  OUTPUT_DIRECTORY               = Build/RaspberryPiPkg-$(ARCH)
   SUPPORTED_ARCHITECTURES        = AARCH64|ARM
   BUILD_TARGETS                  = DEBUG|RELEASE
   SKUID_IDENTIFIER               = DEFAULT
-  FLASH_DEFINITION               = OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.fdf
+  FLASH_DEFINITION               = RaspberryPiPkg/RaspberryPiPkg.fdf
 
   #
   # Defines for default states.  These can be changed on the command line.
@@ -115,7 +115,7 @@
   ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerPhyCounterLib/ArmGenericTimerPhyCounterLib.inf
 
   PlatformPeiLib|ArmPlatformPkg/PlatformPei/PlatformPeiLib.inf
-  MemoryInitPeiLib|OpenPlatformPkg/Platforms/RaspberryPi/Library/MemoryInitPeiLib/MemoryInitPeiLib.inf
+  MemoryInitPeiLib|RaspberryPiPkg/Library/MemoryInitPeiLib/MemoryInitPeiLib.inf
 
   PciCf8Lib|MdePkg/Library/BasePciCf8Lib/BasePciCf8Lib.inf
   PciLib|MdePkg/Library/BasePciLibCf8/BasePciLibCf8.inf
@@ -324,7 +324,7 @@
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf
   ArmMmuLib|ArmPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
 
-  ArmPlatformLib|OpenPlatformPkg/Platforms/RaspberryPi/Library/RaspberryPiPlatformLib/RaspberryPiPlatformLib.inf
+  ArmPlatformLib|RaspberryPiPkg/Library/RaspberryPiPlatformLib/RaspberryPiPlatformLib.inf
   ArmPlatformSysConfigLib|ArmPlatformPkg/Library/ArmPlatformSysConfigLibNull/ArmPlatformSysConfigLibNull.inf
 
   TimerLib|ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf
@@ -481,13 +481,13 @@
   MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
   MdeModulePkg/Universal/SerialDxe/SerialDxe.inf
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/DisplayDxe/DisplayDxe.inf
+  RaspberryPiPkg/Drivers/DisplayDxe/DisplayDxe.inf
 
   MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
 
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/RpiFdtDxe/RpiFdtDxe.inf
+  RaspberryPiPkg/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
+  RaspberryPiPkg/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
+  RaspberryPiPkg/Drivers/RpiFdtDxe/RpiFdtDxe.inf
   ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
 
@@ -499,18 +499,17 @@
   MdeModulePkg/Universal/Disk/UnicodeCollation/EnglishDxe/EnglishDxe.inf
   FatPkg/EnhancedFatDxe/Fat.inf
 
-
   #
   # ACPI Support
   #
   MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
   MdeModulePkg/Universal/Acpi/AcpiPlatformDxe/AcpiPlatformDxe.inf
-  OpenPlatformPkg/Platforms/RaspberryPi/AcpiTables/AcpiTables.inf
+  RaspberryPiPkg/AcpiTables/AcpiTables.inf
 
   #
   # SMBIOS Support
   #
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/PlatformSmbiosDxe/PlatformSmbiosDxe.inf
+  RaspberryPiPkg/Drivers/PlatformSmbiosDxe/PlatformSmbiosDxe.inf
   MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
 
   #
@@ -521,7 +520,7 @@
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
   MdeModulePkg/Universal/DriverHealthManagerDxe/DriverHealthManagerDxe.inf
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/Logo/LogoDxe.inf
+  RaspberryPiPkg/Drivers/Logo/LogoDxe.inf
   MdeModulePkg/Application/UiApp/UiApp.inf {
     <LibraryClasses>
       NULL|MdeModulePkg/Library/DeviceManagerUiLib/DeviceManagerUiLib.inf
@@ -538,7 +537,7 @@
   #
   # USB Support
   #
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/DwUsbHostDxe/DwUsbHostDxe.inf
+  RaspberryPiPkg/Drivers/DwUsbHostDxe/DwUsbHostDxe.inf
   MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
   MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
   MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
@@ -546,8 +545,8 @@
   #
   # SD/MMC support
   #
-  # OpenPlatformPkg/Platforms/RaspberryPi/Drivers/SdHostDxe/SdHostDxe.inf
-  OpenPlatformPkg/Platforms/RaspberryPi/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
+  # RaspberryPiPkg/Drivers/SdHostDxe/SdHostDxe.inf
+  RaspberryPiPkg/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
   EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
 
 [Components.common]
