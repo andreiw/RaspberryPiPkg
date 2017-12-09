@@ -1,4 +1,6 @@
 #/** @file
+#
+#  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
 #  Copyright (c) 2016, Linaro, Ltd. All rights reserved.<BR>
 #
 #  This program and the accompanying materials
@@ -25,7 +27,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   EmbeddedPkg/EmbeddedPkg.dec
-  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   BaseLib

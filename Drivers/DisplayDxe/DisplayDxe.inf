@@ -38,7 +38,7 @@
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   ArmPkg/ArmPkg.dec
-  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   BaseLib

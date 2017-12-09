@@ -1,5 +1,6 @@
 #/** @file
 #
+#  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
 #  Copyright (c) 2015-2016, Linaro Limited. All rights reserved.
 #
 #  SPDX-License-Identifier:     GPL-2.0+
@@ -23,7 +24,7 @@
   MdePkg/MdePkg.dec
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
-  OpenPlatformPkg/Platforms/RaspberryPi/RaspberryPi.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   MemoryAllocationLib

@@ -2,6 +2,7 @@
 #  Copyright (c) 2011-2015, ARM Limited. All rights reserved.
 #  Copyright (c) 2014, Linaro Limited. All rights reserved.
 #  Copyright (c) 2015 - 2016, Intel Corporation. All rights reserved.
+#  Copyright (c), 2017, Andrey Warkentin <andrey.warkentin@gmail.com>
 #
 #  This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -55,11 +56,12 @@ NumBlocks     = 0x190
 #
 0x00000000|0x00008000
 FILE = $(ATF_BUILD_DIR)/bl1.bin
+
 #
 # DTB.
 #
 0x00008000|0x00008000
-FILE = OpenPlatformPkg/Platforms/RaspberryPi/Binary/bcm2837-rpi-3-b.dtb
+DATA = { 0x00 }
 
 #
 # ATF secondary boot image in FIP format (BL2 + BL31)
@@ -136,11 +138,11 @@ READ_LOCK_STATUS   = TRUE
   INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   INF MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
   INF MdeModulePkg/Universal/SerialDxe/SerialDxe.inf
-  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/DisplayDxe/DisplayDxe.inf
+  INF RaspberryPiPkg/Drivers/DisplayDxe/DisplayDxe.inf
 
-  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
-  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
-  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/RpiFdtDxe/RpiFdtDxe.inf
+  INF RaspberryPiPkg/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
+  INF RaspberryPiPkg/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
+  INF RaspberryPiPkg/Drivers/RpiFdtDxe/RpiFdtDxe.inf
   INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
 
@@ -162,12 +164,12 @@ READ_LOCK_STATUS   = TRUE
   #
   INF MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
   INF MdeModulePkg/Universal/Acpi/AcpiPlatformDxe/AcpiPlatformDxe.inf
-  INF RuleOverride = ACPITABLE OpenPlatformPkg/Platforms/RaspberryPi/AcpiTables/AcpiTables.inf
+  INF RuleOverride = ACPITABLE RaspberryPiPkg/AcpiTables/AcpiTables.inf
 
   #
   # SMBIOS Support
   #
-  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/PlatformSmbiosDxe/PlatformSmbiosDxe.inf
+  INF RaspberryPiPkg/Drivers/PlatformSmbiosDxe/PlatformSmbiosDxe.inf
   INF MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
 
   #
@@ -204,7 +206,7 @@ READ_LOCK_STATUS   = TRUE
   #
   # USB Support
   #
-  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/DwUsbHostDxe/DwUsbHostDxe.inf
+  INF RaspberryPiPkg/Drivers/DwUsbHostDxe/DwUsbHostDxe.inf
   INF MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
   INF MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
   INF MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
@@ -212,20 +214,20 @@ READ_LOCK_STATUS   = TRUE
   #
   # SD/MMC support
   #
-  # INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/SdHostDxe/SdHostDxe.inf
-  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
+  # INF RaspberryPiPkg/Drivers/SdHostDxe/SdHostDxe.inf
+  INF RaspberryPiPkg/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
   INF EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
 
   #
   # Pi logo (splash screen)
   #
-  INF OpenPlatformPkg/Platforms/RaspberryPi/Drivers/Logo/LogoDxe.inf
+  INF RaspberryPiPkg/Drivers/Logo/LogoDxe.inf
 
   #
   # FDT (GUID matches mRaspberryPiFfsFileGuid in RaspberryPiPlatformDxe)
   #
   FILE FREEFORM = DF5DA223-1D27-47C3-8D1B-9A41B55A18BC {
-    SECTION RAW = OpenPlatformPkg/Platforms/RaspberryPi/Binary/bcm2837-rpi-3-b.dtb
+    SECTION RAW = RaspberryPiPkg/Binary/bcm2837-rpi-3-b.dtb
   }
 
 [FV.FVMAIN_COMPACT]

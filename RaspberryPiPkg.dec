@@ -13,7 +13,7 @@
 
 [Defines]
   DEC_SPECIFICATION              = 0x0001001A
-  PACKAGE_NAME                   = RaspberryPi
+  PACKAGE_NAME                   = RaspberryPiPkg
   PACKAGE_GUID                   = DFA0CA8B-F3AC-4607-96AC-46FA04B84DCC
   PACKAGE_VERSION                = 0.1
 
