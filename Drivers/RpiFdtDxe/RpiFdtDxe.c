@@ -72,6 +72,130 @@ UpdateMacAddress (
     MacAddress[4], MacAddress[5]));
 }
 
+STATIC
+VOID
+CleanMemoryNodes (
+  VOID
+  )
+{
+  INTN Node;
+  INT32 Retval;
+
+  Node = fdt_path_offset(mFdtImage, "/memory");
+  if (Node < 0) {
+    return;
+  }
+
+  /*
+   * Remove bogus memory nodes which can make the booted
+   * OS go crazy and ignore the UEFI map.
+   */
+  DEBUG ((DEBUG_INFO, "Removing bogus /memory\n"));
+  Retval = fdt_del_node(mFdtImage, Node);
+  if (Retval != 0) {
+    DEBUG ((DEBUG_ERROR, "Failed to remove /memory\n"));
+  }
+}
+
+STATIC
+VOID
+SanitizePSCI (
+  VOID
+  )
+{
+  INTN Node;
+  INTN Root;
+  INT32 Retval;
+
+  Root = fdt_path_offset(mFdtImage, "/");
+  ASSERT (Root >= 0);
+  if (Root < 0) {
+    return;
+  }
+
+  Node = fdt_path_offset(mFdtImage, "/psci");
+  if (Node < 0) {
+    Node = fdt_add_subnode(mFdtImage, Root, "psci");
+  }
+
+  ASSERT (Node >= 0);
+  if (Node < 0) {
+    DEBUG ((DEBUG_ERROR, "Couldn't find/create /psci\n"));
+    return;
+  }
+
+  Retval = fdt_setprop_string(mFdtImage, Node, "compatible",
+                               "arm,psci-1.0");
+  if (Retval != 0) {
+    DEBUG ((DEBUG_ERROR, "Couldn't set /psci compatible property\n"));
+    return;
+  }
+
+  Retval = fdt_setprop_string(mFdtImage, Node, "method", "smc");
+  if (Retval != 0) {
+    DEBUG ((DEBUG_ERROR, "Couldn't set /psci method property\n"));
+    return;
+  }
+
+  Root = fdt_path_offset(mFdtImage, "/cpus");
+  if (Root < 0) {
+    DEBUG ((DEBUG_ERROR, "No CPUs to update with PSCI enable-method?\n"));
+    return;
+  }
+
+  Node = fdt_first_subnode(mFdtImage, Root);
+  while (Node >= 0) {
+    if (fdt_setprop_string(mFdtImage, Node, "enable-method", "psci") != 0) {
+      DEBUG ((DEBUG_ERROR, "Failed to update enable-method for a CPU\n"));
+      return;
+    }
+
+    fdt_delprop(mFdtImage, Node, "cpu-release-addr");
+    Node = fdt_next_subnode(mFdtImage, Node);
+  }
+}
+
+STATIC
+VOID
+CleanSimpleFramebuffer (
+  VOID
+  )
+{
+  INTN Node;
+  INT32 Retval;
+
+  /*
+   * Should look for nodes by kind and remove aliases
+   * by matching against device.
+   */
+  Node = fdt_path_offset(mFdtImage, "display0");
+  if (Node < 0) {
+    return;
+  }
+
+  /*
+   * Remove bogus GPU-injected simple-framebuffer, which
+   * doesn't reflect the framebuffer built by UEFI.
+   */
+  DEBUG ((DEBUG_INFO, "Removing bogus display0\n"));
+  Retval = fdt_del_node(mFdtImage, Node);
+  if (Retval != 0) {
+    DEBUG ((DEBUG_ERROR, "Failed to remove display0\n"));
+    return;
+  }
+
+  Node =  fdt_path_offset(mFdtImage, "/aliases");
+  if (Node < 0) {
+    DEBUG ((DEBUG_ERROR, "Couldn't find /aliases to remove display0\n"));
+    return;
+  }
+
+  Retval = fdt_delprop(mFdtImage, Node, "display0");
+  if (Retval != 0) {
+    DEBUG ((DEBUG_ERROR, "Failed to remove display0 alias\n"));
+  }
+}
+
 #define MAX_CMDLINE_SIZE    512
 
 STATIC
@@ -131,8 +255,9 @@ UpdateBootArgs (
   }
 
   DEBUG_CODE_BEGIN ();
-    CONST VOID    *Prop;
+    CONST CHAR8    *Prop;
     INT32         Length;
+    INT32         Index;
 
     Node = fdt_path_offset (mFdtImage, "/chosen");
     ASSERT (Node >= 0);
@@ -140,8 +265,16 @@ UpdateBootArgs (
     Prop = fdt_getprop (mFdtImage, Node, "bootargs", &Length);
     ASSERT (Prop != NULL);
 
-    DEBUG ((DEBUG_INFO, "Command line set from firmware (length %d)\n", Length));
-    DEBUG ((DEBUG_INFO, "'%a'\n", &CommandLine[3]));
+    DEBUG ((DEBUG_INFO, "Command line set from firmware (length %d):\n'", Length));
+
+    for (Index = 0; Index < Length; Index++, Prop++) {
+      if (*Prop == '\0') {
+        continue;
+      }
+      DEBUG ((DEBUG_INFO, "%c", *Prop));
+    }
+
+    DEBUG ((DEBUG_INFO, "'\n"));
   DEBUG_CODE_END ();
 
   FreePool (CommandLine - 4);
@@ -168,11 +301,13 @@ RpiFdtDxeInitialize (
   VOID       *FdtImage;
   UINTN      FdtSize;
   INT32      Retval;
+  BOOLEAN    Internal;
 
   Status = gBS->LocateProtocol (&gRaspberryPiFirmwareProtocolGuid, NULL,
                   (VOID **)&mFwProtocol);
   ASSERT_EFI_ERROR (Status);
 
+  Internal = FALSE;
   FdtImage =  (VOID *) (UINTN) PcdGet32(PcdFdtBaseAddress);
   Retval = fdt_check_header (FdtImage);
   if (Retval == 0) {
@@ -183,6 +318,7 @@ RpiFdtDxeInitialize (
     DEBUG ((DEBUG_INFO, "DTB passed via config.txt of 0x%lx bytes\n", FdtSize));
     Status = EFI_SUCCESS;
   } else {
+    Internal = TRUE;
     DEBUG ((DEBUG_INFO, "No/bad FDT at %p (%a), trying internal DTB...\n",
             FdtImage, fdt_strerror (Retval)));
     Status = GetSectionFromAnyFv (&gRaspberryPiFdtFileGuid, EFI_SECTION_RAW, 0,
@@ -214,9 +350,18 @@ RpiFdtDxeInitialize (
   Retval = fdt_open_into (FdtImage, mFdtImage, FdtSize);
   ASSERT (Retval == 0);
 
+  SanitizePSCI ();
+  CleanMemoryNodes ();
+  CleanSimpleFramebuffer ();
   UpdateMacAddress ();
-  UpdateBootArgs ();
+  if (Internal) {
+    /*
+     * A GPU-provided DTB already has the full command line.
+     */
+    UpdateBootArgs ();
+  }
 
+  DEBUG ((DEBUG_INFO, "Installed FDT is at %p\n", mFdtImage));
   Status = gBS->InstallConfigurationTable (&gFdtTableGuid, mFdtImage);
   ASSERT_EFI_ERROR (Status);
 
