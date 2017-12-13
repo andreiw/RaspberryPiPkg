@@ -37,6 +37,15 @@
   DEFINE SECURE_BOOT_ENABLE      = FALSE
   DEFINE DEBUG_PRINT_ERROR_LEVEL = 0x8000004F
 
+!ifndef ATF_BUILD_DIR
+!if $(TARGET) == RELEASE
+DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/release
+!else
+DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
+!endif
+!endif
+
+
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
   GCC:*_*_ARM_DLINK_FLAGS = -z common-page-size=0x1000
   GCC:*_*_AARCH64_DLINK_FLAGS = -z common-page-size=0x10000
