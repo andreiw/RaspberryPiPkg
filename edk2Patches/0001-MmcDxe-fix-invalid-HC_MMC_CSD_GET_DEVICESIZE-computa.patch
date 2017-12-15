@@ -1,0 +1,30 @@
+From 3b04358622431839ef80f80f138aaee78270b9f5 Mon Sep 17 00:00:00 2001
+From: Andrey Warkentin <andrey.warkentin@gmail.com>
+Date: Thu, 14 Dec 2017 23:41:53 -0500
+Subject: [PATCH] MmcDxe: fix invalid HC_MMC_CSD_GET_DEVICESIZE computation
+
+This made a 64GB SDXC card look twice as small, and if
+a partition fills the entire card, then UEFI will
+ignore it, considering it to be beyond the card's end.
+
+Signed-off-by: Andrey Warkentin <andrey.warkentin@gmail.com>
+---
+ EmbeddedPkg/Universal/MmcDxe/Mmc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/EmbeddedPkg/Universal/MmcDxe/Mmc.h b/EmbeddedPkg/Universal/MmcDxe/Mmc.h
+index a77ba41..48f50dc 100644
+--- a/EmbeddedPkg/Universal/MmcDxe/Mmc.h
++++ b/EmbeddedPkg/Universal/MmcDxe/Mmc.h
+@@ -45,7 +45,7 @@
+ #define MMC_CSD_GET_FILEFORMAT(Response)  ((Response[0] >> 10) & 0x3)
+ #define MMC_CSD_GET_FILEFORMATGRP(Response)  ((Response[0] >> 15) & 0x1)
+ #define MMC_CSD_GET_DEVICESIZE(csd)         (((Response[1] >> 30) & 0x3) | ((Response[2] & 0x3FF) << 2))
+-#define HC_MMC_CSD_GET_DEVICESIZE(Response)    ((Response[1] >> 16) | ((Response[2] & 0x40) << 16));
++#define HC_MMC_CSD_GET_DEVICESIZE(Response)    ((Response[1] >> 16) | ((Response[2] & 0x3F) << 16));
+ #define MMC_CSD_GET_DEVICESIZEMULT(csd)     ((Response[1] >> 15) & 0x7)
+ 
+ #define MMC_R0_READY_FOR_DATA               (1 << 8)
+-- 
+1.8.5.6
+
