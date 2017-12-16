@@ -232,6 +232,64 @@ RpiFirmwareSetPowerState (
 
 #pragma pack()
 typedef struct {
+  UINT32                    Base;
+  UINT32                    Size;
+} RPI_FW_ARM_MEMORY_TAG;
+
+typedef struct {
+  RPI_FW_BUFFER_HEAD        BufferHead;
+  RPI_FW_TAG_HEAD           TagHead;
+  RPI_FW_ARM_MEMORY_TAG     TagBody;
+  UINT32                    EndTag;
+} RPI_FW_GET_ARM_MEMORY_CMD;
+#pragma pack()
+
+STATIC
+EFI_STATUS
+EFIAPI
+RpiFirmwareGetArmMemory (
+  OUT   UINT32 *Base,
+  OUT   UINT32 *Size
+  )
+{
+  RPI_FW_GET_ARM_MEMORY_CMD   *Cmd;
+  EFI_STATUS                  Status;
+  UINT32                      Result;
+
+  if (!AcquireSpinLockOrFail (&mMailboxLock)) {
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    return EFI_DEVICE_ERROR;
+  }
+
+  Cmd = mDmaBuffer;
+  ZeroMem (Cmd, sizeof *Cmd);
+
+  Cmd->BufferHead.BufferSize  = sizeof *Cmd;
+  Cmd->BufferHead.Response    = 0;
+  Cmd->TagHead.TagId          = RPI_FW_GET_ARM_MEMSIZE;
+  Cmd->TagHead.TagSize        = sizeof Cmd->TagBody;
+  Cmd->TagHead.TagValueSize   = 0;
+  Cmd->EndTag                 = 0;
+
+  Status = MailboxTransaction (Cmd->BufferHead.BufferSize, RPI_FW_MBOX_CHANNEL, &Result);
+
+  ReleaseSpinLock (&mMailboxLock);
+
+  if (EFI_ERROR (Status) ||
+      Cmd->BufferHead.Response != RPI_FW_RESP_SUCCESS) {
+    DEBUG ((DEBUG_ERROR,
+      "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
+      __FUNCTION__, Status, Cmd->BufferHead.Response));
+    return EFI_DEVICE_ERROR;
+  }
+
+  *Base = Cmd->TagBody.Base;
+  *Size = Cmd->TagBody.Size;
+  return EFI_SUCCESS;
+}
+
+#pragma pack()
+typedef struct {
   UINT8                     MacAddress[6];
   UINT32                    Padding;
 } RPI_FW_MAC_ADDR_TAG;
@@ -633,6 +691,7 @@ EFI_STATUS
 EFIAPI
 RpiFirmwareGetClockRate (
   IN  UINT32    ClockId,
+  IN  UINT32    ClockKind,
   OUT UINT32    *ClockRate
   )
 {
@@ -650,7 +709,7 @@ RpiFirmwareGetClockRate (
 
   Cmd->BufferHead.BufferSize  = sizeof *Cmd;
   Cmd->BufferHead.Response    = 0;
-  Cmd->TagHead.TagId          = RPI_FW_GET_CLOCK_RATE;
+  Cmd->TagHead.TagId          = ClockKind,
   Cmd->TagHead.TagSize        = sizeof Cmd->TagBody;
   Cmd->TagHead.TagValueSize   = 0;
   Cmd->TagBody.ClockId        = ClockId;
@@ -670,6 +729,39 @@ RpiFirmwareGetClockRate (
 
   *ClockRate = Cmd->TagBody.ClockRate;
   return EFI_SUCCESS;
+}
+
+STATIC
+EFI_STATUS
+EFIAPI
+RpiFirmwareGetCurrentClockRate (
+  IN  UINT32    ClockId,
+  OUT UINT32    *ClockRate
+  )
+{
+  return RpiFirmwareGetClockRate(ClockId, RPI_FW_GET_CLOCK_RATE, ClockRate);
+}
+
+STATIC
+EFI_STATUS
+EFIAPI
+RpiFirmwareGetMaxClockRate (
+  IN  UINT32    ClockId,
+  OUT UINT32    *ClockRate
+  )
+{
+  return RpiFirmwareGetClockRate(ClockId, RPI_FW_GET_MAX_CLOCK_RATE, ClockRate);
+}
+
+STATIC
+EFI_STATUS
+EFIAPI
+RpiFirmwareGetMinClockRate (
+  IN  UINT32    ClockId,
+  OUT UINT32    *ClockRate
+  )
+{
+  return RpiFirmwareGetClockRate(ClockId, RPI_FW_GET_MIN_CLOCK_RATE, ClockRate);
 }
 
 #pragma pack()
@@ -736,12 +828,15 @@ STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL mRpiFirmwareProtocol = {
   RpiFirmwareSetPowerState,
   RpiFirmwareGetMacAddress,
   RpiFirmwareGetCommmandLine,
-  RpiFirmwareGetClockRate,
+  RpiFirmwareGetCurrentClockRate,
+  RpiFirmwareGetMaxClockRate,
+  RpiFirmwareGetMinClockRate,
   RpiFirmwareAllocFb,
   RpiFirmwareFreeFb,
   RpiFirmwareGetFbSize,
   RpiFirmwareLedSet,
-  RpiFirmwareGetSerial
+  RpiFirmwareGetSerial,
+  RpiFirmwareGetArmMemory
 };
 
 /**

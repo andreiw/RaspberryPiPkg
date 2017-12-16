@@ -44,6 +44,7 @@
 #include <Protocol/Smbios.h>
 #include <Protocol/RaspberryPiFirmware.h>
 #include <IndustryStandard/SmBios.h>
+#include <IndustryStandard/RpiFirmware.h>
 #include <Guid/SmBios.h>
 #include <Library/DebugLib.h>
 #include <Library/UefiDriverEntryPoint.h>
@@ -282,8 +283,8 @@ SMBIOS_TABLE_TYPE4 mProcessorInfoType4 = {
     0   // ProcessorVoltageIndicateLegacy      :1;
   },
   0,                      // ExternalClock;
-  1200,                   // MaxSpeed;
-  1200,                   // CurrentSpeed;
+  0,                      // MaxSpeed;
+  0,                      // CurrentSpeed;
   0x41,                   // Status;
   ProcessorUpgradeOther,  // ProcessorUpgrade;      ///< The enumeration value from PROCESSOR_UPGRADE.
   0,                      // L1CacheHandle;
@@ -456,8 +457,8 @@ CHAR8 *mMemDevInfoType17Strings[] = {
 ************************************************************************/
 SMBIOS_TABLE_TYPE19 mMemArrMapInfoType19 = {
   { EFI_SMBIOS_TYPE_MEMORY_ARRAY_MAPPED_ADDRESS, sizeof (SMBIOS_TABLE_TYPE19), 0 },
-  0x80000000, // StartingAddress;
-  0xbfffffff, // EndingAddress;
+  0x00000000, // StartingAddress;
+  0x00000000, // EndingAddress;
   0,          // MemoryArrayHandle;
   1,          // PartitionWidth;
   0,          // ExtendedStartingAddress;
@@ -645,7 +646,7 @@ SysInfoUpdateSmbiosType1 (
   )
 {
   EFI_STATUS Status = EFI_SUCCESS;
-  UINT64 BoardSerial;
+  UINT64 BoardSerial = 0xdeadface;
   static CHAR8 BoardSerialString[sizeof(BoardSerial) * 2 + 1];
   int k=0;
 
@@ -654,7 +655,7 @@ SysInfoUpdateSmbiosType1 (
       //
       // On error, just log and leave the template string
       //
-      DEBUG((EFI_D_ERROR, "Failed to get board serial number, status 0x%08X\n", Status));
+      DEBUG ((EFI_D_ERROR, "Failed to get board serial number, status 0x%08X\n", Status));
   } else {
       //
       // Convert to HEX string
@@ -666,7 +667,7 @@ SysInfoUpdateSmbiosType1 (
       //
       mSysInfoType1Strings[mSysInfoType1.SerialNumber - 1] = &BoardSerialString[0];
 
-      DEBUG((EFI_D_ERROR, "Board Serial Number: %Ld\n", BoardSerial));
+      DEBUG ((EFI_D_ERROR, "Board Serial Number: %lx\n", BoardSerial));
 
       // construct string for making UUID for Rpi3 board from : fixed prefix + board serial number printed in hex
       mSysInfoType1.Uuid.Data1= *(UINT32 *)"RPi3";
@@ -717,9 +718,28 @@ ProcessorInfoUpdateSmbiosType4 (
   IN UINTN MaxCpus
   )
 {
+  EFI_STATUS Status;
+  UINT32 Rate;
+
   mProcessorInfoType4.CoreCount        = (UINT8) MaxCpus;
   mProcessorInfoType4.EnabledCoreCount = (UINT8) MaxCpus;
   mProcessorInfoType4.ThreadCount      = (UINT8) MaxCpus;
+
+  Status = mFwProtocol->GetClockRate(RPI_FW_CLOCK_RATE_ARM, &Rate);
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((DEBUG_ERROR, "Couldn't get the current CPU speed: %r\n", Status));
+  } else {
+    mProcessorInfoType4.CurrentSpeed = Rate / 1000000;
+    DEBUG ((DEBUG_INFO, "Current CPU speed: %uHz\n", Rate));
+  }
+
+  Status = mFwProtocol->GetMaxClockRate(RPI_FW_CLOCK_RATE_ARM, &Rate);
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((DEBUG_ERROR, "Couldn't get the max CPU speed: %r\n", Status));
+  } else {
+    mProcessorInfoType4.MaxSpeed = Rate / 1000000;
+    DEBUG ((DEBUG_INFO, "Max CPU speed: %uHz\n", Rate));
+  }
 
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mProcessorInfoType4, mProcessorInfoType4Strings, NULL);
 }
@@ -783,8 +803,17 @@ MemArrMapInfoUpdateSmbiosType19 (
   VOID
   )
 {
-  mMemArrMapInfoType19.StartingAddress = 0x00000000;
-  mMemArrMapInfoType19.EndingAddress = (0x40000000 / 1024) - 1; /* 1 GB */
+  EFI_STATUS Status;
+  UINT32 Base;
+  UINT32 Size;
+
+  Status = mFwProtocol->GetArmMem(&Base, &Size);
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((DEBUG_ERROR, "Couldn't get the ARM memory size: %r\n", Status));
+  } else {
+    mMemArrMapInfoType19.StartingAddress = Base / 1024;
+    mMemArrMapInfoType19.EndingAddress = (Base + Size - 1) / 1024;
+  }
 
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mMemArrMapInfoType19, mMemArrMapInfoType19Strings, NULL);
 }

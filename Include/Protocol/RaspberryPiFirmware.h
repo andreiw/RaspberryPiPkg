@@ -80,16 +80,26 @@ EFI_STATUS
   UINT64 *Serial
   );
 
+typedef
+EFI_STATUS
+(EFIAPI *GET_ARM_MEM) (
+  UINT32 *Base,
+  UINT32 *Size
+  );
+
 typedef struct {
   SET_POWER_STATE   SetPowerState;
   GET_MAC_ADDRESS   GetMacAddress;
   GET_COMMAND_LINE  GetCommandLine;
   GET_CLOCK_RATE    GetClockRate;
+  GET_CLOCK_RATE    GetMaxClockRate;
+  GET_CLOCK_RATE    GetMinClockRate;
   GET_FB            GetFB;
   FREE_FB           FreeFB;
   GET_FB_SIZE       GetFBSize;
   SET_LED           SetLed;
   GET_SERIAL        GetSerial;
+  GET_ARM_MEM       GetArmMem;
 } RASPBERRY_PI_FIRMWARE_PROTOCOL;
 
 extern EFI_GUID gRaspberryPiFirmwareProtocolGuid;
