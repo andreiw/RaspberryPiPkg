@@ -755,6 +755,8 @@
 #define DWC2_MAX_PACKET_COUNT            511
 
 #define DWC2_HC_CHANNEL                 0
+#define DWC2_HC_CHANNEL_PERIODIC        1
+#define DWC2_HC_PORT                    0
 
 #define DWC2_STATUS_BUF_SIZE            64
 #define DWC2_DATA_BUF_SIZE              (64 * 1024)
