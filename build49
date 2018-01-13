@@ -1,0 +1,34 @@
+#
+# Adjust to taste.
+#
+# This assumes the following directory structure:
+#
+# \
+# \edk2
+# \RaspberryPiPkg
+# \build49
+#
+
+export WORKSPACE=$PWD
+export PACKAGES_PATH=$WORKSPACE/edk2:$WORKSPACE/RaspberryPiPkg
+export EDK_TOOLS_PATH=$WORKSPACE/edk2/BaseTools
+export GCC49_AARCH64_PREFIX=aarch64-linux-
+export CROSS_COMPILE=aarch64-linux-
+
+rm -rf Conf
+mkdir Conf
+make -C $EDK_TOOLS_PATH
+echo $EDK_TOOLS_PATH
+. $WORKSPACE/edk2/edksetup.sh BaseTools
+
+pushd $WORKSPACE/RaspberryPiPkg
+BUILD_COMMIT=`git rev-parse --short HEAD`
+popd
+BUILD_DATE=`date +%m/%d/%Y`
+BUILD_EPOCH=`date +%s`
+
+COMMON_OPTS="-DBUILD_EPOCH=$BUILD_EPOCH -DBUILD_DATE=$BUILD_DATE -DBUILD_COMMIT=$BUILD_COMMIT"
+TARGET="-a AARCH64 -t GCC49 -p RaspberryPiPkg/RaspberryPiPkg.dsc"
+
+build -b DEBUG $TARGET $COMMON_OPTS
+build -b RELEASE $TARGET $COMMON_OPTS
