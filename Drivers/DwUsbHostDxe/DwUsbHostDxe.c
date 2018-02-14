@@ -37,14 +37,16 @@ EFI_DW_DEVICE_PATH DwHcDevicePath =
 typedef enum {
   XFER_DONE,
   XFER_ERROR,
+  XFER_FRMOVRUN,
   XFER_NAK,
   XFER_STALL,
-  XFER_RESTART
+  XFER_CSPLIT
 } CHANNEL_HALT_REASON;
 
 typedef struct {
   BOOLEAN Splitting;
   BOOLEAN SplitStart;
+  UINT32 Tries;
 } SPLIT_CONTROL;
 
 VOID DwHcInit (IN DWUSB_OTGHC_DEV *DwHc);
@@ -95,6 +97,7 @@ Wait4Chhltd (
   MicroSecondDelay (100);
   Ret = Wait4Bit (DwHc->DwUsbBase + HCINT(Channel), DWC2_HCINT_CHHLTD, 1);
   if (Ret) {
+    DEBUG((DEBUG_ERROR, "HCINT wait4bit fail\n"));
     return XFER_ERROR;
   }
 
@@ -109,11 +112,12 @@ Wait4Chhltd (
     return XFER_STALL;
   }
 
+  if ((Hcint & DWC2_HCINT_XACTERR) != 0) {
+    return XFER_ERROR;
+  }
+
   if ((Hcint & DWC2_HCINT_FRMOVRUN) != 0) {
-    /*
-     * Not much else to do, but try again!
-     */
-    return XFER_RESTART;
+    return XFER_FRMOVRUN;
   }
 
   if (IgnoreAck) {
@@ -127,10 +131,11 @@ Wait4Chhltd (
     if (Split->SplitStart &&
         Hcint == HcintSplitStartAck) {
       Split->SplitStart = FALSE;
-      return XFER_RESTART;
+      Split->Tries = 0;
+      return XFER_CSPLIT;
     } else if (!Split->SplitStart &&
                Hcint == HcintSplitNyet) {
-      return XFER_RESTART;
+      return XFER_CSPLIT;
     }
   }
 
@@ -235,17 +240,15 @@ DwHcTransfer (
   EFI_STATUS                      Status = EFI_SUCCESS;
   SPLIT_CONTROL                   Split = { 0 };
 
-  /* DEBUG((DEBUG_ERROR, "%u:%u> Transfer of size %u, MPL = %u\n", */
-  /*        DeviceAddress, */
-  /*        EpAddress, */
-  /*        *DataLength, */
-  /*        MaximumPacketLength)); */
+  EFI_TPL Tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
- do {
+  do {
+  restart_xfer:
     if (DeviceSpeed == EFI_USB_SPEED_LOW ||
         DeviceSpeed == EFI_USB_SPEED_FULL) {
       Split.Splitting = TRUE;
       Split.SplitStart = TRUE;
+      Split.Tries = 0;
     }
 
     TxferLen = *DataLength - Done;
@@ -258,8 +261,7 @@ DwHcTransfer (
       TxferLen = DWC2_DATA_BUF_SIZE - MaximumPacketLength + 1;
     }
 
-    if (Split.Splitting ||
-        TxferLen == 0) {
+    if (Split.Splitting || TxferLen == 0) {
       NumPackets = 1;
     } else {
       NumPackets = (TxferLen + MaximumPacketLength - 1) / MaximumPacketLength;
@@ -269,28 +271,26 @@ DwHcTransfer (
       }
     }
 
-    if (TransferDirection) {
+    if (TransferDirection) { // in
       TxferLen = NumPackets * MaximumPacketLength;
+    } else {
+      CopyMem (DwHc->AlignedBuffer, Data+Done, TxferLen);
+      ArmDataSynchronizationBarrier();
     }
+
+restart_channel:
+    MmioWrite32 (DwHc->DwUsbBase + HCDMA(Channel),
+                 (UINTN)DwHc->AlignedBufferBusAddress);
+
+    DwOtgHcInit (DwHc, Channel, Translator, DeviceSpeed,
+                 DeviceAddress, EpAddress,
+                 TransferDirection, EpType,
+                 MaximumPacketLength, &Split);
 
     MmioWrite32 (DwHc->DwUsbBase + HCTSIZ(Channel),
                  (TxferLen << DWC2_HCTSIZ_XFERSIZE_OFFSET) |
                  (NumPackets << DWC2_HCTSIZ_PKTCNT_OFFSET) |
                  (*Pid << DWC2_HCTSIZ_PID_OFFSET));
-
-    if (!TransferDirection) {
-      CopyMem (DwHc->AlignedBuffer, Data+Done, TxferLen);
-      ArmDataSynchronizationBarrier();
-    }
-
-    MmioWrite32 (DwHc->DwUsbBase + HCDMA(Channel),
-                 (UINTN)DwHc->AlignedBufferBusAddress);
-
-restart_channel:
-    DwOtgHcInit (DwHc, Channel, Translator, DeviceSpeed,
-                 DeviceAddress, EpAddress,
-                 TransferDirection, EpType,
-                 MaximumPacketLength, &Split);
 
     MmioAndThenOr32 (DwHc->DwUsbBase + HCCHAR(Channel),
                      ~(DWC2_HCCHAR_MULTICNT_MASK |
@@ -300,23 +300,40 @@ restart_channel:
                       DWC2_HCCHAR_CHEN));
 
     Ret = Wait4Chhltd (DwHc, Channel, &Sub, Pid, IgnoreAck, &Split);
-    if (Ret == XFER_RESTART) {
-      goto restart_channel;
-    } else if (Ret == XFER_STALL) {
+    if (Ret == XFER_STALL) {
       *TransferResult = EFI_USB_ERR_STALL;
       Status = EFI_DEVICE_ERROR;
       break;
+    } else if (Ret == XFER_CSPLIT) {
+      ASSERT (Split.Splitting);
+
+      if (Split.Tries++ < 3) {
+        goto restart_channel;
+      }
+
+      goto restart_xfer;
     } else if (Ret == XFER_ERROR) {
-      *TransferResult = EFI_USB_ERR_SYSTEM;
+      *TransferResult =
+        EFI_USB_ERR_CRC |
+        EFI_USB_ERR_TIMEOUT |
+        EFI_USB_ERR_BITSTUFF |
+        EFI_USB_ERR_SYSTEM;
       Status = EFI_DEVICE_ERROR;
       break;
+    } else if (Ret == XFER_FRMOVRUN) {
+      goto restart_channel;
     } else if (Ret == XFER_NAK) {
+      if (Split.Splitting &&
+          (EpType == DWC2_HCCHAR_EPTYPE_CONTROL)) {
+        goto restart_xfer;
+      }
+
       *TransferResult = EFI_USB_ERR_NAK;
       Status = EFI_DEVICE_ERROR;
       break;
     }
 
-    if (TransferDirection) { // out or none
+    if (TransferDirection) { // in
       ArmDataSynchronizationBarrier();
       TxferLen -= Sub;
       CopyMem (Data+Done, DwHc->AlignedBuffer, TxferLen);
@@ -332,6 +349,8 @@ restart_channel:
   MmioWrite32 (DwHc->DwUsbBase + HCINT(Channel), 0xFFFFFFFF);
 
   *DataLength = Done;
+
+  gBS->RestoreTPL (Tpl);
 
   return Status;
 }
@@ -362,38 +381,11 @@ DwHcFindDeferredTransfer (
 
 STATIC
 VOID
-DwHcCancelDeferredTransfers (
-                             DWUSB_OTGHC_DEV *DwHc
-                             )
-{
-  LIST_ENTRY *Entry;
-  EFI_TPL PreviousTpl;
-
-  PreviousTpl = gBS->RaiseTPL(TPL_NOTIFY);
-  EFI_LIST_FOR_EACH (Entry, &DwHc->DeferredList) {
-    DWUSB_DEFERRED_REQ *Req = EFI_LIST_CONTAINER (Entry, DWUSB_DEFERRED_REQ,
-                                                  List);
-    /*
-     * Stay on the safe side. Maybe other drivers will quiesce their
-     * periodic requests by now as part of exiting the boot
-     * services, but maybe not.
-     */
-    DEBUG((EFI_D_ERROR, "Cancelling periodic access to 0x%x:0x%x\n",
-           Req->DeviceAddress, Req->EpAddress));
-    gBS->CloseEvent (Req->Event);
-  }
-  gBS->RestoreTPL(PreviousTpl);
-}
-
-STATIC
-VOID
 DwHcDeferredTransfer (
-                      IN EFI_EVENT Event,
-                      IN VOID      *Context
+                      IN DWUSB_DEFERRED_REQ *Req
                       )
 {
   EFI_STATUS Status;
-  DWUSB_DEFERRED_REQ *Req = Context;
 
   Req->TransferResult = EFI_USB_NOERROR;
   Status = DwHcTransfer (Req->DwHc, Req->Channel, Req->Translator,
@@ -770,7 +762,8 @@ DwHcControlTransfer (
                          TransferResult, 1);
 
   if (EFI_ERROR(Status)) {
-    DEBUG ((EFI_D_ERROR, "DwHcControlTransfer: Setup Stage Error\n"));
+    DEBUG ((EFI_D_ERROR, "Setup Stage Error for device 0x%x: 0x%x\n",
+            DeviceAddress, *TransferResult));
     goto EXIT;
   }
 
@@ -789,7 +782,8 @@ DwHcControlTransfer (
                            TransferResult, 0);
 
     if (EFI_ERROR(Status)) {
-      DEBUG ((EFI_D_ERROR, "DwHcControlTransfer: Data Stage Error\n"));
+      DEBUG ((EFI_D_ERROR, "Data Stage Error for device 0x%x: 0x%x\n",
+              DeviceAddress, *TransferResult));
       goto EXIT;
     }
   }
@@ -807,7 +801,8 @@ DwHcControlTransfer (
                          DWC2_HCCHAR_EPTYPE_CONTROL, TransferResult, 0);
 
   if (EFI_ERROR(Status)) {
-    DEBUG ((EFI_D_ERROR, "DwHcControlTransfer: Status Stage Error\n"));
+    DEBUG ((EFI_D_ERROR, "Status Stage Error for 0x%x: 0x%x\n",
+            DeviceAddress, *TransferResult));
     goto EXIT;
   }
 
@@ -844,11 +839,14 @@ DwHcBulkTransfer (
     return EFI_INVALID_PARAMETER;
   }
 
-  if ((*DataToggle != 0) && (*DataToggle != 1))
+  if ((*DataToggle != 0) && (*DataToggle != 1)) {
     return EFI_INVALID_PARAMETER;
+  }
 
-  if ((DeviceSpeed == EFI_USB_SPEED_LOW) || (DeviceSpeed == EFI_USB_SPEED_SUPER))
+  if ((DeviceSpeed == EFI_USB_SPEED_LOW) ||
+      (DeviceSpeed == EFI_USB_SPEED_SUPER)) {
     return EFI_INVALID_PARAMETER;
+  }
 
   if (((DeviceSpeed == EFI_USB_SPEED_FULL) && (MaximumPacketLength > 64)) ||
       ((DeviceSpeed == EFI_USB_SPEED_HIGH) && (MaximumPacketLength > 512)))
@@ -934,12 +932,14 @@ DwHcAsyncInterruptTransfer (
 
   if (!IsNewTransfer) {
     if (FoundReq == NULL) {
-      DEBUG ((DEBUG_ERROR, "Not ending periodic transfer - not found\n"));
+      DEBUG ((DEBUG_ERROR,
+              "%u:%u> transfer not found\n",
+              DeviceAddress,
+              EndPointAddress & 0xF));
       Status = EFI_INVALID_PARAMETER;
       goto done;
     }
 
-    gBS->CloseEvent (FoundReq->Event);
     *DataToggle = FoundReq->Pid >> 1;
     FreePool (FoundReq->Data);
 
@@ -965,23 +965,10 @@ DwHcAsyncInterruptTransfer (
   }
 
   InitializeListHead (&NewReq->List);
-  Status = gBS->CreateEvent (
-                             EVT_TIMER | EVT_NOTIFY_SIGNAL,
-                             TPL_NOTIFY,
-                             DwHcDeferredTransfer,
-                             NewReq, &NewReq->Event
-                             );
-  if (Status != EFI_SUCCESS) {
-    DEBUG ((EFI_D_ERROR, "DwHcAsyncInterruptTransfer: failed to create event: %r\n", Status));
-    goto done;
-  }
 
-  Status = gBS->SetTimer (NewReq->Event, TimerPeriodic,
-                          EFI_TIMER_PERIOD_MILLISECONDS(PollingInterval));
-  if (Status != EFI_SUCCESS) {
-    DEBUG ((EFI_D_ERROR, "DwHcAsyncInterruptTransfer: failed to set timer: %r\n", Status));
-    goto done;
-  }
+  NewReq->FrameInterval = PollingInterval;
+  NewReq->TargetFrame = DwHc->CurrentFrame +
+    NewReq->FrameInterval;
 
   NewReq->DwHc = DwHc;
   NewReq->Channel = DWC2_HC_CHANNEL_PERIODIC;
@@ -1000,7 +987,7 @@ DwHcAsyncInterruptTransfer (
   NewReq->CallbackContext = Context;
 
   InsertTailList (&DwHc->DeferredList, &NewReq->List);
-  gBS->SignalEvent (NewReq->Event);
+  Status = EFI_SUCCESS;
 
  done:
   gBS->RestoreTPL(PreviousTpl);
@@ -1034,7 +1021,71 @@ DwHcSyncInterruptTransfer (
                            OUT UINT32                              *TransferResult
                            )
 {
-  return EFI_UNSUPPORTED;
+  DWUSB_OTGHC_DEV *DwHc;
+  EFI_STATUS Status;
+  EFI_EVENT TimeoutEvt;
+  UINT8 TransferDirection;
+  UINT8 EpAddress;
+  UINT32 Pid;
+
+  DwHc  = DWHC_FROM_THIS(This);
+
+  if (Data == NULL ||
+      DataLength == NULL ||
+      DataToggle == NULL ||
+      TransferResult == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (*DataLength == 0) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if ((*DataToggle != 0) && (*DataToggle != 1)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Status = gBS->CreateEvent (
+                  EVT_TIMER,
+                  TPL_CALLBACK,
+                  NULL,
+                  NULL,
+                  &TimeoutEvt
+                  );
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  Status = gBS->SetTimer (TimeoutEvt, TimerRelative, EFI_TIMER_PERIOD_MILLISECONDS(TimeOut));
+  if (EFI_ERROR (Status)) {
+    goto EXIT;
+  }
+
+  TransferDirection = (EndPointAddress >> 7) & 0x01;
+  EpAddress = EndPointAddress & 0x0F;
+
+  while (EFI_ERROR (gBS->CheckEvent (TimeoutEvt))) {
+    *TransferResult = EFI_USB_NOERROR;
+
+    Pid = (*DataToggle << 1);
+    Status = DwHcTransfer(DwHc, DWC2_HC_CHANNEL, Translator,
+                          DeviceSpeed, DeviceAddress,
+                          MaximumPacketLength,
+                          &Pid, TransferDirection, Data,
+                          DataLength, EpAddress,
+                          DWC2_HCCHAR_EPTYPE_INTR,
+                          TransferResult, 1);
+    *DataToggle = (Pid >> 1);
+    if (Status == EFI_SUCCESS) {
+      break;
+    }
+  }
+
+ EXIT:
+  if (TimeoutEvt != NULL) {
+    gBS->CloseEvent (TimeoutEvt);
+  }
+  return Status;
 }
 
 EFI_STATUS
@@ -1052,6 +1103,7 @@ DwHcIsochronousTransfer (
                          OUT UINT32                              *TransferResult
                          )
 {
+  DEBUG((EFI_D_ERROR, "Iso\n"));
   return EFI_UNSUPPORTED;
 }
 
@@ -1071,6 +1123,7 @@ DwHcAsyncIsochronousTransfer (
                               IN  VOID                                *Context
                               )
 {
+  DEBUG((EFI_D_ERROR, "AsyncIso\n"));
   return EFI_UNSUPPORTED;
 }
 
@@ -1293,11 +1346,16 @@ DwUsbHcExitBootService (
                         VOID          *Context
                         )
 {
-  DWUSB_OTGHC_DEV         *DwHc;
+  DWUSB_OTGHC_DEV *DwHc;
 
   DwHc = (DWUSB_OTGHC_DEV *) Context;
 
-  DwHcCancelDeferredTransfers(DwHc);
+  if (DwHc->PeriodicEvent != NULL) {
+    EFI_TPL PreviousTpl;
+    PreviousTpl = gBS->RaiseTPL(TPL_NOTIFY);
+    gBS->CloseEvent (DwHc->PeriodicEvent);
+    gBS->RestoreTPL(PreviousTpl);
+  }
 
   MmioAndThenOr32 (DwHc->DwUsbBase + HPRT0,
                    ~(DWC2_HPRT0_PRTENA | DWC2_HPRT0_PRTCONNDET |
@@ -1308,6 +1366,65 @@ DwUsbHcExitBootService (
 
   DwCoreReset (DwHc);
 }
+
+STATIC
+UINT32
+FramesPassed (DWUSB_OTGHC_DEV *DwHc)
+{
+  UINT32 MicroFrameStart = DwHc->LastMicroFrame;
+  UINT32 MicroFrameEnd =
+    MmioRead32 (DwHc->DwUsbBase + HFNUM) &
+    DWC2_HFNUM_FRNUM_MASK;
+  UINT32 MicroFramesPassed;
+
+  DwHc->LastMicroFrame = (UINT16) MicroFrameEnd;
+
+  if (MicroFrameEnd < MicroFrameStart) {
+    /*
+     * Being delayed by 0x8000 microframes is 262 seconds.
+     * Unlikely. Also, we can't really do better unless we
+     * start polling time (which is tedious in EFI...).
+     */
+    MicroFrameEnd += DWC2_HFNUM_FRNUM_MASK + 1;
+  }
+
+  MicroFramesPassed = MicroFrameEnd - MicroFrameStart;
+
+  /*
+   * Round up. We're supposedly getting called every
+   * 8 microframes anyway. This means we'll end up
+   * going a bit faster, which is okay.
+   */
+  return ALIGN_VALUE(MicroFramesPassed, 8) / 8;
+}
+
+STATIC
+VOID
+DwHcPeriodicHandler (
+                      IN EFI_EVENT Event,
+                      IN VOID      *Context
+                      )
+{
+  UINT32 Frame;
+  LIST_ENTRY *Entry;
+  LIST_ENTRY *NextEntry;
+  DWUSB_OTGHC_DEV *DwHc = Context;
+
+  DwHc->CurrentFrame += FramesPassed(DwHc);
+  Frame = DwHc->CurrentFrame;
+
+  EFI_LIST_FOR_EACH_SAFE (Entry, NextEntry,
+                          &DwHc->DeferredList) {
+    DWUSB_DEFERRED_REQ *Req = EFI_LIST_CONTAINER (Entry, DWUSB_DEFERRED_REQ,
+                                                  List);
+
+    if (Frame >= Req->TargetFrame) {
+      Req->TargetFrame = Frame + Req->FrameInterval;
+      DwHcDeferredTransfer(Req);
+    }
+  }
+}
+
 
 /**
    UEFI Driver Entry Point API
@@ -1379,8 +1496,33 @@ DwUsbHostEntryPoint (
     goto UNINSTALL_PROTOCOL;
   }
 
+  Status = gBS->CreateEvent (
+                             EVT_TIMER | EVT_NOTIFY_SIGNAL,
+                             TPL_NOTIFY,
+                             DwHcPeriodicHandler,
+                             DwHc, &DwHc->PeriodicEvent
+                             );
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "DwUsbHostEntryPoint: failed to create periodic event: %r\n", Status));
+    goto CLEANUP_EVENTS;
+  }
+
+  Status = gBS->SetTimer (DwHc->PeriodicEvent, TimerPeriodic,
+                          EFI_TIMER_PERIOD_MILLISECONDS(1));
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "DwUsbHostEntryPoint: failed to set timer: %r\n", Status));
+    goto CLEANUP_EVENTS;
+  }
+
   return Status;
 
+ CLEANUP_EVENTS:
+  if (DwHc->PeriodicEvent != NULL) {
+    gBS->CloseEvent (DwHc->PeriodicEvent);
+  }
+  if (DwHc->ExitBootServiceEvent != NULL) {
+    gBS->CloseEvent (DwHc->ExitBootServiceEvent);
+  }
  UNINSTALL_PROTOCOL:
   gBS->UninstallMultipleProtocolInterfaces (
                                             &DwHc->DeviceHandle,
@@ -1420,6 +1562,9 @@ DwUsbHostExitPoint (
 
   DwHc  = DWHC_FROM_THIS(DwUsbHc);
 
+  if (DwHc->PeriodicEvent != NULL) {
+    gBS->CloseEvent (DwHc->PeriodicEvent);
+  }
   if (DwHc->ExitBootServiceEvent != NULL) {
     gBS->CloseEvent (DwHc->ExitBootServiceEvent);
   }

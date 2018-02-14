@@ -75,9 +75,10 @@ typedef struct {
 
 typedef struct _DWUSB_DEFERRED_REQ {
   IN OUT LIST_ENTRY                         List;
-  IN OUT EFI_EVENT                          Event;
   IN     struct _DWUSB_OTGHC_DEV            *DwHc;
   IN     UINT32                             Channel;
+  IN     UINT32                             FrameInterval;
+  IN     UINT32                             TargetFrame;
   IN     EFI_USB2_HC_TRANSACTION_TRANSLATOR *Translator;
   IN     UINT8                              DeviceSpeed;
   IN     UINT8                              DeviceAddress;
@@ -106,17 +107,23 @@ typedef struct _DWUSB_OTGHC_DEV {
 
   EFI_EVENT                       ExitBootServiceEvent;
 
+  EFI_EVENT                       PeriodicEvent;
+
   EFI_PHYSICAL_ADDRESS            DwUsbBase;
   UINT8                           *StatusBuffer;
 
   UINT8                           *AlignedBuffer;
   VOID *                          AlignedBufferMapping;
   UINTN                           AlignedBufferBusAddress;
-
-  UINT16                          PortStatus;
-  UINT16                          PortChangeStatus;
-
   LIST_ENTRY                      DeferredList;
+  /*
+   * 1ms frames.
+   */
+  UINTN                           CurrentFrame;
+  /*
+   * 125us frames;
+   */
+  UINT16                          LastMicroFrame;
 } DWUSB_OTGHC_DEV;
 
 #endif //_DWUSBHOSTDXE_H_

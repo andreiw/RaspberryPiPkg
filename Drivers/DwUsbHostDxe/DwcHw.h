@@ -483,7 +483,7 @@
 #define DWC2_HCFG_PERSCHEDSTAT_OFFSET                   27
 #define DWC2_HFIR_FRINT_MASK                            (0xFFFF << 0)
 #define DWC2_HFIR_FRINT_OFFSET                          0
-#define DWC2_HFNUM_FRNUM_MASK                           (0xFFFF << 0)
+#define DWC2_HFNUM_FRNUM_MASK                           (0x3FFF << 0)
 #define DWC2_HFNUM_FRNUM_OFFSET                         0
 #define DWC2_HFNUM_FRREM_MASK                           (0xFFFF << 16)
 #define DWC2_HFNUM_FRREM_OFFSET                         16
