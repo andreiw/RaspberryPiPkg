@@ -69,10 +69,9 @@
   ((UINT8)((((Dir) == EfiUsbDataIn ? 0x01 : 0) << 7) | (Type) | (Target)))
 
 typedef struct {
-  ACPI_HID_DEVICE_PATH          AcpiDevicePath;
-  PCI_DEVICE_PATH               PciDevicePath;
+  VENDOR_DEVICE_PATH            Custom;
   EFI_DEVICE_PATH_PROTOCOL      EndDevicePath;
-} EFI_USB_PCIIO_DEVICE_PATH;
+} EFI_DW_DEVICE_PATH;
 
 typedef struct _DWUSB_DEFERRED_REQ {
   IN OUT LIST_ENTRY                         List;
@@ -103,7 +102,7 @@ typedef struct _DWUSB_OTGHC_DEV {
 
   EFI_USB_HC_STATE                DwHcState;
 
-  EFI_USB_PCIIO_DEVICE_PATH       DevicePath;
+  EFI_DW_DEVICE_PATH              DevicePath;
 
   EFI_EVENT                       ExitBootServiceEvent;
 

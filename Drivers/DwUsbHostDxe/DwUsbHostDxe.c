@@ -18,17 +18,18 @@
  * https://www.quicklogic.com/assets/pdf/data-sheets/QL-Hi-Speed-USB-2.0-OTG-Controller-Data-Sheet.pdf
  */
 
-EFI_USB_PCIIO_DEVICE_PATH DwHcDevicePath =
+EFI_DW_DEVICE_PATH DwHcDevicePath =
   {
     {
-      { ACPI_DEVICE_PATH, ACPI_DP, { sizeof (ACPI_HID_DEVICE_PATH), 0 } },
-      EISA_PNP_ID(0x0A03),  // HID
-      0                     // UID
-    },
-    {
-      { HARDWARE_DEVICE_PATH, HW_PCI_DP, { sizeof (PCI_DEVICE_PATH), 0 } },
-      0,
-      0
+      {
+        HARDWARE_DEVICE_PATH,
+        HW_VENDOR_DP,
+        {
+          (UINT8)(sizeof(VENDOR_DEVICE_PATH)),
+          (UINT8)((sizeof(VENDOR_DEVICE_PATH)) >> 8),
+        }
+      },
+      EFI_CALLER_ID_GUID
     },
     { END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE, { sizeof (EFI_DEVICE_PATH_PROTOCOL), 0} }
   };
