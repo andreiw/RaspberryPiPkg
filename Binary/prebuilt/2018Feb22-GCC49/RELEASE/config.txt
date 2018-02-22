@@ -1,0 +1,4 @@
+arm_control=0x200
+enable_uart=1
+armstub=RPI_EFI.fd
+disable_commandline_tags=1
