@@ -1,7 +1,7 @@
-From 3b04358622431839ef80f80f138aaee78270b9f5 Mon Sep 17 00:00:00 2001
+From abb8108e7a45132d0dd340820d47c08949dcb1ba Mon Sep 17 00:00:00 2001
 From: Andrey Warkentin <andrey.warkentin@gmail.com>
 Date: Thu, 14 Dec 2017 23:41:53 -0500
-Subject: [PATCH] MmcDxe: fix invalid HC_MMC_CSD_GET_DEVICESIZE computation
+Subject: [PATCH 1/2] MmcDxe: fix invalid HC_MMC_CSD_GET_DEVICESIZE computation
 
 This made a 64GB SDXC card look twice as small, and if
 a partition fills the entire card, then UEFI will
@@ -13,7 +13,7 @@ Signed-off-by: Andrey Warkentin <andrey.warkentin@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/EmbeddedPkg/Universal/MmcDxe/Mmc.h b/EmbeddedPkg/Universal/MmcDxe/Mmc.h
-index a77ba41..48f50dc 100644
+index a77ba41..d960aa4 100644
 --- a/EmbeddedPkg/Universal/MmcDxe/Mmc.h
 +++ b/EmbeddedPkg/Universal/MmcDxe/Mmc.h
 @@ -45,7 +45,7 @@
@@ -26,5 +26,5 @@ index a77ba41..48f50dc 100644
  
  #define MMC_R0_READY_FOR_DATA               (1 << 8)
 -- 
-1.8.5.6
+2.5.3
 

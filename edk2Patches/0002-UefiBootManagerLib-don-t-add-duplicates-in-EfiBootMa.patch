@@ -1,0 +1,134 @@
+From e8f37ad0832244289eabe84005004b13ea9153f9 Mon Sep 17 00:00:00 2001
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
+Date: Thu, 22 Feb 2018 18:28:32 -0500
+Subject: [PATCH 2/2] UefiBootManagerLib: don't add duplicates in
+ EfiBootManagerRefreshAllBootOption
+
+EfiBootManagerRefreshAllBootOption used to consider exactly
+identical boot options as being duplicates, but it's
+good enough to match on just type and device path, to account
+for boot options added by the PlatformBootManagerLib.
+
+Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+---
+ MdeModulePkg/Include/Library/UefiBootManagerLib.h  | 23 +++++++++++++-
+ MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c   |  5 +--
+ .../Library/UefiBootManagerLib/BmLoadOption.c      | 36 +++++++++++++++++++++-
+ 3 files changed, 60 insertions(+), 4 deletions(-)
+
+diff --git a/MdeModulePkg/Include/Library/UefiBootManagerLib.h b/MdeModulePkg/Include/Library/UefiBootManagerLib.h
+index 97ac1f2..c014aa0 100644
+--- a/MdeModulePkg/Include/Library/UefiBootManagerLib.h
++++ b/MdeModulePkg/Include/Library/UefiBootManagerLib.h
+@@ -227,7 +227,7 @@ EfiBootManagerSortLoadOptionVariable (
+ /**
+   Return the index of the load option in the load option array.
+ 
+-  The function consider two load options are equal when the 
++  The function consider two load options are equal when the
+   OptionType, Attributes, Description, FilePath and OptionalData are equal.
+ 
+   @param Key    Pointer to the load option to be found.
+@@ -245,6 +245,27 @@ EfiBootManagerFindLoadOption (
+   IN UINTN                              Count
+   );
+ 
++/**
++  Return the index of a matching load option in the load option array.
++
++  The function consider two load options are equal when the
++  OptionType and FilePath are equal.
++
++  @param Key    Pointer to the load option to be found.
++  @param Array  Pointer to the array of load options to be found.
++  @param Count  Number of entries in the Array.
++
++  @retval -1          Key wasn't found in the Array.
++  @retval 0 ~ Count-1 The index of the Key in the Array.
++**/
++INTN
++EFIAPI
++EfiBootManagerMatchEquivalentLoadOption (
++  IN CONST EFI_BOOT_MANAGER_LOAD_OPTION *Key,
++  IN CONST EFI_BOOT_MANAGER_LOAD_OPTION *Array,
++  IN UINTN                              Count
++  );
++
+ //
+ // Boot Manager hot key library functions.
+ //
+diff --git a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
+index d684482..d0ca086 100644
+--- a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
++++ b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
+@@ -2234,10 +2234,11 @@ EfiBootManagerRefreshAllBootOption (
+   }
+ 
+   //
+-  // Add new EFI boot options to NV
++  // Add new EFI boot options to NV, as long as it doesn't
++  // encode an already existing boot option.
+   //
+   for (Index = 0; Index < BootOptionCount; Index++) {
+-    if (EfiBootManagerFindLoadOption (&BootOptions[Index], NvBootOptions, NvBootOptionCount) == -1) {
++    if (EfiBootManagerMatchEquivalentLoadOption (&BootOptions[Index], NvBootOptions, NvBootOptionCount) == -1) {
+       EfiBootManagerAddLoadOptionVariable (&BootOptions[Index], (UINTN) -1);
+       //
+       // Try best to add the boot options so continue upon failure.
+diff --git a/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c b/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c
+index 32918ca..9d85c5c 100644
+--- a/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c
++++ b/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c
+@@ -510,7 +510,7 @@ EfiBootManagerInitializeLoadOption (
+ /**
+   Return the index of the load option in the load option array.
+ 
+-  The function consider two load options are equal when the 
++  The function consider two load options are equal when the
+   OptionType, Attributes, Description, FilePath and OptionalData are equal.
+ 
+   @param Key    Pointer to the load option to be found.
+@@ -545,6 +545,40 @@ EfiBootManagerFindLoadOption (
+ }
+ 
+ /**
++  Return the index of a matching load option in the load option array.
++
++  The function consider two load options are equal when the
++  OptionType and FilePath are equal.
++
++  @param Key    Pointer to the load option to be found.
++  @param Array  Pointer to the array of load options to be found.
++  @param Count  Number of entries in the Array.
++
++  @retval -1          Key wasn't found in the Array.
++  @retval 0 ~ Count-1 The index of the Key in the Array.
++**/
++INTN
++EFIAPI
++EfiBootManagerMatchEquivalentLoadOption (
++  IN CONST EFI_BOOT_MANAGER_LOAD_OPTION *Key,
++  IN CONST EFI_BOOT_MANAGER_LOAD_OPTION *Array,
++  IN UINTN                              Count
++  )
++{
++  UINTN                             Index;
++
++  for (Index = 0; Index < Count; Index++) {
++    if ((Key->OptionType == Array[Index].OptionType) &&
++        (Key->Attributes == Array[Index].Attributes) &&
++        (CompareMem (Key->FilePath, Array[Index].FilePath, GetDevicePathSize (Key->FilePath)) == 0)) {
++      return (INTN) Index;
++    }
++  }
++
++  return -1;
++}
++
++/**
+   Delete the load option.
+ 
+   @param  OptionNumber        Indicate the option number of load option
+-- 
+2.5.3
+
