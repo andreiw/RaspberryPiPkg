@@ -755,7 +755,9 @@
 #define DWC2_MAX_PACKET_COUNT            511
 
 #define DWC2_HC_CHANNEL                 0
-#define DWC2_HC_CHANNEL_PERIODIC        1
+#define DWC2_HC_CHANNEL_ASYNC           1
+#define DWC2_HC_CHANNEL_SYNC            2
+#define DWC2_HC_CHANNEL_BULK            3
 #define DWC2_HC_PORT                    0
 
 #define DWC2_STATUS_BUF_SIZE            64
