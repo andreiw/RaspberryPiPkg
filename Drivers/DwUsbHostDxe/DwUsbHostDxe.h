@@ -93,6 +93,7 @@ typedef struct _DWUSB_DEFERRED_REQ {
   IN     BOOLEAN                            IgnoreAck;
   IN     EFI_ASYNC_USB_TRANSFER_CALLBACK    CallbackFunction;
   IN     VOID                               *CallbackContext;
+  IN     UINTN                              TimeOut;
 } DWUSB_DEFERRED_REQ;
 
 typedef struct _DWUSB_OTGHC_DEV {
