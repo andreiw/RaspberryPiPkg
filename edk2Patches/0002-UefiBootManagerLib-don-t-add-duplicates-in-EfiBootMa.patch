@@ -1,7 +1,7 @@
 From e8f37ad0832244289eabe84005004b13ea9153f9 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Thu, 22 Feb 2018 18:28:32 -0500
-Subject: [PATCH 2/2] UefiBootManagerLib: don't add duplicates in
+Subject: [PATCH 2/3] UefiBootManagerLib: don't add duplicates in
  EfiBootManagerRefreshAllBootOption
 
 EfiBootManagerRefreshAllBootOption used to consider exactly

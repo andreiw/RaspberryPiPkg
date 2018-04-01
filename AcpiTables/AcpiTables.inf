@@ -30,6 +30,13 @@
 
 [Sources]
   SPCR.asl
+  FACP.asl
+  GTDT.asl
+  APIC.aslc
 
 [Packages]
   MdePkg/MdePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+
+[FixedPcd]
+  gEmbeddedTokenSpaceGuid.PcdInterruptBaseAddress
