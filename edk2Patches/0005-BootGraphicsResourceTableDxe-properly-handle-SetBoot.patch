@@ -1,0 +1,131 @@
+From 5ac7fc286e908a5e99ca8cfab7c7df38f71a69f6 Mon Sep 17 00:00:00 2001
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
+Date: Sat, 21 Apr 2018 22:58:58 -0400
+Subject: [PATCH 5/5] BootGraphicsResourceTableDxe: properly handle SetBootLogo
+ with NULL buffer
+
+SetBootLogo would not free the previous logo memory, which in turn
+means that a BGRT would still be installed, even if marked as not valid.
+Windows 10 actually uses the BGRT image for its boot screen even if
+not 'valid', which seems incredibly unintuitive.
+
+This new behavior means a few things:
+1) A boot to the default boot option (where SetBootLogo(NULL) is never
+   called) will result in Windows displaying the OEM logo.
+2) Any other boot (via boot manager, second boot option, etc) will
+   result in Windows displaying its own logo. Honestly, this is much
+   better from a user experience, since it will be obvious that
+   something "non-default" is happening to the system.
+
+Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+---
+ .../BootGraphicsResourceTableDxe.c                 | 36 +++++++++-------------
+ 1 file changed, 15 insertions(+), 21 deletions(-)
+
+diff --git a/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c b/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
+index 6a7165a..1b15995 100644
+--- a/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
++++ b/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
+@@ -36,7 +36,6 @@ EFI_EVENT  mBootGraphicsReadyToBootEvent;
+ UINTN      mBootGraphicsResourceTableKey = 0;
+ 
+ EFI_HANDLE                     mBootLogoHandle = NULL;
+-BOOLEAN                        mIsLogoValid = FALSE;
+ EFI_GRAPHICS_OUTPUT_BLT_PIXEL  *mLogoBltBuffer = NULL;
+ UINTN                          mLogoDestX = 0;
+ UINTN                          mLogoDestY = 0;
+@@ -63,7 +62,6 @@ BMP_IMAGE_HEADER  mBmpImageHeaderTemplate = {
+ };
+ 
+ BOOLEAN  mAcpiBgrtInstalled = FALSE;
+-BOOLEAN  mAcpiBgrtStatusChanged = FALSE;
+ BOOLEAN  mAcpiBgrtBufferChanged = FALSE;
+ 
+ EFI_ACPI_5_0_BOOT_GRAPHICS_RESOURCE_TABLE mBootGraphicsResourceTableTemplate = {
+@@ -151,9 +149,13 @@ SetBootLogo (
+ {
+   UINT64                        BufferSize;
+ 
++  mAcpiBgrtBufferChanged = TRUE;
++  if (mLogoBltBuffer != NULL) {
++    FreePool (mLogoBltBuffer);
++    mLogoBltBuffer = NULL;
++  }
++
+   if (BltBuffer == NULL) {
+-    mIsLogoValid = FALSE;
+-    mAcpiBgrtStatusChanged = TRUE;
+     return EFI_SUCCESS;
+   }
+ 
+@@ -161,12 +163,6 @@ SetBootLogo (
+     return EFI_INVALID_PARAMETER;
+   }
+   
+-  mAcpiBgrtBufferChanged = TRUE;
+-  if (mLogoBltBuffer != NULL) {
+-    FreePool (mLogoBltBuffer);
+-    mLogoBltBuffer = NULL;
+-  }
+-  
+   //
+   // Ensure the Height * Width doesn't overflow
+   //
+@@ -193,7 +189,6 @@ SetBootLogo (
+   mLogoDestY = DestinationY;
+   mLogoWidth = Width;
+   mLogoHeight = Height;
+-  mIsLogoValid = TRUE;
+ 
+   return EFI_SUCCESS;
+ }
+@@ -260,7 +255,7 @@ InstallBootGraphicsResourceTable (
+   // Check whether Boot Graphics Resource Table is already installed.
+   //
+   if (mAcpiBgrtInstalled) {
+-    if (!mAcpiBgrtStatusChanged && !mAcpiBgrtBufferChanged) {
++    if (!mAcpiBgrtBufferChanged) {
+       //
+       // Nothing has changed
+       //
+@@ -277,13 +272,13 @@ InstallBootGraphicsResourceTable (
+         return Status;
+       } 
+     }
+-  } else {
+-    //
+-    // Check whether Logo exist.
+-    //
+-    if ( mLogoBltBuffer == NULL) {
+-      return EFI_NOT_FOUND;
+-    }
++  }
++
++  //
++  // Check whether Logo exist.
++  //
++  if ( mLogoBltBuffer == NULL) {
++    return EFI_NOT_FOUND;
+   }
+ 
+   if (mAcpiBgrtBufferChanged) {
+@@ -361,7 +356,7 @@ InstallBootGraphicsResourceTable (
+     mBootGraphicsResourceTableTemplate.ImageOffsetY = (UINT32) mLogoDestY;
+   }
+ 
+-  mBootGraphicsResourceTableTemplate.Status = (UINT8) (mIsLogoValid ? EFI_ACPI_5_0_BGRT_STATUS_VALID : EFI_ACPI_5_0_BGRT_STATUS_INVALID);
++  mBootGraphicsResourceTableTemplate.Status = EFI_ACPI_5_0_BGRT_STATUS_VALID;
+ 
+   //
+   // Update Checksum.
+@@ -382,7 +377,6 @@ InstallBootGraphicsResourceTable (
+   }
+ 
+   mAcpiBgrtInstalled = TRUE;
+-  mAcpiBgrtStatusChanged = FALSE;
+   mAcpiBgrtBufferChanged = FALSE;
+   
+   return Status;
+-- 
+2.5.3
+

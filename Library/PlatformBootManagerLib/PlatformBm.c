@@ -31,6 +31,7 @@
 #include <Protocol/LoadedImage.h>
 #include <Guid/EventGroup.h>
 #include <Guid/TtyTerm.h>
+#include <Protocol/BootLogo.h>
 
 #include "PlatformBm.h"
 
@@ -443,6 +444,36 @@ PlatformRegisterOptionsAndKeys (
   ASSERT (Status == EFI_SUCCESS || Status == EFI_ALREADY_STARTED);
 }
 
+STATIC VOID EFIAPI
+ExitBootServicesHandler (
+                         EFI_EVENT     Event,
+                         VOID          *Context
+                         )
+{
+  EFI_STATUS Status;
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Green;
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Black;
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Yellow;
+  //
+  // Long enough to occlude the string printed
+  // in PlatformBootManagerWaitCallback.
+  //
+  STATIC CHAR16 *OsBootStr = L"----> Exiting UEFI and booting OS kernel! <----\n";
+
+  Green.Raw = 0x00007F00;
+  Black.Raw = 0x00000000;
+  Yellow.Raw = 0x00FFFF00;
+
+  DEBUG((DEBUG_INFO, "Exiting UEFI Boot Services!\n"));
+  Status = BootLogoUpdateProgress (Yellow.Pixel,
+                                   Black.Pixel,
+                                   OsBootStr,
+                                   Green.Pixel,
+                                   100, 0);
+  if (EFI_ERROR (Status)) {
+    Print (OsBootStr);
+  }
+}
 
 //
 // BDS Platform Functions
@@ -464,8 +495,22 @@ PlatformBootManagerBeforeConsole (
   VOID
   )
 {
-  EFI_STATUS                    Status;
-  ESRT_MANAGEMENT_PROTOCOL      *EsrtManagement;
+  EFI_STATUS Status;
+  EFI_EVENT ExitBSEvent;
+  ESRT_MANAGEMENT_PROTOCOL *EsrtManagement;
+
+  Status = gBS->CreateEventEx (
+                               EVT_NOTIFY_SIGNAL,
+                               TPL_NOTIFY,
+                               ExitBootServicesHandler,
+                               NULL,
+                               &gEfiEventExitBootServicesGuid,
+                               &ExitBSEvent
+                               );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: failed to register ExitBootServices handler\n",
+            __FUNCTION__));
+  }
 
   if (GetBootModeHob() == BOOT_ON_FLASH_UPDATE) {
     DEBUG ((DEBUG_INFO, "ProcessCapsules Before EndOfDxe ......\n"));
@@ -594,6 +639,21 @@ PlatformBootManagerWaitCallback (
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION White;
   UINT16                              Timeout;
   EFI_STATUS                          Status;
+  EFI_BOOT_LOGO_PROTOCOL *BootLogo;
+
+  if (TimeoutRemain == 0) {
+    BootLogo = NULL;
+
+    //
+    // Clear out the boot logo so that Windows displays its own logo
+    // instead of ours.
+    //
+    Status = gBS->LocateProtocol (&gEfiBootLogoProtocolGuid, NULL, (VOID **) &BootLogo);
+    if (!EFI_ERROR (Status) && (BootLogo != NULL)) {
+      Status = BootLogo->SetBootLogo (BootLogo, NULL, 0, 0, 0, 0);
+      ASSERT_EFI_ERROR (Status);
+    };
+  }
 
   Timeout = PcdGet16 (PcdPlatformBootTimeOut);
 
@@ -603,7 +663,7 @@ PlatformBootManagerWaitCallback (
   Status = BootLogoUpdateProgress (
              White.Pixel,
              Black.Pixel,
-             L"ESC (setup), F1 (shell), ENTER (boot)\n",
+             L"ESC (setup), F1 (shell), ENTER (boot)",
              White.Pixel,
              (Timeout - TimeoutRemain) * 100 / Timeout,
              0

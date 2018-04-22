@@ -76,6 +76,7 @@
   gEfiEndOfDxeEventGroupGuid
   gEfiTtyTermGuid
   gUefiShellFileGuid
+  gEfiEventExitBootServicesGuid
 
 [Protocols]
   gEfiDevicePathProtocolGuid
@@ -84,3 +85,4 @@
   gEfiSimpleFileSystemProtocolGuid
   gEsrtManagementProtocolGuid
   gEfiUsb2HcProtocolGuid
+  gEfiBootLogoProtocolGuid
