@@ -29,10 +29,11 @@
 #
 
 [Sources]
-  SPCR.asl
-  FACP.asl
-  GTDT.asl
-  APIC.aslc
+  Madt.aslc
+  Fadt.aslc
+  Dbg2.aslc
+  Gtdt.aslc
+  DSDT.asl
 
 [Packages]
   MdePkg/MdePkg.dec
