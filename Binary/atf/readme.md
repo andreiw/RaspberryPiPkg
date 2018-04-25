@@ -1,10 +1,10 @@
 ARM Trusted Firmware for RPi3
 =============================
 
-Last updated March 1st, 2018.
+Last updated April 24th, 2018.
 
 These are binary deliverables for a basic RPi3 ATF, equivalent
-to https://github.com/andreiw/raspberry-pi3-atf/commit/64e7f333623e24d89f7dae37557d707b42689e50
+to https://github.com/andreiw/raspberry-pi3-atf/commit/f2368dd3a63eeaa1a3c8b37c9aa0b76a0e344e41
 
 If you want to use your own build, simply override ATF_BUILD_DIR, e.g.:
 ```
