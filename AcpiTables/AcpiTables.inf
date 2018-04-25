@@ -29,11 +29,13 @@
 #
 
 [Sources]
+  Platform.h
   Madt.aslc
   Fadt.aslc
   Dbg2.aslc
   Gtdt.aslc
   DSDT.asl
+  CSRT.aslc
 
 [Packages]
   MdePkg/MdePkg.dec

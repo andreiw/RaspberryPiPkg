@@ -1,0 +1,330 @@
+/*++
+Copyright (c) 2015  Microsoft Corporation
+Module Name:    CSRT.aslc
+Abstract:    RPi2 Core System Resource Table
+Author:    Sergey Rusakov serusako 19-Feb-2015
+Environment:  UEFI ACPI 5.0
+Revision History:
+--*/
+
+#include "Platform.h"
+
+#define DMA_MAX_REQ_LINES 32
+
+#pragma pack(push, 1)
+
+//------------------------------------------------------------------------
+// DMA Controller Vendor Data for RPi2
+//------------------------------------------------------------------------
+typedef struct
+{
+    UINT32 Length;
+    UINT32 Type;
+    UINT64 ChannelsBaseAddress;
+    UINT32 ChannelsBaseSize;
+    UINT64 ControllerBaseAddress;
+    UINT32 ControllerBaseSize;
+    UINT32 ChannelCount;
+    UINT32 ControllerInterrupt;
+    UINT32 MinimumRequestLine;
+    UINT32 MaximumRequestLine;
+    BOOLEAN CacheCoherent;
+} DMA_CONTROLLER_VENDOR_DATA;
+
+//------------------------------------------------------------------------
+// DMA Controller on RPi2
+//------------------------------------------------------------------------
+typedef struct
+{
+    EFI_ACPI_5_0_CSRT_RESOURCE_DESCRIPTOR_HEADER DmaControllerHeader;
+    DMA_CONTROLLER_VENDOR_DATA ControllerVendorData;
+} RD_DMA_CONTROLLER;
+
+//------------------------------------------------------------------------
+// DMA Channel Vendor Data for RPi2
+//------------------------------------------------------------------------
+typedef struct
+{
+    UINT32 ChannelNumber;
+    UINT32 ChannelInterrupt;
+    UINT16 IsReservedChannel;    
+    UINT16 NoSrcNoDestAddrIncr;    
+} DMA_CHANNEL_VENDOR_DATA;
+
+//------------------------------------------------------------------------
+// DMA Channel on RPi2
+//------------------------------------------------------------------------
+typedef struct
+{
+    EFI_ACPI_5_0_CSRT_RESOURCE_DESCRIPTOR_HEADER DmaChannelHeader;
+    DMA_CHANNEL_VENDOR_DATA ChannelVendorData;
+} RD_DMA_CHANNEL;
+
+//------------------------------------------------------------------------
+// DMA Resource Group on RPi2
+//------------------------------------------------------------------------
+
+typedef struct
+{
+    EFI_ACPI_5_0_CSRT_RESOURCE_GROUP_HEADER ResGroupHeader;
+    RD_DMA_CONTROLLER DmaController;
+    RD_DMA_CHANNEL DmaChannels[RPI2_DMA_CHANNEL_COUNT];
+} RG_DMA;
+
+//----------------------------------------------------------------------------
+// CSRT table structure for RPi2 platform - current revision only includes DMA
+//----------------------------------------------------------------------------
+typedef struct
+{
+// Standard ACPI Header
+    EFI_ACPI_DESCRIPTION_HEADER CsrtHeader;
+
+// DMA Resource Group
+    RG_DMA DmaResourceGroup;
+
+} EFI_ACPI_5_0_CSRT_TABLE;
+
+
+
+EFI_ACPI_5_0_CSRT_TABLE Csrt = 
+{
+    //------------------------------------------------------------------------
+    // ACPI Table Header 
+    //------------------------------------------------------------------------
+    {
+        EFI_ACPI_5_0_CORE_SYSTEM_RESOURCE_TABLE_SIGNATURE,    // Signature "CSRT"
+        sizeof(EFI_ACPI_DESCRIPTION_HEADER) + sizeof(RG_DMA), // was sizeof(EFI_ACPI_5_0_CSRT_TABLE),    // Length
+        EFI_ACPI_5_0_CSRT_REVISION,         // Revision
+        0x00,                           // Checksum calculated at runtime.
+        EFI_ACPI_OEM_ID,                // OEMID is a 6 bytes long field "BC2836"
+        EFI_ACPI_OEM_TABLE_ID,          // OEM table identification(8 bytes long) "RPI2EDK2"
+        EFI_ACPI_OEM_REVISION,          // OEM revision number.
+        EFI_ACPI_CREATOR_ID,            // ASL compiler vendor ID.
+        EFI_ACPI_CREATOR_REVISION       // ASL compiler revision number.
+    },
+
+    //------------------------------------------------------------------------
+    // DMA Resource Group
+    //------------------------------------------------------------------------
+    {
+
+        //------------------------------------------------------------------------
+        // DMA Resource Group Header
+        //------------------------------------------------------------------------
+        {
+            sizeof(RG_DMA),                 // Resource Group Length
+            EFI_ACPI_VENDOR_ID,                // VendorId
+            0,                              // SubvendorId
+            EFI_ACPI_CSRT_DEVICE_ID_DMA, // DeviceId 9
+            0,                              // SubdeviceId
+            0,                              // Revision
+            0,                              // Reserved
+            0                            // SharedInfoLength
+        },
+
+    
+        //-------------------------------------------------------------------------------
+        // Resource Descriptor - DMA Controller 
+        //-------------------------------------------------------------------------------
+        {
+            {
+                sizeof(RD_DMA_CONTROLLER),                        // Length of this Resource Descriptor
+                EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,                // Type for this resource 3=DMA
+                EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CONTROLLER,    // Subtype for this resource 1=DMA Controller
+                EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+0,            // ResourceId - 1st DMA controller
+            },
+            {
+                sizeof(DMA_CONTROLLER_VENDOR_DATA),            // controller vendor data here
+                1,
+                0x3F007000,                // Base address for channels
+                RPI2_DMA_CHANNEL_COUNT*0x100, // Base size = Number of channels x 0x100 size for each channel
+                0x3F007FE0,                // Base address for controller
+                8,                         // Base size = two registers
+                RPI2_DMA_USED_CHANNEL_COUNT,
+                0,                    // cannot use controller interrupt
+                0,                    // Minimum Request Line
+                DMA_MAX_REQ_LINES-1,  // Maximum Request Line
+                FALSE,
+            },
+        },
+
+        //------------------------------------------------------------------------
+        // Resource Descriptor(s) - DMA Channels 0 to n-1
+        //------------------------------------------------------------------------
+        {
+    
+            // channel 0
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),                        // Length of this Resource Descriptor
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,            // Type for this resource 3=DMA
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,    // Subtype for this resource 0=DMA Channel
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+1,     // ResourceId
+                },
+                {
+                    0,        // channel vendor data here
+                    0x30,    // 16+32 dma_int[0]
+                    0,
+                    0
+                },
+            },
+
+            // channel 1 reserved
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+2,            // ResourceId
+                },
+                {
+                    1,        // channel vendor data here
+                    0x31,    // 17+32 dma_int[1]
+                    1,
+                    0
+                },
+            },
+
+            // channel 2 - VC4 use only   
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+3,        // ResourceId
+                },
+                {
+                    2,        // channel vendor data here
+                    0x32,    // 18+32 dma_int[2]
+                    1,
+                    0
+                },
+            },
+
+            // channel 3 - VC4 use only
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+4,
+                },
+                {
+                    3,        // channel vendor data here
+                    0x33,    // 19+32 dma_int[3]
+                    1,
+                    0
+                },
+            },
+
+            // channel 4
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+5,    
+                },
+                {
+                    4,        // channel vendor data here
+                    0x34,    // 20+32 dma_int[4]
+                    0,
+                    1       // SD host controller candidate
+                },
+            },
+
+            // channel 5
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+6,
+                },
+                {
+                    5,        // channel vendor data here
+                    0x35,    // 21+32 dma_int[5]
+                    0,
+                    0
+                },
+            },
+
+            // channel 6 is reserved
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+7,
+                },
+                {
+                    6,        // channel vendor data here
+                    0x36,    // 22+32 dma_int[6]
+                    1,
+                    0
+                },
+            },
+
+            // channel 7 is reserved
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+8,
+                },
+                {
+                    7,        // channel vendor data here
+                    0x37,    // 23+32 dma_int[7]
+                    1,
+                    0
+                },
+            },
+
+            // channel 8
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+9,
+                },
+                {
+                    8,        // channel vendor data here
+                    0x38,    // 24+32 dma_int[8]
+                    0,
+                    0
+                },
+            },
+
+            // channel 9
+            {
+                {
+                    sizeof(RD_DMA_CHANNEL),
+                    EFI_ACPI_CSRT_RESOURCE_TYPE_DMA,
+                    EFI_ACPI_CSRT_RESOURCE_SUBTYPE_DMA_CHANNEL,
+                    EFI_ACPI_CSRT_RESOURCE_ID_IN_DMA_GRP+10,
+                },
+                {
+                    9,        // channel vendor data here
+                    0x39,    // 25+32 dma_int[9]
+                    0,
+                    0
+                },
+            }
+
+        } // end DMA Channels 0 to 14
+
+    } // end DMA Resource group
+};
+
+#pragma pack(pop)
+
+VOID* ReferenceAcpiTable(VOID)
+{
+//
+// Reference the table being generated to prevent the optimizer from removing the
+// data structure from the exeutable
+//
+  return (VOID*)&Csrt;
+}
