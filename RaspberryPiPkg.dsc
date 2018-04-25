@@ -481,7 +481,7 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
   EmbeddedPkg/ResetRuntimeDxe/ResetRuntimeDxe.inf
   EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf {
     <LibraryClasses>
-      RealTimeClockLib|ArmVirtPkg/Library/XenRealTimeClockLib/XenRealTimeClockLib.inf
+      RealTimeClockLib|RaspberryPiPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
   }
   EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
 
