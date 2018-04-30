@@ -410,7 +410,7 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
 
   gEmbeddedTokenSpaceGuid.PcdPrePiCpuMemorySize|32
 
-  gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|3
+  gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|5
 
 [PcdsFixedAtBuild.AARCH64]
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
