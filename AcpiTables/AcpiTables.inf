@@ -36,6 +36,7 @@
   Gtdt.aslc
   DSDT.asl
   CSRT.aslc
+  SPCR.asl
 
 [Packages]
   MdePkg/MdePkg.dec
