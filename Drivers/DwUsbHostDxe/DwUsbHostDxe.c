@@ -460,7 +460,7 @@ DwHcDeferredTransfer (
     /*
      * Swallow the NAK, the upper layer expects us to resubmit automatically.
      */
-    return;
+    goto out;
   }
 
   Req->CallbackFunction (Req->Data, Req->DataLength,
@@ -528,12 +528,13 @@ DwHcReset (
   Status = DwCoreInit(DwHc, TimeoutEvt);
   if (Status != EFI_SUCCESS) {
     DEBUG((DEBUG_ERROR, "DwCoreInit failed\n"));
-    return Status;
+    goto out;
   }
+
   Status = DwHcInit(DwHc, TimeoutEvt);
   if (Status != EFI_SUCCESS) {
     DEBUG((DEBUG_ERROR, "DwHcInit failed\n"));
-    return Status;
+    goto out;
   }
 
   MmioAndThenOr32 (DwHc->DwUsbBase + HPRT0,
