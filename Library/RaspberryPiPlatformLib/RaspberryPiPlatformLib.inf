@@ -1,8 +1,8 @@
 #/* @file
 #
-#  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
 #  Copyright (c) 2011-2014, ARM Limited. All rights reserved.
 #  Copyright (c) 2014-2016, Linaro Limited. All rights reserved.
+#  Copyright (c), 2017-2018, Andrei Warkentin <andrey.warkentin@gmail.com>
 #
 #  This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -59,6 +59,10 @@
   gEmbeddedTokenSpaceGuid.PcdPrePiCpuMemorySize
   gArmTokenSpaceGuid.PcdSystemMemoryBase
   gArmTokenSpaceGuid.PcdSystemMemorySize
+  gRaspberryPiTokenSpaceGuid.PcdNvStorageEventLogSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
 
 [Ppis]
   gArmMpCoreInfoPpiGuid

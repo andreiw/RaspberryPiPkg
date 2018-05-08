@@ -32,3 +32,9 @@
 
 [PcdsFixedAtBuild.common]
   gRaspberryPiTokenSpaceGuid.PcdFdtBaseAddress|0x8000|UINT32|0x00000001
+  gRaspberryPiTokenSpaceGuid.PcdFirmwareBlockSize|0x0|UINT32|0x00000002
+  gRaspberryPiTokenSpaceGuid.PcdNvStorageEventLogBase|0x0|UINT32|0x00000003
+  gRaspberryPiTokenSpaceGuid.PcdNvStorageEventLogSize|0x0|UINT32|0x00000004
+  gRaspberryPiTokenSpaceGuid.PcdNvStorageVariableBase|0x0|UINT32|0x00000005
+  gRaspberryPiTokenSpaceGuid.PcdNvStorageFtwSpareBase|0x0|UINT32|0x00000006
+  gRaspberryPiTokenSpaceGuid.PcdNvStorageFtwWorkingBase|0x0|UINT32|0x00000007
