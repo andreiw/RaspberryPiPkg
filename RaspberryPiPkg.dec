@@ -38,3 +38,5 @@
   gRaspberryPiTokenSpaceGuid.PcdNvStorageVariableBase|0x0|UINT32|0x00000005
   gRaspberryPiTokenSpaceGuid.PcdNvStorageFtwSpareBase|0x0|UINT32|0x00000006
   gRaspberryPiTokenSpaceGuid.PcdNvStorageFtwWorkingBase|0x0|UINT32|0x00000007
+  gRaspberryPiTokenSpaceGuid.PcdBootEpochSeconds|0x0|UINT64|0x00000008
+

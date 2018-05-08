@@ -21,6 +21,8 @@
 #include <Library/IoLib.h>
 #include <Library/RealTimeClockLib.h>
 #include <Library/TimerLib.h>
+#include <Library/TimeBaseLib.h>
+#include <Library/UefiRuntimeLib.h>
 #include <Library/ArmGenericTimerCounterLib.h>
 
 /**
@@ -47,6 +49,9 @@ LibGetTime (
             OUT  EFI_TIME_CAPABILITIES  *Capabilities
             )
 {
+  UINTN DataSize;
+  EFI_STATUS Status;
+  UINTN ElapsedSeconds;
   UINT32 Freq = ArmGenericTimerGetTimerFreq();
 
   if (Time == NULL) {
@@ -70,39 +75,20 @@ LibGetTime (
     Capabilities->SetsToZero = FALSE;
   }
 
-  UINT64 ElapsedSeconds = GetPerformanceCounter () / Freq;
+  DataSize = sizeof (UINTN);
+  ElapsedSeconds = 0;
+  Status = EfiGetVariable (L"RtcEpochSeconds",
+                           &gEfiCallerIdGuid,
+                           NULL,
+                           &DataSize,
+                           &ElapsedSeconds);
+  if (EFI_ERROR (Status)) {
+    ElapsedSeconds = PcdGet64(PcdBootEpochSeconds);
+  }
+  ElapsedSeconds += GetPerformanceCounter () / Freq;
 
-  //
-  // Don't report Year/Month since Leap Year logic is not implemented. This should be
-  // fine since the sole purpose of this special implementation is to be used for relative time
-  // measurement. e.g. Windows Boot Manager.
-  //
-  
-  Time->Year = 0;
-  Time->Month = 0;
-
-  const UINT64 SECONDS_PER_DAY = 24 * 60 * 60;
-  Time->Day = (ElapsedSeconds / SECONDS_PER_DAY);
-  ElapsedSeconds %= SECONDS_PER_DAY;
-
-  const UINT64 SECONDS_PER_HOUR = 60 * 60;
-  Time->Hour = (ElapsedSeconds / SECONDS_PER_HOUR);
-  ElapsedSeconds %= SECONDS_PER_HOUR;
-
-  const UINT64 SECONDS_PER_MINUTE = 60;
-  Time->Minute = (ElapsedSeconds / SECONDS_PER_MINUTE);
-  ElapsedSeconds %= SECONDS_PER_MINUTE;
-
-  Time->Second = ElapsedSeconds;
-
-  //
-  // Not required to report in our special case
-  //
-  
-  Time->Nanosecond = 0;
-  Time->TimeZone = 0;
-  Time->Daylight = 0;
-
+  EpochToEfiTime(ElapsedSeconds, Time);
+    
   return EFI_SUCCESS;
 }
 
@@ -120,13 +106,22 @@ LibGetTime (
 EFI_STATUS
 EFIAPI
 LibSetTime (
-            IN EFI_TIME                *Time
+            IN EFI_TIME *Time
             )
 {
-  //
-  // The virtual clock is read-only.
-  //
-  return EFI_UNSUPPORTED;
+  UINTN Epoch;
+
+  if (!IsTimeValid(Time)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Epoch = EfiTimeToEpoch(Time);
+  return EfiSetVariable(L"RtcEpochSeconds", &gEfiCallerIdGuid,
+                        EFI_VARIABLE_BOOTSERVICE_ACCESS |
+                        EFI_VARIABLE_RUNTIME_ACCESS |
+                        EFI_VARIABLE_NON_VOLATILE,
+                        sizeof (Epoch),
+                        &Epoch);
 }
 
 
