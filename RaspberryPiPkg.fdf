@@ -215,6 +215,7 @@ READ_LOCK_STATUS   = TRUE
   INF MdeModulePkg/Universal/SerialDxe/SerialDxe.inf
   INF RaspberryPiPkg/Drivers/DisplayDxe/DisplayDxe.inf
 
+  INF UefiCpuPkg/CpuIo2Dxe/CpuIo2Dxe.inf
   INF RaspberryPiPkg/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
   INF RaspberryPiPkg/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
   INF RaspberryPiPkg/Drivers/RpiFdtDxe/RpiFdtDxe.inf

@@ -513,6 +513,7 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
 
   MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
 
+  UefiCpuPkg/CpuIo2Dxe/CpuIo2Dxe.inf
   RaspberryPiPkg/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
   RaspberryPiPkg/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
   RaspberryPiPkg/Drivers/RpiFdtDxe/RpiFdtDxe.inf
@@ -578,7 +579,6 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
   RaspberryPiPkg/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
   EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
 
-[Components.common]
   #
   # Networking stack
   #
