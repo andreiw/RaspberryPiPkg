@@ -1,0 +1,27 @@
+/** @file
+ *
+ *  Copyright (c), 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+ *
+ *  This program and the accompanying materials
+ *  are licensed and made available under the terms and conditions of the BSD License
+ *  which accompanies this distribution.  The full text of the license may be found at
+ *  http://opensource.org/licenses/bsd-license.php
+ *
+ *  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+ *
+ **/
+
+#langdef en-US  "English"
+
+#string STR_FORM_SET_TITLE      #language en-US "HypDxe Configuration"
+#string STR_FORM_SET_TITLE_HELP #language en-US "Press <Enter> to configure HypDxe."
+
+#string STR_MAIN_FORM_TITLE     #language en-US "HypDxe Configuration"
+#string STR_NULL_STRING         #language en-US ""
+
+#string STR_SELECT_PROMPT       #language en-US "System Boot Mode"
+#string STR_SELECT_HELP         #language en-US "EL1 or EL2"
+
+#string STR_SELECT_EL1          #language en-US "Boot in EL1"
+#string STR_SELECT_EL2          #language en-US "Boot in EL2"

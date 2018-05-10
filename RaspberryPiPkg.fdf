@@ -219,6 +219,7 @@ READ_LOCK_STATUS   = TRUE
   INF RaspberryPiPkg/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
   INF RaspberryPiPkg/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
   INF RaspberryPiPkg/Drivers/RpiFdtDxe/RpiFdtDxe.inf
+  INF RaspberryPiPkg/Drivers/HypDxe/HypDxe.inf
   INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
 

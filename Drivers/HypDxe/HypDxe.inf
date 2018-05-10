@@ -1,0 +1,69 @@
+## @file
+#
+#  Copyright (c), 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+#
+#  This program and the accompanying materials are licensed and made available
+#  under the terms and conditions of the BSD License which accompanies this
+#  distribution. The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR
+#  IMPLIED.
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = HypDxe
+  FILE_GUID                      = 744cbac2-b23f-4b92-bc8e-fb01ce5907b7
+  MODULE_TYPE                    = DXE_RUNTIME_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = HypInitialize
+
+#
+# The following information is for reference only and not required by the build
+# tools.
+#
+#  VALID_ARCHITECTURES           = AARCH64
+#
+
+[Sources]
+  HypDxe.c
+  HypConfig.c
+  HypDxeHii.vfr
+  HypDxeHii.uni
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  DxeServicesTableLib
+  MemoryAllocationLib
+  PcdLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiRuntimeLib
+  ArmLib
+  HiiLib
+
+[Guids]
+  gHypDxeFormSetGuid
+
+[Protocols]
+
+[FixedPcd]
+
+[Pcd]
+  gRaspberryPiTokenSpaceGuid.PcdBootInEL1
+
+[FeaturePcd]
+
+[Depex]
+  gPcdProtocolGuid
