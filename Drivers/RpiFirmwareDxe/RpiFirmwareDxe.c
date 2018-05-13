@@ -786,6 +786,66 @@ RpiFirmwareGetCommmandLine (
 typedef struct {
   UINT32                    ClockId;
   UINT32                    ClockRate;
+  UINT32                    SkipTurbo;
+} RPI_FW_SET_CLOCK_RATE_TAG;
+
+typedef struct {
+  RPI_FW_BUFFER_HEAD        BufferHead;
+  RPI_FW_TAG_HEAD           TagHead;
+  RPI_FW_SET_CLOCK_RATE_TAG TagBody;
+  UINT32                    EndTag;
+} RPI_FW_SET_CLOCK_RATE_CMD;
+#pragma pack()
+
+STATIC
+EFI_STATUS
+EFIAPI
+RpiFirmwareSetClockRate (
+  IN  UINT32 ClockId,
+  IN  UINT32 ClockRate
+  )
+{
+  RPI_FW_SET_CLOCK_RATE_CMD   *Cmd;
+  EFI_STATUS                  Status;
+  UINT32                      Result;
+
+  if (!AcquireSpinLockOrFail (&mMailboxLock)) {
+    DEBUG ((DEBUG_ERROR, "%a: failed to acquire spinlock\n", __FUNCTION__));
+    return EFI_DEVICE_ERROR;
+  }
+
+  Cmd = mDmaBuffer;
+  ZeroMem (Cmd, sizeof *Cmd);
+
+  Cmd->BufferHead.BufferSize  = sizeof *Cmd;
+  Cmd->BufferHead.Response    = 0;
+  Cmd->TagHead.TagId          = RPI_FW_SET_CLOCK_RATE,
+  Cmd->TagHead.TagSize        = sizeof Cmd->TagBody;
+  Cmd->TagHead.TagValueSize   = 0;
+  Cmd->TagBody.ClockId        = ClockId;
+  Cmd->TagBody.ClockRate      = ClockRate;
+  Cmd->EndTag                 = 0;
+
+  Status = MailboxTransaction (Cmd->BufferHead.BufferSize, RPI_FW_MBOX_CHANNEL, &Result);
+
+  ReleaseSpinLock (&mMailboxLock);
+
+  if (EFI_ERROR (Status) ||
+      Cmd->BufferHead.Response != RPI_FW_RESP_SUCCESS) {
+    DEBUG ((DEBUG_ERROR,
+      "%a: mailbox transaction error: Status == %r, Response == 0x%x\n",
+      __FUNCTION__, Status, Cmd->BufferHead.Response));
+    return EFI_DEVICE_ERROR;
+  }
+
+  return EFI_SUCCESS;
+}
+
+
+#pragma pack()
+typedef struct {
+  UINT32                    ClockId;
+  UINT32                    ClockRate;
 } RPI_FW_CLOCK_RATE_TAG;
 
 typedef struct {
@@ -800,9 +860,9 @@ STATIC
 EFI_STATUS
 EFIAPI
 RpiFirmwareGetClockRate (
-  IN  UINT32    ClockId,
-  IN  UINT32    ClockKind,
-  OUT UINT32    *ClockRate
+  IN  UINT32 ClockId,
+  IN  UINT32 ClockKind,
+  OUT UINT32 *ClockRate
   )
 {
   RPI_FW_GET_CLOCK_RATE_CMD   *Cmd;
@@ -941,6 +1001,7 @@ STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL mRpiFirmwareProtocol = {
   RpiFirmwareGetCurrentClockRate,
   RpiFirmwareGetMaxClockRate,
   RpiFirmwareGetMinClockRate,
+  RpiFirmwareSetClockRate,
   RpiFirmwareAllocFb,
   RpiFirmwareFreeFb,
   RpiFirmwareGetFbSize,

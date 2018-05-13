@@ -46,6 +46,13 @@ EFI_STATUS
 
 typedef
 EFI_STATUS
+(EFIAPI *SET_CLOCK_RATE) (
+  IN  UINT32    ClockId,
+  OUT UINT32    ClockRate
+  );
+
+typedef
+EFI_STATUS
 (EFIAPI *GET_FB) (
   IN  UINT32 Width,
   IN  UINT32 Height,
@@ -106,6 +113,7 @@ typedef struct {
   GET_CLOCK_RATE     GetClockRate;
   GET_CLOCK_RATE     GetMaxClockRate;
   GET_CLOCK_RATE     GetMinClockRate;
+  SET_CLOCK_RATE     SetClockRate;
   GET_FB             GetFB;
   FREE_FB            FreeFB;
   GET_FB_SIZE        GetFBSize;

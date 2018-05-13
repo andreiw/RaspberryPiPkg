@@ -58,18 +58,21 @@
 #define RPI_FW_GET_MAX_CLOCK_RATE                           0x00030004
 #define RPI_FW_GET_MIN_CLOCK_RATE                           0x00030007
 
+#define RPI_FW_SET_CLOCK_RATE                               0x00038002
+#define RPI_FW_SET_GPIO                                     0x00038041
+
 #define RPI_FW_GET_FB_GEOMETRY                              0x00040003
 #define RPI_FW_GET_FB_LINELENGTH                            0x00040008
 #define RPI_FW_GET_FB_COLOR_DEPTH                           0x00040005
 #define RPI_FW_GET_FB_REGION                                0x00040001
-#define RPI_FW_SET_GPIO                                     0x00038041
-#define RPI_FW_GET_COMMAND_LINE                             0x00050001
 
 #define RPI_FW_SET_FB_PGEOM                                 0x00048003
 #define RPI_FW_SET_FB_VGEOM                                 0x00048004
 #define RPI_FW_SET_FB_DEPTH                                 0x00048005
 #define RPI_FW_ALLOC_FB                                     0x00040001
 #define RPI_FW_FREE_FB                                      0x00048001
+
+#define RPI_FW_GET_COMMAND_LINE                             0x00050001
 
 #define RPI_FW_POWER_STATE_ENABLE                           BIT0
 #define RPI_FW_POWER_STATE_WAIT                             BIT1

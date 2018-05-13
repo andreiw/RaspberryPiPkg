@@ -774,20 +774,22 @@ ProcessorInfoUpdateSmbiosType4 (
   mProcessorInfoType4.EnabledCoreCount = (UINT8) MaxCpus;
   mProcessorInfoType4.ThreadCount      = (UINT8) MaxCpus;
 
-  Status = mFwProtocol->GetClockRate(RPI_FW_CLOCK_RATE_ARM, &Rate);
-  if (Status != EFI_SUCCESS) {
-    DEBUG ((DEBUG_ERROR, "Couldn't get the current CPU speed: %r\n", Status));
-  } else {
-    mProcessorInfoType4.CurrentSpeed = Rate / 1000000;
-    DEBUG ((DEBUG_INFO, "Current CPU speed: %uHz\n", Rate));
-  }
-
   Status = mFwProtocol->GetMaxClockRate(RPI_FW_CLOCK_RATE_ARM, &Rate);
   if (Status != EFI_SUCCESS) {
     DEBUG ((DEBUG_ERROR, "Couldn't get the max CPU speed: %r\n", Status));
   } else {
     mProcessorInfoType4.MaxSpeed = Rate / 1000000;
     DEBUG ((DEBUG_INFO, "Max CPU speed: %uHz\n", Rate));
+  }
+
+  mFwProtocol->SetClockRate(RPI_FW_CLOCK_RATE_ARM, Rate);
+
+  Status = mFwProtocol->GetClockRate(RPI_FW_CLOCK_RATE_ARM, &Rate);
+  if (Status != EFI_SUCCESS) {
+    DEBUG ((DEBUG_ERROR, "Couldn't get the current CPU speed: %r\n", Status));
+  } else {
+    mProcessorInfoType4.CurrentSpeed = Rate / 1000000;
+    DEBUG ((DEBUG_INFO, "Current CPU speed: %uHz\n", Rate));
   }
 
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mProcessorInfoType4, mProcessorInfoType4Strings, NULL);
