@@ -34,8 +34,12 @@
   HypDxeHii.vfr
   HypDxeHii.uni
 
+[Sources.AArch64]
+  AArch64/ExceptionSupport.S
+
 [Packages]
   ArmPkg/ArmPkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   RaspberryPiPkg/RaspberryPiPkg.dec
@@ -59,6 +63,7 @@
 [Protocols]
 
 [FixedPcd]
+  gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize
 
 [Pcd]
   gRaspberryPiTokenSpaceGuid.PcdBootInEL1

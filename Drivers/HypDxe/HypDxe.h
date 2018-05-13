@@ -17,4 +17,6 @@
 
 EFI_STATUS InstallHiiPages(VOID);
 
+extern void *ExceptionHandlersStart;
+
 #endif /* HYP_DXE_H */
