@@ -18,6 +18,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Chipset/AArch64.h>
 #include <Protocol/DebugSupport.h>
+#include <Utils.h>
 
 #define HCR_RW_64 BIT31
 #define SPSR_D    BIT9
@@ -26,17 +27,6 @@
 #define ReadSysReg(var, reg) asm volatile("mrs %0, " #reg : "=r" (var))
 #define WriteSysReg(reg, val) asm volatile("msr " #reg ", %0"  : : "r" (val))
 #define ISB() asm volatile("isb");
-
-#define _IX_BITS(sm, bg) (bg - sm + 1)
-#define _IX_MASK(sm, bg) ((1 << _IX_BITS(sm, bg)) - 1)
-#define _X(val, sm, bg) (val >> sm) & _IX_MASK(sm, bg)
-#define X(val, ix1, ix2) ((ix1 < ix2) ? _X(val, ix1, ix2) :     \
-                          _X(val, ix2, ix1))
-
-#define _I(val, sm, bg)  ((val & _IX_MASK(sm, bg)) << sm)
-#define I(val, ix1, ix2) ((ix1 < ix2) ? _I(val, ix1, ix2) :     \
-                          _I(val, ix2, ix1))
-
 
 #define SPSR_2_EL(spsr) (_X(spsr, 2, 3))
 #define SPSR_2_BITNESS(spsr) (_X(spsr, 4, 4) ? 32 : 64)

@@ -1,8 +1,8 @@
 /** @file
-  Static SMBIOS Table for ARM platform
-  Derived from EmulatorPkg package
+    Static SMBIOS Table for ARM platform
+    Derived from EmulatorPkg package
 
-  Note SMBIOS 2.7.1 Required structures:
+    Note SMBIOS 2.7.1 Required structures:
     BIOS Information (Type 0)
     System Information (Type 1)
     Board Information (Type 2)
@@ -16,27 +16,27 @@
     System Boot Information (Type 32)
 
 
-  Copyright (c), 2017, Andrey Warkentin <andrey.warkentin@gmail.com>
-  Copyright (c), Microsoft Corporation. All rights reserved.
+    Copyright (c), 2017-2018, Andrey Warkentin <andrey.warkentin@gmail.com>
+    Copyright (c), Microsoft Corporation. All rights reserved.
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
+    This program and the accompanying materials
+    are licensed and made available under the terms and conditions of the BSD License
+    which accompanies this distribution.  The full text of the license may be found at
+    http://opensource.org/licenses/bsd-license.php
 
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+    THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+    WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 
-  Copyright (c) 2012, Apple Inc. All rights reserved.<BR>
-  Copyright (c) 2013 Linaro.org
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
+    Copyright (c) 2012, Apple Inc. All rights reserved.<BR>
+    Copyright (c) 2013 Linaro.org
+    This program and the accompanying materials
+    are licensed and made available under the terms and conditions of the BSD License
+    which accompanies this distribution.  The full text of the license may be found at
+    http://opensource.org/licenses/bsd-license.php
 
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+    THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+    WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 **/
 
@@ -53,11 +53,13 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
+#include <Library/PrintLib.h>
+#include <Utils.h>
 
 STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL *mFwProtocol;
 
 /***********************************************************************
-	SMBIOS data definition  TYPE0  BIOS Information
+        SMBIOS data definition  TYPE0  BIOS Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
   { EFI_SMBIOS_TYPE_BIOS_INFORMATION, sizeof (SMBIOS_TABLE_TYPE0), 0 },
@@ -99,7 +101,7 @@ SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
     0,    //  CgaMonoIsSupported                :1;
     0,    //  NecPc98                           :1;
     0     //  ReservedForVendor                 :32; ///< Bits 32-63. Bits 32-47 reserved for BIOS vendor
-                                                 ///< and bits 48-63 reserved for System Vendor.
+    ///< and bits 48-63 reserved for System Vendor.
   },
   {       // BIOSCharacteristicsExtensionBytes[]
     0x81, //  AcpiIsSupported                   :1;
@@ -125,14 +127,14 @@ SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
 };
 
 CHAR8 *mBIOSInfoType0Strings[] = {
-  "Raspberry Pi 3 64-bit UEFI", // Vendor String
-  "Built: " __DATE__,             // BiosVersion String
-  "Built: " __DATE__,             // BiosReleaseDate String
+  "https://github.org/andreiw/RaspberryPiPkg",      // Vendor String
+  "Raspberry Pi 64-bit UEFI (Built: " __DATE__ ")", // BiosVersion String
+  "Built: " __DATE__,                               // BiosReleaseDate String
   NULL
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE1  System Information
+        SMBIOS data definition  TYPE1  System Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE1 mSysInfoType1 = {
   { EFI_SMBIOS_TYPE_SYSTEM_INFORMATION, sizeof (SMBIOS_TABLE_TYPE1), 0 },
@@ -145,18 +147,48 @@ SMBIOS_TABLE_TYPE1 mSysInfoType1 = {
   5,    // SKUNumber String
   6,    // Family String
 };
+
+#define PROD_BASE     8
+#define PROD_KNOWN   13
+#define PROD_UNKNOWN 11
+CHAR8 *ProductNames[] = {
+  /* 8 */ "3",
+  /* 9 */ "Zero",
+  /* 10 */ "CM3",
+  /* 11 */ "???",
+  /* 12 */ "Zero W",
+  /* 13 */ "3B+"
+};
+
+#define MANU_UNKNOWN 0
+#define MANU_KNOWN   4
+#define MANU_BASE    1
+CHAR8 *ManufNames[] = {
+  "???",
+  /* 0 */ "Sony",
+  /* 1 */ "Egoman",
+  /* 2 */ "Embest",
+  /* 3 */ "Sony Japan",
+  /* 4 */ "Embest"
+};
+
+CHAR8 mSysInfoManufName[sizeof("Sony Japan")];
+CHAR8 mSysInfoProductName[sizeof("64-bit Raspberry Pi XXXXXX (rev. xxxxxxxx)")];
+CHAR8 mSysInfoSerial[sizeof(UINT64) * 2 + 1];
+CHAR8 mSysInfoSKU[sizeof(UINT64) * 2 + 1];
+
 CHAR8  *mSysInfoType1Strings[] = {
-  "Raspberry Pi",
-  "Raspberry Pi 3",
-  "1.0",
-  "System Serial#",
-  "RPi3-1GB",
+  mSysInfoManufName,
+  mSysInfoProductName,
+  mSysInfoProductName,
+  mSysInfoSerial,
+  mSysInfoSKU,
   "edk2",
   NULL
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE2  Board Information
+        SMBIOS data definition  TYPE2  Board Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE2  mBoardInfoType2 = {
   { EFI_SMBIOS_TYPE_BASEBOARD_INFORMATION, sizeof (SMBIOS_TABLE_TYPE2), 0 },
@@ -180,17 +212,17 @@ SMBIOS_TABLE_TYPE2  mBoardInfoType2 = {
   { 0 }                     // ContainedObjectHandles[1];
 };
 CHAR8  *mBoardInfoType2Strings[] = {
-  "Raspberry Pi",
-  "Raspberry Pi 3",
-  "1.0",
-  "Base Board Serial#",
-  "Base Board Asset Tag#",
-  "Part Component",
+  mSysInfoManufName,
+  mSysInfoProductName,
+  mSysInfoProductName,
+  mSysInfoSerial,
+  "None",
+  mSysInfoSKU,
   NULL
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE3  Enclosure Information
+        SMBIOS data definition  TYPE3  Enclosure Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE3  mEnclosureInfoType3 = {
   { EFI_SMBIOS_TYPE_SYSTEM_ENCLOSURE, sizeof (SMBIOS_TABLE_TYPE3), 0 },
@@ -211,20 +243,20 @@ SMBIOS_TABLE_TYPE3  mEnclosureInfoType3 = {
   { { 0 } },    // ContainedElements[1];
 };
 CHAR8  *mEnclosureInfoType3Strings[] = {
-  "Raspberry Pi",
-  "1.0",
-  "Chassis Board Serial#",
-  "Chassis Board Asset Tag#",
+  mSysInfoManufName,
+  mSysInfoProductName,
+  mSysInfoSerial,
+  "None",
   NULL
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE4  Processor Information
+        SMBIOS data definition  TYPE4  Processor Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE4 mProcessorInfoType4 = {
   { EFI_SMBIOS_TYPE_PROCESSOR_INFORMATION, sizeof (SMBIOS_TABLE_TYPE4), 0},
   1,                    // Socket String
-  CentralProcessor,       // ProcessorType;				      ///< The enumeration value from PROCESSOR_TYPE_DATA.
+  CentralProcessor,       // ProcessorType;                                   ///< The enumeration value from PROCESSOR_TYPE_DATA.
   ProcessorFamilyIndicatorFamily2, // ProcessorFamily;        ///< The enumeration value from PROCESSOR_FAMILY2_DATA.
   2,                    // ProcessorManufacture String;
   {                     // ProcessorId;
@@ -311,38 +343,38 @@ CHAR8 *mProcessorInfoType4Strings[] = {
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE7  Cache Information
+        SMBIOS data definition  TYPE7  Cache Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE7  mCacheInfoType7 = {
   { EFI_SMBIOS_TYPE_CACHE_INFORMATION, sizeof (SMBIOS_TABLE_TYPE7), 0 },
   1,                        // SocketDesignation String
-  0x018A,					// Cache Configuration
-  0x00FF,					// Maximum Size 256k
-  0x00FF,					// Install Size 256k
+  0x018A,                                       // Cache Configuration
+  0x00FF,                                       // Maximum Size 256k
+  0x00FF,                                       // Install Size 256k
   {                         // Supported SRAM Type
-	0,  //Other             :1
-	0,  //Unknown           :1
-	0,  //NonBurst          :1
-	1,  //Burst             :1
-	0,  //PiplelineBurst    :1
-	1,  //Synchronous       :1
-	0,  //Asynchronous      :1
-	0	//Reserved          :9
+    0,  //Other             :1
+    0,  //Unknown           :1
+    0,  //NonBurst          :1
+    1,  //Burst             :1
+    0,  //PiplelineBurst    :1
+    1,  //Synchronous       :1
+    0,  //Asynchronous      :1
+    0       //Reserved          :9
   },
   {                         // Current SRAM Type
-	0,  //Other             :1
-	0,  //Unknown           :1
-	0,  //NonBurst          :1
-	1,  //Burst             :1
-	0,  //PiplelineBurst    :1
-	1,  //Synchronous       :1
-	0,  //Asynchronous      :1
-	0	//Reserved          :9
+    0,  //Other             :1
+    0,  //Unknown           :1
+    0,  //NonBurst          :1
+    1,  //Burst             :1
+    0,  //PiplelineBurst    :1
+    1,  //Synchronous       :1
+    0,  //Asynchronous      :1
+    0       //Reserved          :9
   },
-  0,						// Cache Speed unknown
-  CacheErrorMultiBit,		// Error Correction Multi
-  CacheTypeUnknown,			// System Cache Type
-  CacheAssociativity2Way	// Associativity
+  0,                                            // Cache Speed unknown
+  CacheErrorMultiBit,           // Error Correction Multi
+  CacheTypeUnknown,                     // System Cache Type
+  CacheAssociativity2Way        // Associativity
 };
 CHAR8  *mCacheInfoType7Strings[] = {
   "Cache1",
@@ -350,7 +382,7 @@ CHAR8  *mCacheInfoType7Strings[] = {
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE9  System Slot Information
+        SMBIOS data definition  TYPE9  System Slot Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE9  mSysSlotInfoType9 = {
   { EFI_SMBIOS_TYPE_SYSTEM_SLOTS, sizeof (SMBIOS_TABLE_TYPE9), 0 },
@@ -386,7 +418,7 @@ CHAR8  *mSysSlotInfoType9Strings[] = {
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE16  Physical Memory ArrayInformation
+        SMBIOS data definition  TYPE16  Physical Memory ArrayInformation
 ************************************************************************/
 SMBIOS_TABLE_TYPE16 mPhyMemArrayInfoType16 = {
   { EFI_SMBIOS_TYPE_PHYSICAL_MEMORY_ARRAY, sizeof (SMBIOS_TABLE_TYPE16), 0 },
@@ -403,7 +435,7 @@ CHAR8 *mPhyMemArrayInfoType16Strings[] = {
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE17  Memory Device Information
+        SMBIOS data definition  TYPE17  Memory Device Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE17 mMemDevInfoType17 = {
   { EFI_SMBIOS_TYPE_MEMORY_DEVICE, sizeof (SMBIOS_TABLE_TYPE17), 0 },
@@ -453,7 +485,7 @@ CHAR8 *mMemDevInfoType17Strings[] = {
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE19  Memory Array Mapped Address Information
+        SMBIOS data definition  TYPE19  Memory Array Mapped Address Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE19 mMemArrMapInfoType19 = {
   { EFI_SMBIOS_TYPE_MEMORY_ARRAY_MAPPED_ADDRESS, sizeof (SMBIOS_TABLE_TYPE19), 0 },
@@ -469,7 +501,7 @@ CHAR8 *mMemArrMapInfoType19Strings[] = {
 };
 
 /***********************************************************************
-	SMBIOS data definition  TYPE32  Boot Information
+        SMBIOS data definition  TYPE32  Boot Information
 ************************************************************************/
 SMBIOS_TABLE_TYPE32 mBootInfoType32 = {
   { EFI_SMBIOS_TYPE_SYSTEM_BOOT_INFORMATION, sizeof (SMBIOS_TABLE_TYPE32), 0 },
@@ -484,43 +516,43 @@ CHAR8 *mBootInfoType32Strings[] = {
 
 /**
 
-  Create SMBIOS record.
+   Create SMBIOS record.
 
-  Converts a fixed SMBIOS structure and an array of pointers to strings into
-  an SMBIOS record where the strings are cat'ed on the end of the fixed record
-  and terminated via a double NULL and add to SMBIOS table.
+   Converts a fixed SMBIOS structure and an array of pointers to strings into
+   an SMBIOS record where the strings are cat'ed on the end of the fixed record
+   and terminated via a double NULL and add to SMBIOS table.
 
-  SMBIOS_TABLE_TYPE32 gSmbiosType12 = {
-    { EFI_SMBIOS_TYPE_SYSTEM_CONFIGURATION_OPTIONS, sizeof (SMBIOS_TABLE_TYPE12), 0 },
-    1 // StringCount
-  };
+   SMBIOS_TABLE_TYPE32 gSmbiosType12 = {
+   { EFI_SMBIOS_TYPE_SYSTEM_CONFIGURATION_OPTIONS, sizeof (SMBIOS_TABLE_TYPE12), 0 },
+   1 // StringCount
+   };
 
-  CHAR8 *gSmbiosType12Strings[] = {
-    "Not Found",
-    NULL
-  };
+   CHAR8 *gSmbiosType12Strings[] = {
+   "Not Found",
+   NULL
+   };
 
-  ...
+   ...
 
-  LogSmbiosData (
-    (EFI_SMBIOS_TABLE_HEADER*)&gSmbiosType12,
-    gSmbiosType12Strings
-    );
+   LogSmbiosData (
+   (EFI_SMBIOS_TABLE_HEADER*)&gSmbiosType12,
+   gSmbiosType12Strings
+   );
 
-  @param  Template    Fixed SMBIOS structure, required.
-  @param  StringPack  Array of strings to convert to an SMBIOS string pack.
-                      NULL is OK.
-  @param  DataSmbiosHande  The new SMBIOS record handle .
-                      NULL is OK.
+   @param  Template    Fixed SMBIOS structure, required.
+   @param  StringPack  Array of strings to convert to an SMBIOS string pack.
+   NULL is OK.
+   @param  DataSmbiosHande  The new SMBIOS record handle .
+   NULL is OK.
 **/
 
 EFI_STATUS
 EFIAPI
 LogSmbiosData (
-  IN  EFI_SMBIOS_TABLE_HEADER *Template,
-  IN  CHAR8                   **StringPack,
-  OUT EFI_SMBIOS_HANDLE       *DataSmbiosHande
-  )
+               IN  EFI_SMBIOS_TABLE_HEADER *Template,
+               IN  CHAR8                   **StringPack,
+               OUT EFI_SMBIOS_HANDLE       *DataSmbiosHande
+               )
 {
   EFI_STATUS                Status;
   EFI_SMBIOS_PROTOCOL       *Smbios;
@@ -551,9 +583,9 @@ LogSmbiosData (
       StringSize = AsciiStrSize (StringPack[Index]);
       Size += StringSize;
     }
-  if (StringPack[0] == NULL) {
-    // At least a double null is required
-    Size += 1;
+    if (StringPack[0] == NULL) {
+      // At least a double null is required
+      Size += 1;
     }
 
     // Don't forget the terminating double null
@@ -579,14 +611,14 @@ LogSmbiosData (
   *Str = 0;
   SmbiosHandle = SMBIOS_HANDLE_PI_RESERVED;
   Status = Smbios->Add (
-                     Smbios,
-                     gImageHandle,
-                     &SmbiosHandle,
-                     Record
-                     );
+                        Smbios,
+                        gImageHandle,
+                        &SmbiosHandle,
+                        Record
+                        );
 
   if ((Status == EFI_SUCCESS) && (DataSmbiosHande != NULL)) {
-      *DataSmbiosHande = SmbiosHandle;
+    *DataSmbiosHande = SmbiosHandle;
   }
 
   ASSERT_EFI_ERROR (Status);
@@ -595,128 +627,145 @@ LogSmbiosData (
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE0  BIOS Information
+        SMBIOS data update  TYPE0  BIOS Information
 ************************************************************************/
 VOID
 BIOSInfoUpdateSmbiosType0 (
-  VOID
-  )
+                           VOID
+                           )
 {
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mBIOSInfoType0, mBIOSInfoType0Strings, NULL);
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE1  System Information
+        SMBIOS data update  TYPE1  System Information
 ************************************************************************/
 VOID
 I64ToHexString(
-    IN OUT CHAR8* TargetStringSz,
-    IN UINT32 TargetStringSize,
-    IN UINT64 Value
-    )
+               IN OUT CHAR8* TargetStringSz,
+               IN UINT32 TargetStringSize,
+               IN UINT64 Value
+               )
 {
-    static CHAR8 ItoH[] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };
-    UINT8 StringInx;
-    INT8 NibbleInx;
+  static CHAR8 ItoH[] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };
+  UINT8 StringInx;
+  INT8 NibbleInx;
 
-    ZeroMem((void*)TargetStringSz, TargetStringSize);
+  ZeroMem((void*)TargetStringSz, TargetStringSize);
 
-    //
-    // Convert each nibble to hex string, starting from
-    // the highest non-zero nibble.
-    //
-    StringInx = 0;
-    for (NibbleInx = sizeof(UINT64) * 2; NibbleInx > 0; --NibbleInx) {
-        UINT64 NibbleMask = (((UINT64)0xF) << ((NibbleInx - 1) * 4));
-        UINT8 Nibble = (UINT8)((Value & NibbleMask) >> ((NibbleInx - 1) * 4));
+  //
+  // Convert each nibble to hex string, starting from
+  // the highest non-zero nibble.
+  //
+  StringInx = 0;
+  for (NibbleInx = sizeof(UINT64) * 2; NibbleInx > 0; --NibbleInx) {
+    UINT64 NibbleMask = (((UINT64)0xF) << ((NibbleInx - 1) * 4));
+    UINT8 Nibble = (UINT8)((Value & NibbleMask) >> ((NibbleInx - 1) * 4));
 
-        ASSERT(Nibble <= 0xF);
+    ASSERT(Nibble <= 0xF);
 
-        if (StringInx < (TargetStringSize-1)) {
-            TargetStringSz[StringInx++] = ItoH[Nibble];
-        } else {
-            break;
-        }
+    if (StringInx < (TargetStringSize-1)) {
+      TargetStringSz[StringInx++] = ItoH[Nibble];
+    } else {
+      break;
     }
+  }
 }
 
 VOID
 SysInfoUpdateSmbiosType1 (
-  VOID
-  )
+                          VOID
+                          )
 {
+  UINT32 BoardRevision = 0;
   EFI_STATUS Status = EFI_SUCCESS;
-  UINT64 BoardSerial = 0xdeadface;
-  static CHAR8 BoardSerialString[sizeof(BoardSerial) * 2 + 1];
-  int k=0;
+  UINT64 BoardSerial = 0;
+  UINTN Prod = PROD_UNKNOWN;
+  UINTN Manu = MANU_UNKNOWN;
+
+  Status = mFwProtocol->GetModelRevision(&BoardRevision);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((EFI_D_ERROR,
+            "Failed to get board model: %r\n",
+            Status));
+  } else {
+    Prod = X(BoardRevision, 4, 11);
+  }
+
+  if (Prod > PROD_KNOWN) {
+    Prod = PROD_UNKNOWN;
+  }
+  Prod -= PROD_BASE;
+  AsciiSPrint(mSysInfoProductName,
+              sizeof(mSysInfoProductName),
+              "64-bit Raspberry Pi %a (rev. %x)",
+              ProductNames[Prod], BoardRevision);
+
+  Manu = X(BoardRevision, 16, 19);
+  if (Manu > MANU_KNOWN) {
+    Manu = MANU_UNKNOWN;
+  } else {
+    Manu += MANU_BASE;
+  }
+  AsciiSPrint(mSysInfoManufName,
+              sizeof(mSysInfoManufName),
+              "%a", ManufNames[Manu]);
+
+  I64ToHexString(mSysInfoSKU,
+                 sizeof(mSysInfoSKU),
+                 BoardRevision);
 
   Status = mFwProtocol->GetSerial(&BoardSerial);
   if (EFI_ERROR(Status)) {
-      //
-      // On error, just log and leave the template string
-      //
-      DEBUG ((EFI_D_ERROR, "Failed to get board serial number, status 0x%08X\n", Status));
-  } else {
-      //
-      // Convert to HEX string
-      //
-      I64ToHexString(&BoardSerialString[0], sizeof(BoardSerialString), BoardSerial);
-
-      //
-      // Update the Smbios Type1 information with the board serial string
-      //
-      mSysInfoType1Strings[mSysInfoType1.SerialNumber - 1] = &BoardSerialString[0];
-
-      DEBUG ((EFI_D_ERROR, "Board Serial Number: %lx\n", BoardSerial));
-
-      // construct string for making UUID for Rpi3 board from : fixed prefix + board serial number printed in hex
-      mSysInfoType1.Uuid.Data1= *(UINT32 *)"RPi3";
-      mSysInfoType1.Uuid.Data2=0x0;
-      mSysInfoType1.Uuid.Data3=0x0;
-      for(k=7; k>=0; k--){
-
-         mSysInfoType1.Uuid.Data4[7-k]=(UINT8)(BoardSerial>>(k*8));
-      };
-
-      //
-      // example of GUID created 52706932-0000-0000-0000-0000096554c1
-      //
-      // option: compute SHA1 hash of string from GUID constructed and use it as Uuid
-      //
+    DEBUG ((EFI_D_ERROR,
+            "Failed to get board serial: %r\n",
+            Status));
   }
+
+  I64ToHexString(mSysInfoSerial,
+                 sizeof(mSysInfoSerial),
+                 BoardSerial);
+
+  DEBUG ((EFI_D_ERROR, "Board Serial Number: %a\n", mSysInfoSerial));
+
+  mSysInfoType1.Uuid.Data1= *(UINT32 *)"RPi3";
+  mSysInfoType1.Uuid.Data2=0x0;
+  mSysInfoType1.Uuid.Data3=0x0;
+  CopyMem(mSysInfoType1.Uuid.Data4,
+          &BoardSerial, sizeof(BoardSerial));
 
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mSysInfoType1, mSysInfoType1Strings, NULL);
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE2  Board Information
+        SMBIOS data update  TYPE2  Board Information
 ************************************************************************/
 VOID
 BoardInfoUpdateSmbiosType2 (
-  VOID
-  )
+                            VOID
+                            )
 {
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mBoardInfoType2, mBoardInfoType2Strings, NULL);
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE3  Enclosure Information
+        SMBIOS data update  TYPE3  Enclosure Information
 ************************************************************************/
 VOID
 EnclosureInfoUpdateSmbiosType3 (
-  VOID
-  )
+                                VOID
+                                )
 {
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mEnclosureInfoType3, mEnclosureInfoType3Strings, NULL);
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE4  Processor Information
+        SMBIOS data update  TYPE4  Processor Information
 ************************************************************************/
 VOID
 ProcessorInfoUpdateSmbiosType4 (
-  IN UINTN MaxCpus
-  )
+                                IN UINTN MaxCpus
+                                )
 {
   EFI_STATUS Status;
   UINT32 Rate;
@@ -745,34 +794,34 @@ ProcessorInfoUpdateSmbiosType4 (
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE7  Cache Information
+        SMBIOS data update  TYPE7  Cache Information
 ************************************************************************/
 VOID
 CacheInfoUpdateSmbiosType7 (
-  VOID
-  )
+                            VOID
+                            )
 {
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mCacheInfoType7, mCacheInfoType7Strings, NULL);
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE9  System Slot Information
+        SMBIOS data update  TYPE9  System Slot Information
 ************************************************************************/
 VOID
 SysSlotInfoUpdateSmbiosType9 (
-  VOID
-  )
+                              VOID
+                              )
 {
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mSysSlotInfoType9, mSysSlotInfoType9Strings, NULL);
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE16  Physical Memory Array Information
+        SMBIOS data update  TYPE16  Physical Memory Array Information
 ************************************************************************/
 VOID
 PhyMemArrayInfoUpdateSmbiosType16 (
-  VOID
-  )
+                                   VOID
+                                   )
 {
   EFI_SMBIOS_HANDLE MemArraySmbiosHande;
 
@@ -785,23 +834,23 @@ PhyMemArrayInfoUpdateSmbiosType16 (
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE17  Memory Device Information
+        SMBIOS data update  TYPE17  Memory Device Information
 ************************************************************************/
 VOID
 MemDevInfoUpdateSmbiosType17 (
-  VOID
-  )
+                              VOID
+                              )
 {
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mMemDevInfoType17, mMemDevInfoType17Strings, NULL);
 }
 
 /***********************************************************************
-	SMBIOS data update  TYPE19  Memory Array Map Information
+        SMBIOS data update  TYPE19  Memory Array Map Information
 ************************************************************************/
 VOID
 MemArrMapInfoUpdateSmbiosType19 (
-  VOID
-  )
+                                 VOID
+                                 )
 {
   EFI_STATUS Status;
   UINT32 Base;
@@ -820,30 +869,30 @@ MemArrMapInfoUpdateSmbiosType19 (
 
 
 /***********************************************************************
-	SMBIOS data update  TYPE32  Boot Information
+        SMBIOS data update  TYPE32  Boot Information
 ************************************************************************/
 VOID
 BootInfoUpdateSmbiosType32 (
-  VOID
-  )
+                            VOID
+                            )
 {
   LogSmbiosData ((EFI_SMBIOS_TABLE_HEADER *)&mBootInfoType32, mBootInfoType32Strings, NULL);
 }
 
 /***********************************************************************
-	Driver Entry
+        Driver Entry
 ************************************************************************/
 EFI_STATUS
 EFIAPI
 PlatformSmbiosDriverEntryPoint (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  )
+                                IN EFI_HANDLE        ImageHandle,
+                                IN EFI_SYSTEM_TABLE  *SystemTable
+                                )
 {
   EFI_STATUS Status;
 
   Status = gBS->LocateProtocol (&gRaspberryPiFirmwareProtocolGuid, NULL,
-                  (VOID **)&mFwProtocol);
+                                (VOID **)&mFwProtocol);
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
     return Status;
@@ -857,7 +906,7 @@ PlatformSmbiosDriverEntryPoint (
 
   EnclosureInfoUpdateSmbiosType3();
 
-  ProcessorInfoUpdateSmbiosType4 (4);	//One example for creating and updating
+  ProcessorInfoUpdateSmbiosType4 (4);   //One example for creating and updating
 
   CacheInfoUpdateSmbiosType7();
 

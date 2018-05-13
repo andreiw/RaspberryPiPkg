@@ -50,6 +50,7 @@
   UefiLib
   UefiDriverEntryPoint
   DebugLib
+  PrintLib
 
 [Protocols]
   gEfiSmbiosProtocolGuid           # PROTOCOL SOMETIMES_CONSUMED
