@@ -321,7 +321,9 @@ DisplayDxeInitialize (
    * and we don't want to see corruption due to missing WB cache
    * maintenance. Performance with WT is good.
    */
-  Status = Cpu->SetMemoryAttributes(Cpu, FbBase, FbSize, EFI_MEMORY_WT);
+  Status = Cpu->SetMemoryAttributes(Cpu, FbBase,
+                                    ALIGN_VALUE(FbSize, EFI_PAGE_SIZE),
+                                    EFI_MEMORY_WT);
   if (Status != EFI_SUCCESS) {
     DEBUG((EFI_D_ERROR, "Couldn't set framebuffer attributes: %r\n", Status));
     return Status;
