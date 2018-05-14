@@ -1,4 +1,4 @@
-From 7c52e9a64102a7d3abf320bf18def9929dfe3247 Mon Sep 17 00:00:00 2001
+From 31ec7002f98fc5cd7fa9ab5a4352820cf10f61ed Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Thu, 22 Feb 2018 18:28:32 -0500
 Subject: [PATCH 2/5] UefiBootManagerLib: don't add duplicates in
@@ -17,10 +17,10 @@ Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
  3 files changed, 60 insertions(+), 4 deletions(-)
 
 diff --git a/MdeModulePkg/Include/Library/UefiBootManagerLib.h b/MdeModulePkg/Include/Library/UefiBootManagerLib.h
-index 97ac1f2..6b9bd52 100644
+index 1d862a4..3a06eeb 100644
 --- a/MdeModulePkg/Include/Library/UefiBootManagerLib.h
 +++ b/MdeModulePkg/Include/Library/UefiBootManagerLib.h
-@@ -227,7 +227,7 @@ EfiBootManagerSortLoadOptionVariable (
+@@ -237,7 +237,7 @@ EfiBootManagerSortLoadOptionVariable (
  /**
    Return the index of the load option in the load option array.
  
@@ -29,7 +29,7 @@ index 97ac1f2..6b9bd52 100644
    OptionType, Attributes, Description, FilePath and OptionalData are equal.
  
    @param Key    Pointer to the load option to be found.
-@@ -245,6 +245,27 @@ EfiBootManagerFindLoadOption (
+@@ -255,6 +255,27 @@ EfiBootManagerFindLoadOption (
    IN UINTN                              Count
    );
  
@@ -58,10 +58,10 @@ index 97ac1f2..6b9bd52 100644
  // Boot Manager hot key library functions.
  //
 diff --git a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
-index d684482..ee32318 100644
+index b842d58..347f31f 100644
 --- a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
 +++ b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
-@@ -2234,10 +2234,11 @@ EfiBootManagerRefreshAllBootOption (
+@@ -2265,10 +2265,11 @@ EfiBootManagerRefreshAllBootOption (
    }
  
    //
@@ -76,10 +76,10 @@ index d684482..ee32318 100644
        //
        // Try best to add the boot options so continue upon failure.
 diff --git a/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c b/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c
-index 32918ca..0d91db8 100644
+index f88f8e0..2ccf1d4 100644
 --- a/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c
 +++ b/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c
-@@ -510,7 +510,7 @@ EfiBootManagerInitializeLoadOption (
+@@ -514,7 +514,7 @@ EfiBootManagerInitializeLoadOption (
  /**
    Return the index of the load option in the load option array.
  
@@ -88,7 +88,7 @@ index 32918ca..0d91db8 100644
    OptionType, Attributes, Description, FilePath and OptionalData are equal.
  
    @param Key    Pointer to the load option to be found.
-@@ -545,6 +545,40 @@ EfiBootManagerFindLoadOption (
+@@ -549,6 +549,40 @@ EfiBootManagerFindLoadOption (
  }
  
  /**

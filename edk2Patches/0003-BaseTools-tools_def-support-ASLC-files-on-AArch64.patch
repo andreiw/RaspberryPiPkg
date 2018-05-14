@@ -1,4 +1,4 @@
-From 374ef3b404a90211a8c5d5c02021adae34b87475 Mon Sep 17 00:00:00 2001
+From 02e4c45a2daff426dfcbb777962ac894875466fb Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sun, 1 Apr 2018 02:58:31 -0400
 Subject: [PATCH 3/5] BaseTools/tools_def: support ASLC files on AArch64
@@ -11,10 +11,10 @@ Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/BaseTools/Conf/tools_def.template b/BaseTools/Conf/tools_def.template
-index 4d2a3b7..8ebb36d 100755
+index 03d7000..9f9df69 100755
 --- a/BaseTools/Conf/tools_def.template
 +++ b/BaseTools/Conf/tools_def.template
-@@ -4356,10 +4356,10 @@ DEFINE GCC_IA32_X64_DLINK_COMMON   = DEF(GCC_DLINK_FLAGS_COMMON) --gc-sections
+@@ -4545,10 +4545,10 @@ DEFINE GCC_IA32_X64_DLINK_COMMON   = DEF(GCC_DLINK_FLAGS_COMMON) --gc-sections
  DEFINE GCC_ARM_AARCH64_DLINK_COMMON= -Wl,--emit-relocs -nostdlib -Wl,--gc-sections -u $(IMAGE_ENTRY_POINT) -Wl,-e,$(IMAGE_ENTRY_POINT),-Map,$(DEST_DIR_DEBUG)/$(BASE_NAME).map
  DEFINE GCC_ARM_DLINK_FLAGS         = DEF(GCC_ARM_AARCH64_DLINK_COMMON) -z common-page-size=0x20
  DEFINE GCC_AARCH64_DLINK_FLAGS     = DEF(GCC_ARM_AARCH64_DLINK_COMMON) -z common-page-size=0x20

@@ -1,4 +1,4 @@
-From 5a7a0b4cb5098dc2deb13221ca4b1b09f9ac382a Mon Sep 17 00:00:00 2001
+From 3375bea3c89c86f6fbdbaf182f2a676efe777c9a Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sat, 21 Apr 2018 22:57:53 -0400
 Subject: [PATCH 4/5] BdsDxe: allow PlatformBootManagerWaitCallback to handle
@@ -13,7 +13,7 @@ Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/MdeModulePkg/Universal/BdsDxe/BdsEntry.c b/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
-index dccc490..26461ae 100644
+index 3191a98..d17fe43 100644
 --- a/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
 +++ b/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
 @@ -347,6 +347,8 @@ BdsWait (

@@ -38,11 +38,11 @@
   UefiDriverEntryPoint
 
 [Protocols]
-  gHardwareInterruptProtocolGuid
-  gEfiCpuArchProtocolGuid
+  gHardwareInterruptProtocolGuid  ## PRODUCES
+  gEfiCpuArchProtocolGuid         ## CONSUMES ## NOTIFY
 
 [FixedPcd]
   gEmbeddedTokenSpaceGuid.PcdInterruptBaseAddress
 
 [Depex]
-  gEfiCpuArchProtocolGuid
+  TRUE

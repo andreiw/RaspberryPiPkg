@@ -1,6 +1,6 @@
-From 5ac7fc286e908a5e99ca8cfab7c7df38f71a69f6 Mon Sep 17 00:00:00 2001
+From 84c4b9dac780976c560100a761f341462025d916 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
-Date: Sat, 21 Apr 2018 22:58:58 -0400
+Date: Mon, 14 May 2018 01:10:50 -0400
 Subject: [PATCH 5/5] BootGraphicsResourceTableDxe: properly handle SetBootLogo
  with NULL buffer
 
@@ -19,34 +19,40 @@ This new behavior means a few things:
 
 Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
 ---
- .../BootGraphicsResourceTableDxe.c                 | 36 +++++++++-------------
- 1 file changed, 15 insertions(+), 21 deletions(-)
+ .../BootGraphicsResourceTableDxe.c                 | 54 +++++++++-------------
+ 1 file changed, 22 insertions(+), 32 deletions(-)
 
 diff --git a/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c b/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
-index 6a7165a..1b15995 100644
+index cfd4be0..ef6e3de 100644
 --- a/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
 +++ b/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
-@@ -36,7 +36,6 @@ EFI_EVENT  mBootGraphicsReadyToBootEvent;
- UINTN      mBootGraphicsResourceTableKey = 0;
+@@ -145,14 +145,12 @@ EDKII_BOOT_LOGO2_PROTOCOL mBootLogo2ProtocolTemplate = {
  
- EFI_HANDLE                     mBootLogoHandle = NULL;
+ EFI_EVENT                      mBootGraphicsReadyToBootEvent;
+ UINTN                          mBootGraphicsResourceTableKey = 0;
 -BOOLEAN                        mIsLogoValid = FALSE;
  EFI_GRAPHICS_OUTPUT_BLT_PIXEL  *mLogoBltBuffer = NULL;
- UINTN                          mLogoDestX = 0;
- UINTN                          mLogoDestY = 0;
-@@ -63,7 +62,6 @@ BMP_IMAGE_HEADER  mBmpImageHeaderTemplate = {
- };
+ UINTN                          mLogoDestX  = 0;
+ UINTN                          mLogoDestY  = 0;
+ UINTN                          mLogoWidth  = 0;
+ UINTN                          mLogoHeight = 0;
+ BOOLEAN                        mAcpiBgrtInstalled     = FALSE;
+-BOOLEAN                        mAcpiBgrtStatusChanged = FALSE;
+ BOOLEAN                        mAcpiBgrtBufferChanged = FALSE;
  
- BOOLEAN  mAcpiBgrtInstalled = FALSE;
--BOOLEAN  mAcpiBgrtStatusChanged = FALSE;
- BOOLEAN  mAcpiBgrtBufferChanged = FALSE;
+ //
+@@ -255,9 +253,20 @@ SetBootLogo2 (
+   UINTN       BufferSize;
+   UINT32      Result32;
  
- EFI_ACPI_5_0_BOOT_GRAPHICS_RESOURCE_TABLE mBootGraphicsResourceTableTemplate = {
-@@ -151,9 +149,13 @@ SetBootLogo (
- {
-   UINT64                        BufferSize;
- 
++  //
++  // Update state
++  //
 +  mAcpiBgrtBufferChanged = TRUE;
++
++  //
++  // Free old logo buffer
++  //
 +  if (mLogoBltBuffer != NULL) {
 +    FreePool (mLogoBltBuffer);
 +    mLogoBltBuffer = NULL;
@@ -58,28 +64,35 @@ index 6a7165a..1b15995 100644
      return EFI_SUCCESS;
    }
  
-@@ -161,12 +163,6 @@ SetBootLogo (
-     return EFI_INVALID_PARAMETER;
+@@ -311,19 +320,6 @@ SetBootLogo2 (
    }
-   
+ 
+   //
+-  // Update state
+-  //
 -  mAcpiBgrtBufferChanged = TRUE;
+-
+-  //
+-  // Free old logo buffer
+-  //
 -  if (mLogoBltBuffer != NULL) {
 -    FreePool (mLogoBltBuffer);
 -    mLogoBltBuffer = NULL;
 -  }
--  
+-
+-  //
+   // Allocate new logo buffer
    //
-   // Ensure the Height * Width doesn't overflow
-   //
-@@ -193,7 +189,6 @@ SetBootLogo (
-   mLogoDestY = DestinationY;
-   mLogoWidth = Width;
-   mLogoHeight = Height;
+   mLogoBltBuffer = AllocateCopyPool (BufferSize, BltBuffer);
+@@ -335,7 +331,6 @@ SetBootLogo2 (
+   mLogoDestY   = DestinationY;
+   mLogoWidth   = Width;
+   mLogoHeight  = Height;
 -  mIsLogoValid = TRUE;
  
    return EFI_SUCCESS;
  }
-@@ -260,7 +255,7 @@ InstallBootGraphicsResourceTable (
+@@ -441,7 +436,7 @@ BgrtReadyToBootEventNotify (
    // Check whether Boot Graphics Resource Table is already installed.
    //
    if (mAcpiBgrtInstalled) {
@@ -88,44 +101,48 @@ index 6a7165a..1b15995 100644
        //
        // Nothing has changed
        //
-@@ -277,13 +272,13 @@ InstallBootGraphicsResourceTable (
-         return Status;
-       } 
+@@ -458,13 +453,13 @@ BgrtReadyToBootEventNotify (
+         return;
+       }
      }
 -  } else {
 -    //
--    // Check whether Logo exist.
+-    // Check whether Logo exists
 -    //
--    if ( mLogoBltBuffer == NULL) {
--      return EFI_NOT_FOUND;
+-    if (mLogoBltBuffer == NULL) {
+-      return;
 -    }
 +  }
 +
 +  //
 +  // Check whether Logo exist.
 +  //
-+  if ( mLogoBltBuffer == NULL) {
-+    return EFI_NOT_FOUND;
++  if (mLogoBltBuffer == NULL) {
++    return;
    }
  
    if (mAcpiBgrtBufferChanged) {
-@@ -361,7 +356,7 @@ InstallBootGraphicsResourceTable (
-     mBootGraphicsResourceTableTemplate.ImageOffsetY = (UINT32) mLogoDestY;
-   }
- 
--  mBootGraphicsResourceTableTemplate.Status = (UINT8) (mIsLogoValid ? EFI_ACPI_5_0_BGRT_STATUS_VALID : EFI_ACPI_5_0_BGRT_STATUS_INVALID);
+@@ -509,11 +504,7 @@ BgrtReadyToBootEventNotify (
+   //
+   // Update Status field of Boot Graphics Resource Table
+   //
+-  if (mIsLogoValid) {
+-    mBootGraphicsResourceTableTemplate.Status = EFI_ACPI_5_0_BGRT_STATUS_VALID;
+-  } else {
+-    mBootGraphicsResourceTableTemplate.Status = EFI_ACPI_5_0_BGRT_STATUS_INVALID;
+-  }
 +  mBootGraphicsResourceTableTemplate.Status = EFI_ACPI_5_0_BGRT_STATUS_VALID;
  
    //
-   // Update Checksum.
-@@ -382,7 +377,6 @@ InstallBootGraphicsResourceTable (
+   // Update Checksum of Boot Graphics Resource Table
+@@ -539,7 +530,6 @@ BgrtReadyToBootEventNotify (
    }
  
-   mAcpiBgrtInstalled = TRUE;
+   mAcpiBgrtInstalled     = TRUE;
 -  mAcpiBgrtStatusChanged = FALSE;
    mAcpiBgrtBufferChanged = FALSE;
-   
-   return Status;
+ }
+ 
 -- 
 2.5.3
 
