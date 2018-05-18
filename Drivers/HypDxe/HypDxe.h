@@ -15,7 +15,17 @@
 #ifndef HYP_DXE_H
 #define HYP_DXE_H
 
+#include <Uefi.h>
+#include <Chipset/AArch64.h>
+#include <Protocol/DebugSupport.h>
+
 EFI_STATUS InstallHiiPages(VOID);
+
+typedef struct HYP_EXC_CONTEXT {
+  EFI_SYSTEM_CONTEXT_AARCH64 Sys;
+  UINT64 PAR;
+  UINT64 Padding;
+} HYP_EXC_CONTEXT;
 
 extern void *ExceptionHandlersStart;
 

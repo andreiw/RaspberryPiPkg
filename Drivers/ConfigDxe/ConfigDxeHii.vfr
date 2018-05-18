@@ -13,7 +13,7 @@
  **/
 
 #include <Guid/HiiPlatformSetupFormset.h>
-#include "HypDxeFormSetGuid.h"
+#include "ConfigDxeFormSetGuid.h"
 
 typedef struct {
   UINT32 InEL1;
@@ -28,7 +28,7 @@ typedef struct {
 #define EFI_VARIABLE_READ_ONLY          0x00000008
 
 formset
-  guid      = HYPDXE_FORM_SET_GUID,
+  guid      = CONFIGDXE_FORM_SET_GUID,
   title     = STRING_TOKEN(STR_FORM_SET_TITLE),
   help      = STRING_TOKEN(STR_FORM_SET_TITLE_HELP),
   classguid = EFI_HII_PLATFORM_SETUP_FORMSET_GUID,
@@ -36,10 +36,10 @@ formset
   efivarstore VARSTORE_DATA,
     attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
     name  = BootInEL1,
-    guid  = HYPDXE_FORM_SET_GUID;
+    guid  = CONFIGDXE_FORM_SET_GUID;
 
   form formid = 0x1000,
-    title  = STRING_TOKEN(STR_MAIN_FORM_TITLE);
+    title  = STRING_TOKEN(STR_HYP_FORM_TITLE);
 
     oneof varid = BootInEL1.InEL1,
         prompt      = STRING_TOKEN(STR_SELECT_PROMPT),

@@ -15,11 +15,11 @@
 
 [Defines]
   INF_VERSION                    = 0x00010005
-  BASE_NAME                      = HypDxe
-  FILE_GUID                      = 744cbac2-b23f-4b92-bc8e-fb01ce5907b7
-  MODULE_TYPE                    = DXE_RUNTIME_DRIVER
+  BASE_NAME                      = ConfigDxe
+  FILE_GUID                      = 755cbac2-b23f-4b92-bc8e-fb01ce5907b7
+  MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 1.0
-  ENTRY_POINT                    = HypInitialize
+  ENTRY_POINT                    = ConfigInitialize
 
 #
 # The following information is for reference only and not required by the build
@@ -29,10 +29,9 @@
 #
 
 [Sources]
-  HypDxe.c
-
-[Sources.AArch64]
-  AArch64/ExceptionSupport.S
+  ConfigDxe.c
+  ConfigDxeHii.vfr
+  ConfigDxeHii.uni
 
 [Packages]
   ArmPkg/ArmPkg.dec
@@ -43,23 +42,18 @@
 
 [LibraryClasses]
   BaseLib
-  BaseMemoryLib
   DebugLib
   DxeServicesTableLib
-  MemoryAllocationLib
   PcdLib
   UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
   UefiDriverEntryPoint
-  UefiRuntimeLib
-  ArmLib
-  ArmSmcLib
+  HiiLib
 
 [Guids]
+  gConfigDxeFormSetGuid
 
 [Protocols]
-
-[FixedPcd]
-  gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize
 
 [Pcd]
   gRaspberryPiTokenSpaceGuid.PcdBootInEL1

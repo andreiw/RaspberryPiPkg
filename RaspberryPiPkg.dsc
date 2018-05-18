@@ -417,7 +417,7 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
 
 [PcdsDynamicHii.common.DEFAULT]
-  gRaspberryPiTokenSpaceGuid.PcdBootInEL1|L"BootInEL1"|gHypDxeFormSetGuid|0x0|FALSE
+  gRaspberryPiTokenSpaceGuid.PcdBootInEL1|L"BootInEL1"|gConfigDxeFormSetGuid|0x0|0
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|L"Timeout"|gEfiGlobalVariableGuid|0x0|5
   #
   # This is silly, but by pointing SetupConXXX and ConXXX PCDs to
@@ -516,6 +516,7 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
   RaspberryPiPkg/Drivers/Bcm2836InterruptDxe/Bcm2836InterruptDxe.inf
   RaspberryPiPkg/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
   RaspberryPiPkg/Drivers/RpiFdtDxe/RpiFdtDxe.inf
+  RaspberryPiPkg/Drivers/ConfigDxe/ConfigDxe.inf
   RaspberryPiPkg/Drivers/HypDxe/HypDxe.inf
   ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf

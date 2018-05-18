@@ -14,10 +14,10 @@
 
 #langdef en-US  "English"
 
-#string STR_FORM_SET_TITLE      #language en-US "HypDxe Configuration"
-#string STR_FORM_SET_TITLE_HELP #language en-US "Press <Enter> to configure HypDxe."
+#string STR_FORM_SET_TITLE      #language en-US "Raspberry Pi Configuration"
+#string STR_FORM_SET_TITLE_HELP #language en-US "Press <Enter> to configure system settings."
 
-#string STR_MAIN_FORM_TITLE     #language en-US "HypDxe Configuration"
+#string STR_HYP_FORM_TITLE      #language en-US "HypDxe Configuration"
 #string STR_NULL_STRING         #language en-US ""
 
 #string STR_SELECT_PROMPT       #language en-US "System Boot Mode"

@@ -16,21 +16,53 @@
 #include <HypDxe.h>
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
-#include <Chipset/AArch64.h>
-#include <Protocol/DebugSupport.h>
+#include <Library/BaseMemoryLib.h>
+#include <IndustryStandard/Bcm2836.h>
+#include <Library/ArmSmcLib.h>
 #include <Utils.h>
 
-#define HCR_RW_64 BIT31
-#define SPSR_D    BIT9
-#define SPSR_EL1  0x4
-#define SPSR_ELx  0x1
 #define ReadSysReg(var, reg) asm volatile("mrs %0, " #reg : "=r" (var))
 #define WriteSysReg(reg, val) asm volatile("msr " #reg ", %0"  : : "r" (val))
 #define ISB() asm volatile("isb");
+#define DSB_ISH() asm volatile("dsb ish");
 
-#define SPSR_2_EL(spsr) (_X(spsr, 2, 3))
-#define SPSR_2_BITNESS(spsr) (_X(spsr, 4, 4) ? 32 : 64)
-#define SPSR_2_SPSEL(spsr) (_X(spsr, 0, 0) ? 1 : 0)
+#define SPSR_2_EL(spsr) (X((spsr), 2, 3))
+#define SPSR_2_BITNESS(spsr) (X((spsr), 4, 4) ? 32 : 64)
+#define SPSR_2_SPSEL(spsr) (X((spsr), 0, 0) ? 1 : 0)
+
+#define ESR_EC_HVC64 0x16
+#define ESR_EC_SMC64 0x17
+#define ESR_2_IL(x)  (X((x), 25, 25))
+#define ESR_2_EC(x)  (X((x), 26, 31))
+#define ESR_2_ISS(x) (X((x), 0, 24))
+
+#define HCR_RW_64 BIT31
+#define HCR_TSC   BIT19
+#define SPSR_D    BIT9
+#define SPSR_EL1  0x4
+#define SPSR_ELx  0x1
+
+
+/*
+ * I share UEFI's MAIR.
+ */
+#define PTE_ATTR_MEM TT_ATTR_INDX_MEMORY_WRITE_BACK
+#define PTE_ATTR_DEV TT_ATTR_INDX_DEVICE_MEMORY
+#define PTE_RW       I(0x1, 6, 7)
+#define PTE_SH_INNER I(0x3, 8, 9)
+#define PTE_AF       I(0x1, 10, 10)
+
+#define MBYTES_2_BYTES(x) ((x) * 1024 * 1024)
+#define PTE_TYPE_TAB      0x3
+#define PTE_TYPE_BLOCK    0x1
+#define PTE_TYPE_BLOCK_L3 0x3
+#define PTE_2_TYPE(x)     ((x) & 0x3)
+/*
+ * Assumes 4K granularity.
+ */
+#define PTE_2_TAB(x)      ((VOID *)M((x), 47, 12))
+#define VA_2_PL1_IX(x)    X((x), 30, 38)
+#define VA_2_PL2_IX(x)    X((x), 21, 29)
 
 typedef struct UEFI_EL2_STATE
 {
@@ -74,11 +106,87 @@ CaptureEL2State(OUT UEFI_EL2_STATE *State)
 
 
 STATIC EFI_STATUS
+HypBuildPT(IN  UEFI_EL2_STATE *State)
+{
+  UINT64 *PL1;
+  EFI_PHYSICAL_ADDRESS A = 0;
+  EFI_PHYSICAL_ADDRESS E = BCM2836_SOC_REGISTERS +
+    BCM2836_SOC_REGISTER_LENGTH;
+  /*
+   * This is not a general purpose page table
+   * builder.
+   *
+   * T0SZ assumed 32-bit.
+   * Granule 4K.
+   */
+  ASSERT (X(State->Tcr, 0, 5) == (64 - 32));
+  ASSERT (X(State->Tcr, 14, 15) == 0x0);
+
+  PL1 = (VOID *) AllocateRuntimePages(1);
+  if (PL1 == NULL) {
+    DEBUG((EFI_D_ERROR, "Couldn't alloc L1 table\n"));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  ZeroMem(PL1, EFI_PAGE_SIZE);
+
+  while (A < E) {
+    /*
+     * Each PL2 covers 1GB, each entry being 2MB.
+     */
+    UINT64 *PL2;
+
+    UINTN ix1 = VA_2_PL1_IX(A);
+    UINTN ix2 = VA_2_PL2_IX(A);
+
+    PL2 = PTE_2_TAB(PL1[ix1]);
+    if (PTE_2_TYPE(PL1[ix1]) != PTE_TYPE_TAB) {
+      PL2 = (VOID *) AllocateRuntimePages(1);
+      if (PL2 == NULL) {
+        DEBUG((EFI_D_ERROR, "Couldn't alloc L2 table for %u\n",
+               ix1));
+        return EFI_OUT_OF_RESOURCES;
+      }
+
+      ZeroMem(PL2, EFI_PAGE_SIZE);
+      PL1[ix1] = ((UINTN) PL2) | PTE_TYPE_TAB;
+    }
+
+    PL2[ix2] = PTE_TYPE_BLOCK | PTE_RW | PTE_SH_INNER |
+      PTE_AF | A;
+    if (A >= BCM2836_SOC_REGISTERS) {
+      PL2[ix2] |= PTE_ATTR_DEV;
+    } else {
+      PL2[ix2] |= PTE_ATTR_MEM;
+    }
+
+    A += MBYTES_2_BYTES(2);
+  }
+
+  DEBUG((EFI_D_INFO, "Setting page table root to 0x%lx\n",
+         (UINT64) PL1));
+
+  DSB_ISH();
+  WriteSysReg(ttbr0_el2, PL1);
+  ISB();
+
+  asm volatile("tlbi alle2");
+  DSB_ISH();
+  ISB();
+
+  DEBUG((EFI_D_INFO, "It lives!\n"));
+
+  return EFI_SUCCESS;
+}
+
+
+STATIC EFI_STATUS
 HypModeInit(IN  UEFI_EL2_STATE *State,
             OUT EFI_PHYSICAL_ADDRESS *ExceptionStackTop)
 {
   VOID *Stack;
   UINTN StackSize;
+  EFI_STATUS Status;
 
   /*
     HCR_EL2         0x8000002 (TGE | SWIO)
@@ -123,10 +231,22 @@ HypModeInit(IN  UEFI_EL2_STATE *State,
   }
   DEBUG((EFI_D_INFO, "%u of EL2 stack at %p\n", StackSize, Stack));
 
-  /* EL1 is 64-bit. */
-  WriteSysReg(hcr_el2, HCR_RW_64);
+  /* EL1 is 64-bit, and we trap SMC calls. */
+  WriteSysReg(hcr_el2, HCR_RW_64 | HCR_TSC);
   *ExceptionStackTop = ((EFI_PHYSICAL_ADDRESS) Stack) + StackSize;
   WriteSysReg(vbar_el2, &ExceptionHandlersStart);
+
+  /*
+   * Initialize the page tables. We need EL2 ones (we cannot
+   * reuse UEFI's, because those are allocated as boot service data,
+   * and thus are gone after OS boots. We also need second stage
+   * tables so we can control the view of the OS into the physical
+   * address space.
+   */
+  Status = HypBuildPT(State);
+  if (Status != EFI_SUCCESS) {
+    return Status;
+  }
 
   return EFI_SUCCESS;
 }
@@ -187,21 +307,57 @@ HypSwitchToEL1(IN  UEFI_EL2_STATE *State,
 
 
 VOID
+HypExceptionFatal (
+  IN     EFI_EXCEPTION_TYPE ExceptionType,
+  IN OUT EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
+)
+{
+  if (SPSR_2_BITNESS(SystemContext->SPSR) == 32) {
+    DEBUG((EFI_D_ERROR, "Unexpected exception from AArch32!\n"));
+    goto done;
+  }
+
+  if (SPSR_2_EL(SystemContext->SPSR) == 2) {
+    DEBUG((EFI_D_ERROR, "Unexpected exception in EL2!\n"));
+    goto done;
+  }
+
+done:
+  DEBUG((EFI_D_ERROR, "FAR = 0x%lx\n",
+         SystemContext->FAR));
+  while(1);
+}
+
+
+VOID
 HypExceptionHandler (
   IN     EFI_EXCEPTION_TYPE ExceptionType,
   IN OUT EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
 )
 {
-  if (SPSR_2_BITNESS(SystemContext->SPSR) == 64) {
-    if (SPSR_2_EL(SystemContext->SPSR) == 2) {
-      DEBUG((EFI_D_ERROR, "Unexpected exception in EL2!\n"));
-      while(1);
-    }
+  if (SPSR_2_BITNESS(SystemContext->SPSR) == 32 ||
+      SPSR_2_EL(SystemContext->SPSR) == 2) {
+    HypExceptionFatal(ExceptionType, SystemContext);
+  }
 
-    DEBUG((EFI_D_ERROR, "Hello from EL%u, EC 0x%x ISS 0x%x\n",
+  switch (ESR_2_EC(SystemContext->ESR)) {
+  case ESR_EC_HVC64:
+    DEBUG((EFI_D_ERROR, "Hello from EL%u PC 0x%016lx SP 0x%016lx\n",
            SPSR_2_EL(SystemContext->SPSR),
-           AARCH64_ESR_EC(SystemContext->ESR),
-           AARCH64_ESR_ISS(SystemContext->ESR)));
+           SystemContext->ELR, SystemContext->SP));
+    break;
+  case ESR_EC_SMC64: {
+    DEBUG((EFI_D_INFO, "0x%lx: Forwarding SMC(%u) %x %x %x %x\n",
+           SystemContext->ELR, ESR_2_ISS(SystemContext->ESR),
+           SystemContext->X0, SystemContext->X1,
+           SystemContext->X2, SystemContext->X3));
+    ArmCallSmc((ARM_SMC_ARGS *) &(SystemContext->X0));
+    SystemContext->ELR += 4;
+    break;
+  }
+
+  default:
+    HypExceptionFatal(ExceptionType, SystemContext);
   }
 }
 
@@ -238,18 +394,6 @@ HypInitialize(
     WriteSysReg(daif, DAIF);
 
     asm volatile("hvc #0x1337");
-  }
-
-  /*
-   * Update regardless to create NV variable. The
-   * config VFR won't work otherwise, failing to save.
-   */
-  PcdSet32 (PcdBootInEL1, DoEL1);
-
-  Status = InstallHiiPages();
-  if (Status != EFI_SUCCESS) {
-    DEBUG((EFI_D_ERROR, "Couldn't install HypDxe configuration pages: %r\n",
-           Status));
   }
 
   return EFI_SUCCESS;

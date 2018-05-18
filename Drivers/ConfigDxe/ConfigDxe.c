@@ -14,12 +14,14 @@
 
 #include <Uefi.h>
 #include <Library/HiiLib.h>
+#include <Library/DebugLib.h>
 #include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/DevicePathLib.h>
-#include "HypDxeFormSetGuid.h"
+#include "ConfigDxeFormSetGuid.h"
 
-extern UINT8 HypDxeHiiBin[];
-extern UINT8 HypDxeStrings[];
+extern UINT8 ConfigDxeHiiBin[];
+extern UINT8 ConfigDxeStrings[];
 
 typedef struct {
   VENDOR_DEVICE_PATH VendorDevicePath;
@@ -36,7 +38,7 @@ STATIC HII_VENDOR_DEVICE_PATH mVendorDevicePath = {
         (UINT8) ((sizeof (VENDOR_DEVICE_PATH)) >> 8)
       }
     },
-    HYPDXE_FORM_SET_GUID
+    CONFIGDXE_FORM_SET_GUID
   },
   {
     END_DEVICE_PATH_TYPE,
@@ -49,7 +51,7 @@ STATIC HII_VENDOR_DEVICE_PATH mVendorDevicePath = {
 };
 
 
-EFI_STATUS
+STATIC EFI_STATUS
 InstallHiiPages (
   VOID
   )
@@ -67,10 +69,10 @@ InstallHiiPages (
     return Status;
   }
 
-  HiiHandle = HiiAddPackages (&gHypDxeFormSetGuid,
+  HiiHandle = HiiAddPackages (&gConfigDxeFormSetGuid,
                               DriverHandle,
-                              HypDxeStrings,
-                              HypDxeHiiBin,
+                              ConfigDxeStrings,
+                              ConfigDxeHiiBin,
                               NULL);
 
   if (HiiHandle == NULL) {
@@ -82,3 +84,55 @@ InstallHiiPages (
   }
   return EFI_SUCCESS;
 }
+
+
+STATIC EFI_STATUS
+SetupVariables (
+  VOID
+  )
+{
+  UINTN Size;
+  UINT32 BootInEL1;
+  EFI_STATUS Status;
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"BootInEL1",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &BootInEL1);
+  if (EFI_ERROR (Status)) {
+    /*
+     * Create the var. If we don't, forms won't
+     * be able to update.
+     */
+    DEBUG((EFI_D_INFO, "-------- Created BootInEL1 variable\n"));
+    PcdSet32 (PcdBootInEL1, 0);
+  }
+
+  return EFI_SUCCESS;
+}
+  
+
+EFI_STATUS
+EFIAPI
+ConfigInitialize(
+  IN EFI_HANDLE ImageHandle,
+  IN EFI_SYSTEM_TABLE *SystemTable
+  )
+{
+  EFI_STATUS Status;
+
+  Status = SetupVariables();
+  if (Status != EFI_SUCCESS) {
+    DEBUG((EFI_D_ERROR, "Couldn't not setup NV vars: %r\n",
+           Status));
+  }
+
+  Status = InstallHiiPages();
+  if (Status != EFI_SUCCESS) {
+    DEBUG((EFI_D_ERROR, "Couldn't install ConfigDxe configuration pages: %r\n",
+           Status));
+  }
+
+  return EFI_SUCCESS;
+}
+

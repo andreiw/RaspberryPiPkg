@@ -15,14 +15,17 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#define _IX_BITS(sm, bg) (bg - sm + 1)
-#define _IX_MASK(sm, bg) ((1 << _IX_BITS(sm, bg)) - 1)
-#define _X(val, sm, bg) (val >> sm) & _IX_MASK(sm, bg)
-#define X(val, ix1, ix2) ((ix1 < ix2) ? _X(val, ix1, ix2) :     \
-                          _X(val, ix2, ix1))
+#define _IX_BITS(sm, bg) ((bg) - (sm) + 1)
+#define _IX_MASK(sm, bg) ((1ul << _IX_BITS((sm), (bg))) - 1)
+#define _X(val, sm, bg) ((val) >> (sm)) & _IX_MASK((sm), (bg))
+#define X(val, ix1, ix2) (((ix1) < (ix2)) ? _X((val), (ix1), (ix2)) :   \
+                          _X((val), (ix2), (ix1)))
 
-#define _I(val, sm, bg)  ((val & _IX_MASK(sm, bg)) << sm)
-#define I(val, ix1, ix2) ((ix1 < ix2) ? _I(val, ix1, ix2) :     \
-                          _I(val, ix2, ix1))
+#define _I(val, sm, bg)  (((val) & _IX_MASK((sm), (bg))) << (sm))
+#define I(val, ix1, ix2) (((ix1) < (ix2)) ? _I((val), (ix1), (ix2)) :   \
+                          _I((val), (ix2), (ix1)))
+#define _M(val, sm, bg)  ((val) & (_IX_MASK((sm), (bg)) << (sm)))
+#define M(val, ix1, ix2) (((ix1) < (ix2)) ? _M((val), (ix1), (ix2)) :   \
+                          _M((val), (ix2), (ix1)))
 
 #endif /* UTILS_H */
