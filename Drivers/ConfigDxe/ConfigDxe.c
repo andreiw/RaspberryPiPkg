@@ -18,10 +18,14 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/DevicePathLib.h>
+#include <Protocol/RaspberryPiFirmware.h>
+#include <IndustryStandard/RpiFirmware.h>
 #include "ConfigDxeFormSetGuid.h"
 
 extern UINT8 ConfigDxeHiiBin[];
 extern UINT8 ConfigDxeStrings[];
+
+STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL *mFwProtocol;
 
 typedef struct {
   VENDOR_DEVICE_PATH VendorDevicePath;
@@ -92,25 +96,81 @@ SetupVariables (
   )
 {
   UINTN Size;
-  UINT32 BootInEL1;
+  UINT32 Var32;
   EFI_STATUS Status;
 
+  /*
+   * Create the vars with default value.
+   * If we don't, forms won't be able to update.
+   */
+
   Size = sizeof (UINT32);
-  Status = gRT->GetVariable(L"BootInEL1",
+  Status = gRT->GetVariable(L"HypBootInEL1",
                             &gConfigDxeFormSetGuid,
-                            NULL,  &Size, &BootInEL1);
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdBootInEL1, PcdGet32 (PcdBootInEL1));
+  }
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"CpuClock",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
   if (EFI_ERROR (Status)) {
     /*
      * Create the var. If we don't, forms won't
      * be able to update.
      */
-    DEBUG((EFI_D_INFO, "-------- Created BootInEL1 variable\n"));
-    PcdSet32 (PcdBootInEL1, 0);
+    PcdSet32 (PcdCpuClock, PcdGet32 (PcdCpuClock));
   }
 
   return EFI_SUCCESS;
 }
   
+
+STATIC VOID
+ApplyVariables (
+  VOID
+  )
+{
+  EFI_STATUS Status;
+  UINT32 CpuClock = PcdGet32 (PcdCpuClock);
+  UINT32 Rate = 0;
+
+  if (CpuClock != 0) {
+    if (CpuClock == 2) {
+      /*
+       * Maximum: 1.2GHz on RPi 3, 1.4GHz on RPi 3B+, unless
+       * overridden with arm_freq=xxx in config.txt.
+       */
+      Status = mFwProtocol->GetMaxClockRate(RPI_FW_CLOCK_RATE_ARM, &Rate);
+      if (Status != EFI_SUCCESS) {
+        DEBUG((EFI_D_ERROR, "Couldn't get the max CPU speed, leaving as is: %r\n",
+               Status));
+      }
+    } else {
+      Rate = 600 * 1000000;
+    }
+  }
+
+  if (Rate != 0) {
+    DEBUG((EFI_D_INFO, "Setting CPU speed to %uHz\n", Rate));
+    Status = mFwProtocol->SetClockRate(RPI_FW_CLOCK_RATE_ARM, Rate);
+    if (Status != EFI_SUCCESS) {
+      DEBUG((EFI_D_ERROR, "Couldn't set the CPU speed: %r\n",
+             Status));
+    }
+  }
+
+  Status = mFwProtocol->GetClockRate(RPI_FW_CLOCK_RATE_ARM, &Rate);
+  if (Status != EFI_SUCCESS) {
+    DEBUG((EFI_D_ERROR, "Couldn't get the CPU speed: %r\n",
+           Status));
+  } else {
+    DEBUG((EFI_D_INFO, "Current CPU speed is %uHz\n", Rate));
+  }
+}
+
 
 EFI_STATUS
 EFIAPI
@@ -121,11 +181,23 @@ ConfigInitialize(
 {
   EFI_STATUS Status;
 
+  Status = gBS->LocateProtocol (&gRaspberryPiFirmwareProtocolGuid,
+                                NULL, (VOID **)&mFwProtocol);
+  ASSERT_EFI_ERROR (Status);
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
   Status = SetupVariables();
   if (Status != EFI_SUCCESS) {
     DEBUG((EFI_D_ERROR, "Couldn't not setup NV vars: %r\n",
            Status));
   }
+
+  /*
+   * FIXME: not the right place either.
+   */
+  ApplyVariables();
 
   Status = InstallHiiPages();
   if (Status != EFI_SUCCESS) {

@@ -782,8 +782,6 @@ ProcessorInfoUpdateSmbiosType4 (
     DEBUG ((DEBUG_INFO, "Max CPU speed: %uHz\n", Rate));
   }
 
-  mFwProtocol->SetClockRate(RPI_FW_CLOCK_RATE_ARM, Rate);
-
   Status = mFwProtocol->GetClockRate(RPI_FW_CLOCK_RATE_ARM, &Rate);
   if (Status != EFI_SUCCESS) {
     DEBUG ((DEBUG_ERROR, "Couldn't get the current CPU speed: %r\n", Status));

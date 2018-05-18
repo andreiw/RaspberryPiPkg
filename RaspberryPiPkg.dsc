@@ -417,7 +417,8 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
 
 [PcdsDynamicHii.common.DEFAULT]
-  gRaspberryPiTokenSpaceGuid.PcdBootInEL1|L"BootInEL1"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdCpuClock|L"CpuClock"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdBootInEL1|L"HypBootInEL1"|gConfigDxeFormSetGuid|0x0|0
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|L"Timeout"|gEfiGlobalVariableGuid|0x0|5
   #
   # This is silly, but by pointing SetupConXXX and ConXXX PCDs to

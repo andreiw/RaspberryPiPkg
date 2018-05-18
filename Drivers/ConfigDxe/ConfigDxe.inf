@@ -54,11 +54,13 @@
   gConfigDxeFormSetGuid
 
 [Protocols]
+  gRaspberryPiFirmwareProtocolGuid ## CONSUMES
 
 [Pcd]
   gRaspberryPiTokenSpaceGuid.PcdBootInEL1
+  gRaspberryPiTokenSpaceGuid.PcdCpuClock
 
 [FeaturePcd]
 
 [Depex]
-  gPcdProtocolGuid
+  gPcdProtocolGuid AND gRaspberryPiFirmwareProtocolGuid

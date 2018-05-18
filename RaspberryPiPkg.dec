@@ -41,3 +41,4 @@
 
 [PcdsFixedAtBuild, PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
   gRaspberryPiTokenSpaceGuid.PcdBootInEL1|0|UINT32|0x00000009
+  gRaspberryPiTokenSpaceGuid.PcdCpuClock|0|UINT32|0x0000000a

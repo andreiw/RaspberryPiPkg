@@ -16,8 +16,21 @@
 #include "ConfigDxeFormSetGuid.h"
 
 typedef struct {
+  /*
+   * 0 - boot in EL2.
+   * 1 - boot in EL1.
+   */
   UINT32 InEL1;
-} VARSTORE_DATA;
+} HYP_VARSTORE_DATA;
+
+typedef struct {
+  /*
+   * 0 - don't change the clock rate.
+   * 1 - 600MHz.
+   * 2 - maximum.
+   */
+  UINT32 Clock;
+} CPU_CLOCK_VARSTORE_DATA;
 
 //
 // EFI Variable attributes
@@ -33,24 +46,54 @@ formset
   help      = STRING_TOKEN(STR_FORM_SET_TITLE_HELP),
   classguid = EFI_HII_PLATFORM_SETUP_FORMSET_GUID,
 
-  efivarstore VARSTORE_DATA,
+  efivarstore HYP_VARSTORE_DATA,
     attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
-    name  = BootInEL1,
+    name  = HypBootInEL1,
     guid  = CONFIGDXE_FORM_SET_GUID;
+
+  efivarstore CPU_CLOCK_VARSTORE_DATA,
+    attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+    name  = CpuClock,
+    guid  = CONFIGDXE_FORM_SET_GUID;
+
+  form formid = 1,
+    title  = STRING_TOKEN(STR_FORM_SET_TITLE);
+    subtitle text = STRING_TOKEN(STR_NULL_STRING);
+
+    goto 0x1000,
+      prompt = STRING_TOKEN(STR_HYP_FORM_TITLE),
+      help = STRING_TOKEN(STR_NULL_STRING);
+
+    goto 0x1001,
+      prompt = STRING_TOKEN(STR_CLOCK_FORM_TITLE),
+      help = STRING_TOKEN(STR_NULL_STRING);
+  endform;
 
   form formid = 0x1000,
     title  = STRING_TOKEN(STR_HYP_FORM_TITLE);
+    subtitle text = STRING_TOKEN(STR_HYP_FORM_SUBTITLE);
 
-    oneof varid = BootInEL1.InEL1,
-        prompt      = STRING_TOKEN(STR_SELECT_PROMPT),
-        help        = STRING_TOKEN(STR_SELECT_HELP),
+    oneof varid = HypBootInEL1.InEL1,
+        prompt      = STRING_TOKEN(STR_HYP_EL_SELECT_PROMPT),
+        help        = STRING_TOKEN(STR_HYP_EL_SELECT_HELP),
         flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-        option text = STRING_TOKEN(STR_SELECT_EL2), value = 0, flags = DEFAULT;
-        option text = STRING_TOKEN(STR_SELECT_EL1), value = 1, flags = DEFAULT;
+        option text = STRING_TOKEN(STR_HYP_EL_SELECT_EL2), value = 0, flags = DEFAULT;
+        option text = STRING_TOKEN(STR_HYP_EL_SELECT_EL1), value = 1, flags = 0;
     endoneof;
+  endform;
 
-    subtitle text = STRING_TOKEN(STR_NULL_STRING);
+  form formid = 0x1001,
+    title  = STRING_TOKEN(STR_CLOCK_FORM_TITLE);
+    subtitle text = STRING_TOKEN(STR_CLOCK_FORM_SUBTITLE);
 
+    oneof varid = CpuClock.Clock,
+        prompt      = STRING_TOKEN(STR_CLOCK_CPU_SELECT_PROMPT),
+        help        = STRING_TOKEN(STR_CLOCK_CPU_SELECT_HELP),
+        flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+        option text = STRING_TOKEN(STR_CLOCK_CPU_NA), value = 0, flags = DEFAULT;
+        option text = STRING_TOKEN(STR_CLOCK_CPU_600MHZ), value = 1, flags = 0;
+        option text = STRING_TOKEN(STR_CLOCK_CPU_MAX), value = 2, flags = 0;
+    endoneof;
   endform;
 
 endformset;
