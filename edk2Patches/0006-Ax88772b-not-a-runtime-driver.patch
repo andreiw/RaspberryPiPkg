@@ -1,0 +1,64 @@
+From ab68eb589c7e3ac6f2b1e044751e2637ae554786 Mon Sep 17 00:00:00 2001
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
+Date: Fri, 18 May 2018 22:54:14 -0400
+Subject: [PATCH 6/6] Ax88772b: not a runtime driver
+
+No need to tie up precious memory.
+
+Also fix the depex and library deps.
+
+Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+---
+ .../Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf         | 17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
+
+diff --git a/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf b/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
+index 32a62f6..e7c2148 100644
+--- a/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
++++ b/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
+@@ -18,7 +18,7 @@
+   INF_VERSION                    = 0x00010018
+   BASE_NAME                      = Ax88772b
+   FILE_GUID                      = 95C8D770-E1A4-4422-B263-E32F14FD8186
+-  MODULE_TYPE                    = DXE_RUNTIME_DRIVER
++  MODULE_TYPE                    = DXE_DRIVER
+   VERSION_STRING                 = 1.0
+ 
+   ENTRY_POINT                    = EntryPoint
+@@ -34,7 +34,6 @@
+   DriverBinding.c
+   SimpleNetwork.c
+ 
+-
+ [Packages]
+   MdePkg/MdePkg.dec
+   MdeModulePkg/MdeModulePkg.dec
+@@ -44,7 +43,6 @@
+   UefiBootServicesTableLib
+   BaseMemoryLib
+   DebugLib
+-  UefiRuntimeLib
+   UefiDriverEntryPoint
+ 
+ [Protocols]  
+@@ -53,15 +51,4 @@
+   gEfiUsbIoProtocolGuid                ## TO_START
+ 
+ [Depex]
+-  gEfiBdsArchProtocolGuid AND
+-  gEfiCpuArchProtocolGuid AND
+-  gEfiMetronomeArchProtocolGuid AND
+-  gEfiMonotonicCounterArchProtocolGuid AND
+-  gEfiRealTimeClockArchProtocolGuid AND
+-  gEfiResetArchProtocolGuid AND
+-  gEfiRuntimeArchProtocolGuid AND
+-  gEfiSecurityArchProtocolGuid AND
+-  gEfiTimerArchProtocolGuid AND
+-  gEfiVariableWriteArchProtocolGuid AND
+-  gEfiVariableArchProtocolGuid AND
+-  gEfiWatchdogTimerArchProtocolGuid
++  TRUE
+\ No newline at end of file
+-- 
+2.5.3
+

@@ -1,7 +1,7 @@
 From 02e4c45a2daff426dfcbb777962ac894875466fb Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sun, 1 Apr 2018 02:58:31 -0400
-Subject: [PATCH 3/5] BaseTools/tools_def: support ASLC files on AArch64
+Subject: [PATCH 3/6] BaseTools/tools_def: support ASLC files on AArch64
 
 These weren't being built correctly.
 
