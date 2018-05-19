@@ -12,44 +12,13 @@
  *
  **/
 
-#ifndef HYP_DXE_H
-#define HYP_DXE_H
+#include "HypDxe.h"
 
-#include <Uefi.h>
-#include <Chipset/AArch64.h>
-#include <Protocol/DebugSupport.h>
-#include <Library/DebugLib.h>
-#include <Utils.h>
-
-#define MMIO_EMU_START 0x80000000
-
-extern void *ExceptionHandlersStart;
-
-VOID SwitchStackAndEL(EFI_PHYSICAL_ADDRESS SPEL2);
 
 EFI_STATUS
 HypMmio(
   IN OUT EFI_SYSTEM_CONTEXT_AARCH64 *Context
-  );
-
-EFI_STATUS
-HypMemInit(
-  IN  EFI_HANDLE ImageHandle
-  );
-
-VOID *
-HypMemAlloc(
-  IN  UINTN Pages
-  );
-
-BOOLEAN
-HypMemIsHyp2M(
-  IN  EFI_PHYSICAL_ADDRESS A
-  );
-
-BOOLEAN
-HypMemIsHypAddr(
-  IN  EFI_PHYSICAL_ADDRESS A
-  );
-
-#endif /* HYP_DXE_H */
+  )
+{
+  return EFI_UNSUPPORTED;
+}

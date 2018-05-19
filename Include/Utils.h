@@ -28,4 +28,7 @@
 #define M(val, ix1, ix2) (((ix1) < (ix2)) ? _M((val), (ix1), (ix2)) :   \
                           _M((val), (ix2), (ix1)))
 
+#define A_UP(Value, Alignment)  (((Value) + (Alignment) - 1) & (~((Alignment) - 1)))
+#define A_DOWN(Value, Alignment) ((Value) & (~((Alignment) - 1)))
+
 #endif /* UTILS_H */

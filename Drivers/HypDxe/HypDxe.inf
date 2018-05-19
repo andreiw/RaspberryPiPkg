@@ -30,6 +30,8 @@
 
 [Sources]
   HypDxe.c
+  HypMmio.c
+  HypMem.c
 
 [Sources.AArch64]
   AArch64/ExceptionSupport.S
@@ -45,18 +47,16 @@
   BaseLib
   BaseMemoryLib
   DebugLib
-  DxeServicesTableLib
-  MemoryAllocationLib
   PcdLib
   UefiBootServicesTableLib
   UefiDriverEntryPoint
-  UefiRuntimeLib
   ArmLib
   ArmSmcLib
 
 [Guids]
 
 [Protocols]
+  gEfiLoadedImageProtocolGuid
 
 [FixedPcd]
   gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize
