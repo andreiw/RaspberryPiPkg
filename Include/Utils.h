@@ -31,4 +31,10 @@
 #define A_UP(Value, Alignment)  (((Value) + (Alignment) - 1) & (~((Alignment) - 1)))
 #define A_DOWN(Value, Alignment) ((Value) & (~((Alignment) - 1)))
 
+#define VP(x) ((VOID *)(x))
+#define U8P(x) ((UINT8 *)(x))
+#define UN(x) ((UINTN)(x))
+
+#define ELES(x) (sizeof((x)) / sizeof((x)[0]))
+
 #endif /* UTILS_H */

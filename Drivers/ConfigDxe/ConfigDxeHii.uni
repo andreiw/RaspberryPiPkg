@@ -23,7 +23,7 @@
  * HypDxe settings go here.
  */
 #string STR_HYP_FORM_TITLE       #language en-US "HypDxe Configuration"
-#string STR_HYP_FORM_SUBTITLE    #language en-US "Experimental: do not use"
+#string STR_HYP_FORM_SUBTITLE    #language en-US "Experimental Windows on Arm Support"
 
 #string STR_HYP_EL_SELECT_PROMPT #language en-US "System Boot Mode"
 #string STR_HYP_EL_SELECT_HELP   #language en-US "Boot UEFI/OS in EL1 or EL2"

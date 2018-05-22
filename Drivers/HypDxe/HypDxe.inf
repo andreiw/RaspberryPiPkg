@@ -32,9 +32,14 @@
   HypDxe.c
   HypMmio.c
   HypMem.c
+  HypWS.c
+  HypSMC.c
+  HypSMP.c
 
 [Sources.AArch64]
   AArch64/ExceptionSupport.S
+  AArch64/SecondaryStartup.S
+  AArch64/SwitchStackAndEL.S
 
 [Packages]
   ArmPkg/ArmPkg.dec
@@ -52,6 +57,7 @@
   UefiDriverEntryPoint
   ArmLib
   ArmSmcLib
+  CacheMaintenanceLib
 
 [Guids]
 

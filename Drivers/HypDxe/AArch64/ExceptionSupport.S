@@ -99,9 +99,7 @@
   UINT64  Padding;0x328   // Required for stack alignment
 */
 
-GCC_ASM_EXPORT(SwitchStackAndEL)
 GCC_ASM_EXPORT(ExceptionHandlersEnd)
-GCC_ASM_EXPORT(CommonCExceptionHandler)
 
 .text
 
@@ -328,11 +326,4 @@ ASM_PFX(CommonExceptionEntry):
   // The handler can not change the SP.
   add      sp, sp, #FP_CONTEXT_SIZE + SYS_CONTEXT_SIZE
 
-  eret
-
-ASM_PFX(SwitchStackAndEL):
-  mov x1, sp
-  mov sp, x0
-  msr sp_el1, x1
-  msr elr_el2, x30
   eret

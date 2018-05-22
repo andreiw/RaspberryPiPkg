@@ -12,96 +12,22 @@
  *
  **/
 
-#include <HypDxe.h>
+#include "HypDxe.h"
+#include "ArmDefs.h"
 #include <Library/BaseMemoryLib.h>
 #include <IndustryStandard/Bcm2836.h>
-#include <Library/ArmSmcLib.h>
-
-#define ReadSysReg(var, reg) asm volatile("mrs %0, " #reg : "=r" (var))
-#define WriteSysReg(reg, val) asm volatile("msr " #reg ", %0"  : : "r" (val))
-#define ISB() asm volatile("isb");
-#define DSB_ISH() asm volatile("dsb ish");
-
-#define SPSR_2_EL(spsr) (X((spsr), 2, 3))
-#define SPSR_2_BITNESS(spsr) (X((spsr), 4, 4) ? 32 : 64)
-#define SPSR_2_SPSEL(spsr) (X((spsr), 0, 0) ? 1 : 0)
-
-#define ESR_EC_HVC64   0x16
-#define ESR_EC_SMC64   0x17
-#define ESR_EC_IABT_LO 0x20
-#define ESR_EC_DABT_LO 0x24
-#define ESR_2_IL(x)  (X((x), 25, 25))
-#define ESR_2_EC(x)  (X((x), 26, 31))
-#define ESR_2_ISS(x) (X((x), 0, 24))
-
-#define HCR_VM    BIT0
-#define HCR_AMO   BIT5
-#define HCR_VSE   BIT8
-#define HCR_TSC   BIT19
-#define HCR_RW_64 BIT31
-#define SPSR_D    BIT9
-#define SPSR_EL1  0x4
-#define SPSR_ELx  0x1
 
 
-/*
- * I share UEFI's MAIR.
- */
-#define PTE_ATTR_MEM    TT_ATTR_INDX_MEMORY_WRITE_BACK
-#define PTE_ATTR_DEV    TT_ATTR_INDX_DEVICE_MEMORY
-/*
- * Device is GRE (to allow EL1 to do whatever).
- * Memory is Inner-WB Outer-WB.
- */
-#define PTE_S2_ATTR_MEM (I(3, 4, 5) | I(3, 2, 3))
-#define PTE_S2_ATTR_DEV (I(0, 4, 5) | I(3, 2, 3))
-#define PTE_RW          I(0x1, 6, 7)
-#define PTE_S2_RW       I(0x3, 6, 7)
-#define PTE_S2_RO       I(0x1, 6, 7)
-#define PTE_SH_INNER    I(0x3, 8, 9)
-#define PTE_AF          I(0x1, 10, 10)
-
-#define PTE_TYPE_TAB      0x3
-#define PTE_TYPE_BLOCK    0x1
-#define PTE_TYPE_BLOCK_L3 0x3
-#define PTE_2_TYPE(x)     ((x) & 0x3)
-/*
- * Assumes 4K granularity.
- */
-#define PTE_2_TAB(x)      ((VOID *)M((x), 47, 12))
-#define VA_2_PL1_IX(x)    X((x), 30, 38)
-#define VA_2_PL2_IX(x)    X((x), 21, 29)
-#define VA_2_PL3_IX(x)    X((x), 20, 12)
-
-typedef struct UEFI_EL2_STATE
-{
-  UINT64 Hcr;
-  UINT64 Cptr;
-  UINT64 Cnthctl;
-  UINT64 Cntvoff;
-  UINT64 Vpidr;
-  UINT64 Vmpidr;
-  UINT64 Vttbr;
-  UINT64 Vtcr;
-  UINT64 Sctlr;
-  UINT64 Actlr;
-  UINT64 Tcr;
-  UINT64 Ttbr0;
-  UINT64 Vbar;
-  UINT64 Mair;
-  UINT64 Spsel;
-} UEFI_EL2_STATE;
-
-
-STATIC VOID
-CaptureEL2State(OUT UEFI_EL2_STATE *State)
+VOID
+CaptureEL2State(
+  OUT CAPTURED_EL2_STATE *State
+)
 {
   ReadSysReg(State->Hcr, hcr_el2);
   ReadSysReg(State->Cptr, cptr_el2);
   ReadSysReg(State->Cnthctl, cnthctl_el2);
   ReadSysReg(State->Cntvoff, cntvoff_el2);
   ReadSysReg(State->Vpidr, vpidr_el2);
-  ReadSysReg(State->Vmpidr, vmpidr_el2);
   ReadSysReg(State->Vttbr, vttbr_el2);
   ReadSysReg(State->Vtcr, vtcr_el2);
   ReadSysReg(State->Sctlr, sctlr_el2);
@@ -110,12 +36,11 @@ CaptureEL2State(OUT UEFI_EL2_STATE *State)
   ReadSysReg(State->Tcr, tcr_el2);
   ReadSysReg(State->Vbar, vbar_el2);
   ReadSysReg(State->Mair, mair_el2);
-  ReadSysReg(State->Spsel, spsel);
 }
 
 
 STATIC EFI_STATUS
-HypBuildS2PT(IN  UEFI_EL2_STATE *State)
+HypBuildS2PT(IN  CAPTURED_EL2_STATE *State)
 {
   UINT64 Vtcr;
   UINT64 *PL1;
@@ -221,18 +146,14 @@ HypBuildS2PT(IN  UEFI_EL2_STATE *State)
   DSB_ISH();
   WriteSysReg(vtcr_el2, Vtcr);
   WriteSysReg(vttbr_el2, PL1);
-  ISB();
-
-  asm volatile("tlbi vmalls12e1");
-  DSB_ISH();
-  ISB();
+  TLBI_S12();
 
   return EFI_SUCCESS;
 }
 
 
 STATIC EFI_STATUS
-HypBuildPT(IN  UEFI_EL2_STATE *State)
+HypBuildPT(IN  CAPTURED_EL2_STATE *State)
 {
   UINT64 *PL1;
   EFI_PHYSICAL_ADDRESS A = 0;
@@ -307,7 +228,7 @@ HypBuildPT(IN  UEFI_EL2_STATE *State)
 
 
 STATIC EFI_STATUS
-HypModeInit(IN  UEFI_EL2_STATE *State,
+HypModeInit(IN  CAPTURED_EL2_STATE *State,
             OUT EFI_PHYSICAL_ADDRESS *ExceptionStackTop)
 {
   VOID *Stack;
@@ -320,7 +241,6 @@ HypModeInit(IN  UEFI_EL2_STATE *State,
     CNTHCTL_EL2     0x3       (not trapped)
     CNTVOFF_EL2     0x0
     VPIDR_EL2       0x410FD034
-    VMPIDR_EL2      0x80000000
     VTTBR_EL2       0x0
     VTCR_EL2        0x80000110 (48-bit, inner WBWA, outer non-cacheable)
     SCTLR_EL2       0x30C5183D (I, C, M)
@@ -330,7 +250,6 @@ HypModeInit(IN  UEFI_EL2_STATE *State,
                                 inner shareable, 4K, 32-bit physical)
     VBAR_EL2        0x37203000
     MAIR_EL2        0xFFBB4400
-    SPSEL           0x1
   */
 
   DEBUG((EFI_D_INFO, "HCR_EL2    \t0x%lx\n", State->Hcr));
@@ -338,7 +257,6 @@ HypModeInit(IN  UEFI_EL2_STATE *State,
   DEBUG((EFI_D_INFO, "CNTHCTL_EL2\t0x%lx\n", State->Cnthctl));
   DEBUG((EFI_D_INFO, "CNTVOFF_EL2\t0x%lx\n", State->Cntvoff));
   DEBUG((EFI_D_INFO, "VPIDR_EL2  \t0x%lx\n", State->Vpidr));
-  DEBUG((EFI_D_INFO, "VMPIDR_EL2 \t0x%lx\n", State->Vmpidr));
   DEBUG((EFI_D_INFO, "VTTBR_EL2  \t0x%lx\n", State->Vttbr));
   DEBUG((EFI_D_INFO, "VTCR_EL2   \t0x%lx\n", State->Vtcr));
   DEBUG((EFI_D_INFO, "SCTLR_EL2  \t0x%lx\n", State->Sctlr));
@@ -347,7 +265,6 @@ HypModeInit(IN  UEFI_EL2_STATE *State,
   DEBUG((EFI_D_INFO, "TCR_EL2    \t0x%lx\n", State->Tcr));
   DEBUG((EFI_D_INFO, "VBAR_EL2   \t0x%lx\n", State->Vbar));
   DEBUG((EFI_D_INFO, "MAIR_EL2   \t0x%lx\n", State->Mair));
-  DEBUG((EFI_D_INFO, "SPSEL      \t0x%lx\n", State->Spsel));
 
   StackSize = PcdGet32(PcdCPUCorePrimaryStackSize);
   Stack = HypMemAlloc(EFI_SIZE_TO_PAGES(StackSize));
@@ -384,22 +301,23 @@ HypModeInit(IN  UEFI_EL2_STATE *State,
 
 
 STATIC VOID
-HypSwitchToEL1(IN  UEFI_EL2_STATE *State,
+HypSwitchToEL1(IN  CAPTURED_EL2_STATE *State,
                IN  EFI_PHYSICAL_ADDRESS ExceptionStack)
 {
 
   UINT64 Tcr;
   UINT64 Sctlr;
+  UINT64 Spsel;
 
   DEBUG((EFI_D_INFO, "Switching to EL1\n"));
 
+  ReadSysReg(Spsel, spsel);
+  ASSERT (Spsel != 0);
+
   Sctlr =
     I(X(State->Sctlr, 0, 2), 0, 2)     | // C, A, M
-    I(1, 12, 12)                | // RES1
     I(X(State->Sctlr, 12, 12), 12, 12) | // I
-    I(1, 20, 20)                | // RES1
-    I(0x3, 22, 23)              | // RES1
-    I(0x3, 28, 29);               // RES1
+    SCTLR_EL1_RES1;
   WriteSysReg(sctlr_el1, Sctlr);
 
   WriteSysReg(ttbr0_el1, State->Ttbr0);
@@ -418,7 +336,7 @@ HypSwitchToEL1(IN  UEFI_EL2_STATE *State,
   WriteSysReg(vbar_el1, State->Vbar);
   WriteSysReg(mair_el1, State->Mair);
   WriteSysReg(spsr_el2, SPSR_D | SPSR_A | SPSR_I |
-              SPSR_F | SPSR_EL1 | SPSR_ELx);
+              SPSR_F | SPSR_EL1 | Spsel);
   ISB();
 
   asm volatile("tlbi alle1\n\t"
@@ -434,6 +352,7 @@ HypSwitchToEL1(IN  UEFI_EL2_STATE *State,
 STATIC VOID
 HypExceptionFatal (
   IN     EFI_EXCEPTION_TYPE ExceptionType,
+  IN     UINT64 FaultingGPA,
   IN OUT EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
 )
 {
@@ -454,6 +373,10 @@ done:
          ESR_2_ISS(SystemContext->ESR)));
   DEBUG((EFI_D_ERROR, "FAR = 0x%lx\n",
          SystemContext->FAR));
+  if (SPSR_2_EL(SystemContext->SPSR) < 2) {
+    DEBUG((EFI_D_ERROR, "Faulting GPA = 0x%lx\n",
+           FaultingGPA));
+  }
   while(1);
 }
 
@@ -464,20 +387,27 @@ HypExceptionHandler (
   IN OUT EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
 )
 {
+  GPA FaultingGPA;
+
+  ReadSysReg(FaultingGPA, hpfar_el2);
+  FaultingGPA = HPFAR_2_GPA(FaultingGPA);
+
   if (SPSR_2_BITNESS(SystemContext->SPSR) == 32 ||
       SPSR_2_EL(SystemContext->SPSR) == 2) {
-    HypExceptionFatal(ExceptionType, SystemContext);
+    HypExceptionFatal(ExceptionType,
+                      FaultingGPA,
+                      SystemContext);
   }
 
   switch (ESR_2_EC(SystemContext->ESR)) {
   case ESR_EC_DABT_LO:
-    if (SystemContext->FAR >= MMIO_EMU_START &&
+    if (FaultingGPA >= MMIO_EMU_START &&
         HypMmio(SystemContext) == EFI_SUCCESS) {
       SystemContext->ELR += 4;
       break;
     }
 
-    if (HypMemIsHypAddr(SystemContext->FAR)) {
+    if (HypMemIsHypAddr(GPA_2_MPA(FaultingGPA))) {
       /*
        * Ignore it.
        *
@@ -502,7 +432,7 @@ HypExceptionHandler (
      * Do an EA.
      */
     DEBUG((EFI_D_ERROR, "Unhandled access to 0x%lx, injecting EA\n",
-           SystemContext->FAR));
+           FaultingGPA));
     WriteSysReg(far_el1, SystemContext->FAR);
     WriteSysReg(hcr_el2, Hcr | HCR_VSE);
   } break;
@@ -512,16 +442,15 @@ HypExceptionHandler (
            SystemContext->ELR, SystemContext->SP));
     break;
   case ESR_EC_SMC64: {
-    DEBUG((EFI_D_INFO, "0x%lx: Forwarding SMC(%u) %x %x %x %x\n",
-           SystemContext->ELR, ESR_2_ISS(SystemContext->ESR),
-           SystemContext->X0, SystemContext->X1,
-           SystemContext->X2, SystemContext->X3));
-    ArmCallSmc((ARM_SMC_ARGS *) &(SystemContext->X0));
+    HypWSTryPatch(SystemContext);
+    HypSMCProcess(SystemContext);
+
     SystemContext->ELR += 4;
   } break;
 
   default:
-    HypExceptionFatal(ExceptionType, SystemContext);
+    HypExceptionFatal(ExceptionType, FaultingGPA,
+                      SystemContext);
   }
 }
 
@@ -534,7 +463,7 @@ HypInitialize(
   )
 {
   UINT64 DAIF;
-  UEFI_EL2_STATE State;
+  CAPTURED_EL2_STATE State;
   EFI_PHYSICAL_ADDRESS ExceptionStack;
   EFI_STATUS Status;
   UINT32 DoEL1;
@@ -556,6 +485,8 @@ HypInitialize(
     return Status;
   }
 
+  HypWSInit();
+
   ReadSysReg(DAIF, daif);
   ArmDisableAllExceptions();
 
@@ -563,6 +494,11 @@ HypInitialize(
   Status = HypModeInit(&State, &ExceptionStack);
   if (Status == EFI_SUCCESS) {
     HypSwitchToEL1(&State, ExceptionStack);
+    /*
+     * Once we come back here, HypDxe
+     * code/data are RO and any attempts
+     * to modify will be ignored.
+     */
   }
 
   WriteSysReg(daif, DAIF);

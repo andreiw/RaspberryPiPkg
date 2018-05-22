@@ -12,7 +12,7 @@
  *
  **/
 
-#include <HypDxe.h>
+#include "HypDxe.h"
 #include <Protocol/LoadedImage.h>
 #include <Library/UefiBootServicesTableLib.h>
 
@@ -21,8 +21,8 @@ STATIC UINT8 __attribute__((__aligned__(EFI_PAGE_SIZE))) mPages[20 * EFI_PAGE_SI
 STATIC UINT8 *mNextPage = mPages;
 STATIC UINT8 *mPageEnd = mPages + sizeof(mPages);
 
-STATIC EFI_PHYSICAL_ADDRESS mHypFirst;
-STATIC EFI_PHYSICAL_ADDRESS mHypLast;
+STATIC MPA mHypFirst;
+STATIC MPA mHypLast;
 
 
 EFI_STATUS
@@ -42,12 +42,13 @@ HypMemInit(
     return Status;
   }
 
-  mHypFirst = (EFI_PHYSICAL_ADDRESS)
-    LoadedImage->ImageBase;
-  mHypLast = mHypFirst +
-    LoadedImage->ImageSize - 1;
+  mHypFirst = (MPA) LoadedImage->ImageBase;
+  mHypLast = mHypFirst +  LoadedImage->ImageSize - 1;
   DEBUG((EFI_D_INFO, "HypDxe at 0x%lx-0x%lx\n",
          mHypFirst, mHypLast));
+  DEBUG((EFI_D_INFO, "mPages at 0x%lx-0x%lx\n",
+         UN(mPages), UN(mPageEnd) - 1));
+
   return EFI_SUCCESS;
 }
 
@@ -59,7 +60,7 @@ HypMemAlloc(
 {
   UINT8 *P;
   UINTN Size;
-  ASSERT (((UINTN) mNextPage & EFI_PAGE_MASK) == 0);
+  ASSERT ((UN(mNextPage) & EFI_PAGE_MASK) == 0);
 
   P = mNextPage;
   Size = EFI_PAGE_SIZE * Pages;
@@ -69,7 +70,7 @@ HypMemAlloc(
   }
 
   mNextPage += Size;
-  DEBUG((EFI_D_INFO, "Remaining pages: %u\n",
+  DEBUG((EFI_D_VERBOSE, "Remaining pages: %u\n",
          (mPageEnd - mNextPage) / EFI_PAGE_SIZE));
   return P;
 }
@@ -77,11 +78,11 @@ HypMemAlloc(
 
 BOOLEAN
 HypMemIsHyp2M(
-  IN  EFI_PHYSICAL_ADDRESS A
+  IN  MPA A
   )
 {
-  EFI_PHYSICAL_ADDRESS HypFirst2MB = A_DOWN(mHypFirst, SIZE_2MB);
-  EFI_PHYSICAL_ADDRESS HypAfterLast2MB = A_UP(mHypLast, SIZE_2MB);
+  MPA HypFirst2MB = A_DOWN(mHypFirst, SIZE_2MB);
+  MPA HypAfterLast2MB = A_UP(mHypLast, SIZE_2MB);
 
   if (A >= HypFirst2MB &&
       A < HypAfterLast2MB) {
@@ -94,7 +95,7 @@ HypMemIsHyp2M(
 
 BOOLEAN
 HypMemIsHypAddr(
-  IN  EFI_PHYSICAL_ADDRESS A
+  IN  MPA A
   )
 {
   if (A >= mHypFirst && A <= mHypLast) {
