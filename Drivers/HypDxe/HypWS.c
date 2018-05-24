@@ -148,12 +148,17 @@ HypWSFindKdVerBlock(
     for (; Page < End; Page++) {
       HVA KdVerSearchBase;
       HVA KdVerSearchEnd;
-      GVA KernBase = *(UINT64 *) (Page + 2);
+      GVA KernBase;
 
       if (*Page != Sig) {
         continue;
       }
 
+      if (!IS_ALIGNED((Page + 2), sizeof(UINT64))) {
+        continue;
+      }
+
+      KernBase = *(UINT64 *) (Page + 2);
       if ((KernBase & NT_MIN_ILM) != NT_MIN_ILM) {
         /*
          * This is for sure not _KDDEBUGGER_DATA64.KernBase.
@@ -245,7 +250,7 @@ HypWSSupported(
 
   DEBUG((EFI_D_INFO, "Searching for DBGKD_GET_VERSION64...\n"));
   if (!HypWSFindKdVerBlock(KPCR, KPCRVA)) {
-    DEBUG((EFI_D_ERROR, "Cannot identify build: boot with debug enabled in BCD\n"));
+    DEBUG((EFI_D_ERROR, "Cannot identify build, try with debug enabled in BCD\n"));
   }
 
   /*
