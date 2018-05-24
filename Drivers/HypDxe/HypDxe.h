@@ -65,6 +65,10 @@ typedef UINT64 HVA;
 #define INVALID_MPA ((UINT64)(-1))
 #define INVALID_HPA ((UINT64)(-1))
 #define INVALID_HVA ((UINT64)(-1))
+#define GVA_2_GVPN(x) ((x) >> EFI_PAGE_SHIFT)
+#define GPA_2_GPPN(x) ((x) >> EFI_PAGE_SHIFT)
+#define HVA_2_HVPN(x) ((x) >> EFI_PAGE_SHIFT)
+#define MPA_2_MPPN(x) ((x) >> EFI_PAGE_SHIFT)
 
 #define GPA_2_MPA(x) (x)
 #define MPA_2_HVA(x) (x)

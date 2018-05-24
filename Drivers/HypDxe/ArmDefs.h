@@ -77,7 +77,6 @@
 
 #define PAR_IS_BAD(par)   (((par) & 1) == 1)
 #define PAR_2_ADDR(par)   M((par), 47, 12)
-#define MA_2_MPN(x)       ((x) >> 12)
 
 #define TLBI_S12()        do {       \
     ISB();                           \

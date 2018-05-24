@@ -35,6 +35,9 @@
 
 #define VP(x) ((VOID *)(x))
 #define U8P(x) ((UINT8 *)(x))
+#define U16P(x) ((UINT16 *)(x))
+#define U32P(x) ((UINT32 *)(x))
+#define U64P(x) ((UINT64 *)(x))
 #define UN(x) ((UINTN)(x))
 
 #define ELES(x) (sizeof((x)) / sizeof((x)[0]))

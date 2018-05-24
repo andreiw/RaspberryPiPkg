@@ -19,10 +19,19 @@
 #define NT_MAX_ILM       0xFFFFF87FFFFFFFFFul
 #define WS_BUILD_UNKNOWN 0
 
+/*
+ * +/- so many bytes will be examined around
+ * _KDDEBUGGER_DATA64 candidates to locate
+ * DBGKD_GET_VERSION64.
+ */
+#define BYTES_AROUND_KDDEBUGGER_DATA64 (10 * EFI_PAGE_SIZE)
+
 #define KPCR_LOCK_ARRAY(KPCR) *((UINT64 *) (U8P((KPCR)) + 0x28))
 #define KPCR_VER_MAJOR(KPCR) *((UINT16 *) (U8P((KPCR)) + 0x3c))
 #define KPCR_VER_MINOR(KPCR) *((UINT16 *) (U8P((KPCR)) + 0x3e))
 #define KPCR_KD_VER_BLOCK(KPCR) *((UINT64 *) (U8P((KPCR)) + 0x80))
+
+typedef BOOLEAN (*ContigGPASearchCheck)(HVA, VOID *);
 
 typedef struct {
   UINT16 MajorVersion;
@@ -123,6 +132,108 @@ HypWSProbeKdVerBlock(
 }
 
 
+STATIC GVA
+ContigGPASearch(
+                IN  GVA Start,
+                IN  GVA End,
+                IN  VOID *Seq,
+                IN  UINTN Length,
+                IN  UINTN Alignment,
+                IN  ContigGPASearchCheck Check,
+                IN  VOID *CheckParam
+               )
+{
+  ASSERT (Length != 0);
+  ASSERT (Alignment != 0);
+  ASSERT (Length <= EFI_PAGE_SIZE);
+
+  Start = A_UP(Start, Alignment);
+  ASSERT (End > Start);
+
+  while (Start + Length < End) {
+    GVA SeqLast = Start + Length - 1;
+    HVA StartHVA = Probe(Start);
+    HVA SeqLastHVA = Probe(SeqLast);
+
+    if (SeqLastHVA == INVALID_HVA) {
+      /*
+       * Try page after the page SeqLast fell on.
+       */
+      Start = A_UP(SeqLast + 1, EFI_PAGE_SIZE);
+      continue;
+    }
+
+    if ((HVA_2_HVPN(SeqLastHVA)- HVA_2_HVPN(StartHVA)) > 1) {
+      /*
+       * Crossing page boundary and there is no contiguity?
+       * Start at the page containing SeqLast.
+       */
+      Start = A_DOWN(SeqLast, EFI_PAGE_SIZE);
+      continue;
+    }
+
+    if (Check != NULL) {
+      if (!Check(StartHVA, CheckParam)) {
+        Start += Alignment;
+        continue;
+      }
+
+      if (Seq == NULL) {
+        return Start;
+      }
+    }
+
+    if (Seq != NULL) {
+      UINTN Index;
+      /*
+       * Now we know we can safely check length
+       * bytes of sequence.
+       */
+      for (Index = 0; Index < Length; ) {
+        UINTN AdjIndex;
+        UINTN CompSize = Alignment;
+
+        if (CompSize > (Length - Index)) {
+          CompSize = Length - Index;
+        }
+
+        if (CompSize != 8 &&
+            CompSize != 4 &&
+            CompSize != 2) {
+          CompSize = 1;
+        }
+
+        AdjIndex = Index / CompSize;
+
+        if ((CompSize == 8 &&
+             U64P(StartHVA)[AdjIndex] !=
+             U64P(Seq)[AdjIndex]) ||
+            (CompSize == 4 &&
+             U32P(StartHVA)[AdjIndex] !=
+             U32P(Seq)[AdjIndex]) ||
+            (CompSize == 2 &&
+             U16P(StartHVA)[AdjIndex] !=
+             U16P(Seq)[AdjIndex]) ||
+              (U8P(StartHVA)[AdjIndex] !=
+               U8P(Seq)[AdjIndex])) {
+          break;
+        }
+
+        Index += CompSize;
+      }
+
+      if (Index == Length) {
+        return Start;
+      }
+
+      Start += Alignment;
+    }
+  }
+
+  return INVALID_GVA;
+}
+
+
 STATIC BOOLEAN
 HypWSFindKdVerBlock(
   IN  HVA KPCR,
@@ -135,60 +246,57 @@ HypWSFindKdVerBlock(
     UN('B') << 16 |
     UN('G') << 24;
 
-  for (ProbeVA = KPCRVA;
-       ProbeVA < NT_MAX_ILM;
-       ProbeVA += EFI_PAGE_SIZE) {
-    UINT32 *Page = HVA_2_P(Probe(ProbeVA));
-    UINT32 *End = Page + EFI_PAGE_SIZE / sizeof(UINT32);
+  do {
+    UINT32 *Page;
+    GVA KernBase;
+    GVA VerProbeVA;
 
-    if (Page == NULL || (HVA) Page < KPCR) {
-      continue;
-    }
-
-    for (; Page < End; Page++) {
-      HVA KdVerSearchBase;
-      HVA KdVerSearchEnd;
-      GVA KernBase;
-
-      if (*Page != Sig) {
-        continue;
-      }
-
-      if (!IS_ALIGNED((Page + 2), sizeof(UINT64))) {
-        continue;
-      }
-
-      KernBase = *(UINT64 *) (Page + 2);
-      if ((KernBase & NT_MIN_ILM) != NT_MIN_ILM) {
-        /*
-         * This is for sure not _KDDEBUGGER_DATA64.KernBase.
-         */
-        continue;
-      }
-
+    ProbeVA = ContigGPASearch(ProbeVA, NT_MAX_ILM,
+                              VP(&Sig), sizeof(Sig),
+                              sizeof(UINT64), NULL, NULL);
+    if (ProbeVA == INVALID_GVA) {
       /*
-       * This is nasty and hacky - yes, but it's miles faster than
-       * being proper and AT()ing every GVA around ProbeVA. These
-       * are kernel VAs and they are backed by linear GPAs/HVAs.
-       * Hopefully we never have to manually scanning from
-       * KernBase on up for something that could look like
-       * DBGKD_GET_VERSION64. Ugh.
+       * Signature not found at all?
        */
-      KdVerSearchBase = A_DOWN((HVA) Page, EFI_PAGE_SIZE) - 10 * EFI_PAGE_SIZE;
-      KdVerSearchEnd = A_UP((HVA) Page, EFI_PAGE_SIZE) + 10 * EFI_PAGE_SIZE;
-
-      while (KdVerSearchBase < KdVerSearchEnd) {
-        if (HypWSProbeKdVerBlock(HVA_2_P(KdVerSearchBase),
-                                 KernBase)) {
-          DEBUG((EFI_D_VERBOSE, "Matched DBGKD_GET_VERSION64 @ lx relative to %p\n",
-                 KdVerSearchBase, Page));
-          return TRUE;
-        }
-
-        KdVerSearchBase++;
-      }
+      return FALSE;
     }
-  }
+
+    Page = HVA_2_P(Probe(ProbeVA));
+    KernBase = *(UINT64 *) (Page + 2);
+    if ((KernBase & NT_MIN_ILM) != NT_MIN_ILM) {
+      /*
+       * Go to the next thing that looks like
+       * _KDDEBUGGER_DATA64.
+       */
+      goto next;
+    }
+
+    VerProbeVA = ContigGPASearch(ProbeVA -
+                                 BYTES_AROUND_KDDEBUGGER_DATA64,
+                                 ProbeVA +
+                                 BYTES_AROUND_KDDEBUGGER_DATA64,
+                                 NULL,
+                                 sizeof(DBGKD_GET_VERSION64),
+                                 sizeof(UINT64),
+                                 VP(HypWSProbeKdVerBlock),
+                                 VP(KernBase));
+    if (VerProbeVA == INVALID_GVA) {
+      /*
+       * Go to the next thing that looks like
+       * _KDDEBUGGER_DATA64.
+       */
+      goto next;
+    }
+
+    DEBUG((EFI_D_VERBOSE,
+           "Matched DBGKD_GET_VERSION64 @ %lx relative to %lx\n",
+           VerProbeVA, ProbeVA));
+    return TRUE;
+
+  next:
+    ProbeVA++;
+    continue;
+  } while (ProbeVA < NT_MAX_ILM);
 
   return FALSE;
 }
@@ -262,34 +370,6 @@ HypWSSupported(
 }
 
 
-STATIC UINT32 *
-SeqSearch(
-  IN  UINT32 *Page,
-  IN  UINT32 *End,
-  IN  UINT32 *Seq,
-  IN  UINTN  SeqEles
-  )
-{
-  UINTN Index;
-
-  while (Page + SeqEles < End) {
-    for (Index = 0; Index < SeqEles; Index++) {
-      if (Page[Index] != Seq[Index]) {
-        break;
-      }
-    }
-
-    if (Index == SeqEles) {
-      return Page;
-    }
-
-    Page += Index + 1;
-  }
-
-  return NULL;
-}
-
-
 STATIC GVA
 FindHalpInterruptRegisterControllerLoc(
   IN  GVA From
@@ -310,30 +390,16 @@ FindHalpInterruptRegisterControllerLoc(
    * function may have changed the register assignments
    * or branch distances, but won't change the sequence
    * of opcodes themselves or the immediates used.
-   *
-   * Today I'll just memcmp.
    */
-  for (ProbeVA = From;
-       ProbeVA < NT_MAX_ILM;
-       ProbeVA += EFI_PAGE_SIZE) {
-    UINT32 *Page = HVA_2_P(Probe(ProbeVA));
-    UINT32 *End = Page + EFI_PAGE_SIZE / sizeof(UINT32);
-    UINT32 *Cur;
-
-    if (Page == NULL) {
-      /*
-       * We're looking inside the HAL, unmapped pages means
-       * we've failed.
-       */
-      break;
-    }
-
-    Cur = SeqSearch(Page, End, Seq, ELES(Seq));
-    if (Cur != NULL) {
-      return UN(Cur + ELES(Seq) - 1) - UN(Page) + ProbeVA;
-    }
+  ProbeVA = ContigGPASearch(ProbeVA, NT_MAX_ILM,
+                            VP(Seq), sizeof(Seq),
+                            sizeof(*Seq),
+                            NULL, NULL);
+  if (ProbeVA != INVALID_GVA) {
+    ProbeVA += sizeof(Seq) - 4;
   }
-  return INVALID_GVA;
+
+  return ProbeVA;
 }
 
 
