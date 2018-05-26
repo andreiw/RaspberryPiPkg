@@ -299,9 +299,11 @@ DisplayDxeInitialize (
     return Status;
   }
   DEBUG((EFI_D_INIT, "Mailbox Display Size  %d x %d\n", Width, Height));
-  if (Width < 800 || Height < 600) {
-    DEBUG((EFI_D_ERROR, "Display too small or not connected\n"));
-    return EFI_UNSUPPORTED;
+  if (Width < 640 || Height < 480) {
+    DEBUG((EFI_D_ERROR, "Degraded (scaling) video from %u x %u to (minimum) 640 x 480\n",
+           Width, Height));
+    Width = 640;
+    Height = 480;
   }
 
   Status = FwProtocol->GetFB(Width, Height, PI2_BITS_PER_PIXEL, &FbBase,
