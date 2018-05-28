@@ -143,6 +143,11 @@ HypWSTryPatch(
   );
 
 VOID
+HypHVCProcess(
+  IN  EFI_SYSTEM_CONTEXT_AARCH64 *Context
+  );
+
+VOID
 HypSMCProcess(
   IN  EFI_SYSTEM_CONTEXT_AARCH64 *Context
   );

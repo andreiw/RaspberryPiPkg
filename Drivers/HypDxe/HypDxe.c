@@ -437,14 +437,11 @@ HypExceptionHandler (
     WriteSysReg(hcr_el2, Hcr | HCR_VSE);
   } break;
   case ESR_EC_HVC64:
-    HLOG((HLOG_ERROR, "Hello from EL%u PC 0x%016lx SP 0x%016lx\n",
-           SPSR_2_EL(SystemContext->SPSR),
-           SystemContext->ELR, SystemContext->SP));
+    HypHVCProcess(SystemContext);
     break;
   case ESR_EC_SMC64: {
     HypWSTryPatch(SystemContext);
     HypSMCProcess(SystemContext);
-
     SystemContext->ELR += 4;
   } break;
 
