@@ -18,7 +18,6 @@
 #include <Uefi.h>
 #include <Chipset/AArch64.h>
 #include <Protocol/DebugSupport.h>
-#include <Library/DebugLib.h>
 #include <Utils.h>
 
 typedef struct
@@ -154,5 +153,39 @@ HypSMPOn(
   IN  GPA    EL1PC,
   IN  UINT64 EL1Arg
   );
+
+EFI_STATUS
+HypLogInit(
+  VOID
+  );
+
+#define HLOG_ERROR   0
+#define HLOG_INFO    1
+#define HLOG_VERBOSE 2
+#define HLOG_VM      4
+
+VOID
+HypLog (
+  IN  UINT32       ErrorLevel,
+  IN  CONST CHAR8  *Format,
+  ...
+  );
+
+VOID
+EFIAPI
+HypAssert (
+  IN CONST CHAR8  *FileName,
+  IN UINTN        LineNumber,
+  IN CONST CHAR8  *Description
+  );
+
+#define HLOG(x) HypLog x
+#define ASSERT(x) if (!(x)) { HypAssert(__FILE__, __LINE__, #x); }
+#define ASSERT_EFI_ERROR(StatusParameter) do {                          \
+    if (EFI_ERROR(StatusParameter)) {                                   \
+      HLOG((HLOG_ERROR, "\nASSERT_EFI_ERROR(%r)\n", StatusParameter));  \
+      ASSERT(!EFI_ERROR(StatusParameter));                              \
+    }                                                                   \
+  } while (0)
 
 #endif /* HYP_DXE_H */

@@ -60,7 +60,7 @@ HypBuildS2PT(IN  CAPTURED_EL2_STATE *State)
 
   PL1 = (VOID *) HypMemAlloc(1);
   if (PL1 == NULL) {
-    DEBUG((EFI_D_ERROR, "Couldn't alloc S2 L1 table\n"));
+    HLOG((HLOG_ERROR, "Couldn't alloc S2 L1 table\n"));
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -79,8 +79,8 @@ HypBuildS2PT(IN  CAPTURED_EL2_STATE *State)
     if (PTE_2_TYPE(PL1[ix1]) != PTE_TYPE_TAB) {
       PL2 = (VOID *) HypMemAlloc(1);
       if (PL2 == NULL) {
-        DEBUG((EFI_D_ERROR, "Couldn't alloc S2 L2 table for %u\n",
-               ix1));
+        HLOG((HLOG_ERROR, "Couldn't alloc S2 L2 table for %u\n",
+              ix1));
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -100,8 +100,8 @@ HypBuildS2PT(IN  CAPTURED_EL2_STATE *State)
       if (PTE_2_TYPE(PL2[ix2]) != PTE_TYPE_TAB) {
         PL3 = (VOID *) HypMemAlloc(1);
         if (PL3 == NULL) {
-          DEBUG((EFI_D_ERROR, "Couldn't alloc S2 L3 table for %u\n",
-                 ix2));
+          HLOG((HLOG_ERROR, "Couldn't alloc S2 L3 table for %u\n",
+                ix2));
           return EFI_OUT_OF_RESOURCES;
         }
 
@@ -140,8 +140,8 @@ HypBuildS2PT(IN  CAPTURED_EL2_STATE *State)
     I(X(State->Tcr, 14, 15), 14, 15) | // TG0
     I(X(State->Tcr, 16, 18), 16, 18) | // PS -> IPS
     I(1, 31, 31);                      // RESV1
-  DEBUG((EFI_D_INFO, "Setting S2 page table root to 0x%lx\n",
-         (UINT64) PL1));
+  HLOG((HLOG_INFO, "Setting S2 page table root to 0x%lx\n",
+        (UINT64) PL1));
 
   DSB_ISH();
   WriteSysReg(vtcr_el2, Vtcr);
@@ -171,7 +171,7 @@ HypBuildPT(IN  CAPTURED_EL2_STATE *State)
 
   PL1 = (VOID *) HypMemAlloc(1);
   if (PL1 == NULL) {
-    DEBUG((EFI_D_ERROR, "Couldn't alloc L1 table\n"));
+    HLOG((HLOG_ERROR, "Couldn't alloc L1 table\n"));
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -190,8 +190,8 @@ HypBuildPT(IN  CAPTURED_EL2_STATE *State)
     if (PTE_2_TYPE(PL1[ix1]) != PTE_TYPE_TAB) {
       PL2 = (VOID *) HypMemAlloc(1);
       if (PL2 == NULL) {
-        DEBUG((EFI_D_ERROR, "Couldn't alloc L2 table for %u\n",
-               ix1));
+        HLOG((HLOG_ERROR, "Couldn't alloc L2 table for %u\n",
+              ix1));
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -210,8 +210,8 @@ HypBuildPT(IN  CAPTURED_EL2_STATE *State)
     A += SIZE_2MB;
   }
 
-  DEBUG((EFI_D_INFO, "Setting page table root to 0x%lx\n",
-         (UINT64) PL1));
+  HLOG((HLOG_INFO, "Setting page table root to 0x%lx\n",
+        (UINT64) PL1));
 
   DSB_ISH();
   WriteSysReg(ttbr0_el2, PL1);
@@ -221,7 +221,7 @@ HypBuildPT(IN  CAPTURED_EL2_STATE *State)
   DSB_ISH();
   ISB();
 
-  DEBUG((EFI_D_INFO, "It lives!\n"));
+  HLOG((HLOG_INFO, "It lives!\n"));
 
   return EFI_SUCCESS;
 }
@@ -252,27 +252,27 @@ HypModeInit(IN  CAPTURED_EL2_STATE *State,
     MAIR_EL2        0xFFBB4400
   */
 
-  DEBUG((EFI_D_INFO, "HCR_EL2    \t0x%lx\n", State->Hcr));
-  DEBUG((EFI_D_INFO, "CPTR_EL2   \t0x%lx\n", State->Cptr));
-  DEBUG((EFI_D_INFO, "CNTHCTL_EL2\t0x%lx\n", State->Cnthctl));
-  DEBUG((EFI_D_INFO, "CNTVOFF_EL2\t0x%lx\n", State->Cntvoff));
-  DEBUG((EFI_D_INFO, "VPIDR_EL2  \t0x%lx\n", State->Vpidr));
-  DEBUG((EFI_D_INFO, "VTTBR_EL2  \t0x%lx\n", State->Vttbr));
-  DEBUG((EFI_D_INFO, "VTCR_EL2   \t0x%lx\n", State->Vtcr));
-  DEBUG((EFI_D_INFO, "SCTLR_EL2  \t0x%lx\n", State->Sctlr));
-  DEBUG((EFI_D_INFO, "ACTLR_EL2  \t0x%lx\n", State->Actlr));
-  DEBUG((EFI_D_INFO, "TTBR0_EL2  \t0x%lx\n", State->Ttbr0));
-  DEBUG((EFI_D_INFO, "TCR_EL2    \t0x%lx\n", State->Tcr));
-  DEBUG((EFI_D_INFO, "VBAR_EL2   \t0x%lx\n", State->Vbar));
-  DEBUG((EFI_D_INFO, "MAIR_EL2   \t0x%lx\n", State->Mair));
+  HLOG((HLOG_INFO, "HCR_EL2    \t0x%lx\n", State->Hcr));
+  HLOG((HLOG_INFO, "CPTR_EL2   \t0x%lx\n", State->Cptr));
+  HLOG((HLOG_INFO, "CNTHCTL_EL2\t0x%lx\n", State->Cnthctl));
+  HLOG((HLOG_INFO, "CNTVOFF_EL2\t0x%lx\n", State->Cntvoff));
+  HLOG((HLOG_INFO, "VPIDR_EL2  \t0x%lx\n", State->Vpidr));
+  HLOG((HLOG_INFO, "VTTBR_EL2  \t0x%lx\n", State->Vttbr));
+  HLOG((HLOG_INFO, "VTCR_EL2   \t0x%lx\n", State->Vtcr));
+  HLOG((HLOG_INFO, "SCTLR_EL2  \t0x%lx\n", State->Sctlr));
+  HLOG((HLOG_INFO, "ACTLR_EL2  \t0x%lx\n", State->Actlr));
+  HLOG((HLOG_INFO, "TTBR0_EL2  \t0x%lx\n", State->Ttbr0));
+  HLOG((HLOG_INFO, "TCR_EL2    \t0x%lx\n", State->Tcr));
+  HLOG((HLOG_INFO, "VBAR_EL2   \t0x%lx\n", State->Vbar));
+  HLOG((HLOG_INFO, "MAIR_EL2   \t0x%lx\n", State->Mair));
 
   StackSize = PcdGet32(PcdCPUCorePrimaryStackSize);
   Stack = HypMemAlloc(EFI_SIZE_TO_PAGES(StackSize));
   if (Stack == 0) {
-    DEBUG((EFI_D_ERROR, "No memory for stack\n"));
+    HLOG((HLOG_ERROR, "No memory for stack\n"));
     return EFI_OUT_OF_RESOURCES;
   }
-  DEBUG((EFI_D_INFO, "%u of EL2 stack at %p\n", StackSize, Stack));
+  HLOG((HLOG_INFO, "%u of EL2 stack at %p\n", StackSize, Stack));
 
   /* EL1 is 64-bit, and we trap SMC calls. */
   WriteSysReg(hcr_el2, HCR_RW_64 | HCR_TSC | HCR_AMO | HCR_VM);
@@ -309,7 +309,7 @@ HypSwitchToEL1(IN  CAPTURED_EL2_STATE *State,
   UINT64 Sctlr;
   UINT64 Spsel;
 
-  DEBUG((EFI_D_INFO, "Switching to EL1\n"));
+  HLOG((HLOG_INFO, "Switching to EL1\n"));
 
   ReadSysReg(Spsel, spsel);
   ASSERT (Spsel != 0);
@@ -345,7 +345,7 @@ HypSwitchToEL1(IN  CAPTURED_EL2_STATE *State,
 
   SwitchStackAndEL(ExceptionStack);
 
-  DEBUG((EFI_D_INFO, "Switched to EL1\n"));
+  HLOG((HLOG_INFO, "Switched to EL1\n"));
 }
 
 
@@ -357,24 +357,24 @@ HypExceptionFatal (
 )
 {
   if (SPSR_2_BITNESS(SystemContext->SPSR) == 32) {
-    DEBUG((EFI_D_ERROR, "Unexpected exception from AArch32!\n"));
+    HLOG((HLOG_ERROR, "Unexpected exception from AArch32!\n"));
     goto done;
   }
 
   if (SPSR_2_EL(SystemContext->SPSR) == 2) {
-    DEBUG((EFI_D_ERROR, "Unexpected exception in EL2!\n"));
+    HLOG((HLOG_ERROR, "Unexpected exception in EL2!\n"));
     goto done;
   }
 
 done:
-  DEBUG((EFI_D_ERROR, "ESR 0x%lx (EC 0x%x ISS 0x%x)\n",
+  HLOG((HLOG_ERROR, "ESR 0x%lx (EC 0x%x ISS 0x%x)\n",
          SystemContext->ESR,
          ESR_2_EC(SystemContext->ESR),
          ESR_2_ISS(SystemContext->ESR)));
-  DEBUG((EFI_D_ERROR, "FAR = 0x%lx\n",
+  HLOG((HLOG_ERROR, "FAR = 0x%lx\n",
          SystemContext->FAR));
   if (SPSR_2_EL(SystemContext->SPSR) < 2) {
-    DEBUG((EFI_D_ERROR, "Faulting GPA = 0x%lx\n",
+    HLOG((HLOG_ERROR, "Faulting GPA = 0x%lx\n",
            FaultingGPA));
   }
   while(1);
@@ -431,13 +431,13 @@ HypExceptionHandler (
     /*
      * Do an EA.
      */
-    DEBUG((EFI_D_ERROR, "Unhandled access to 0x%lx, injecting EA\n",
+    HLOG((HLOG_ERROR, "Unhandled access to 0x%lx, injecting EA\n",
            FaultingGPA));
     WriteSysReg(far_el1, SystemContext->FAR);
     WriteSysReg(hcr_el2, Hcr | HCR_VSE);
   } break;
   case ESR_EC_HVC64:
-    DEBUG((EFI_D_ERROR, "Hello from EL%u PC 0x%016lx SP 0x%016lx\n",
+    HLOG((HLOG_ERROR, "Hello from EL%u PC 0x%016lx SP 0x%016lx\n",
            SPSR_2_EL(SystemContext->SPSR),
            SystemContext->ELR, SystemContext->SP));
     break;
@@ -466,22 +466,27 @@ HypInitialize(
   CAPTURED_EL2_STATE State;
   EFI_PHYSICAL_ADDRESS ExceptionStack;
   EFI_STATUS Status;
-  UINT32 DoEL1;
+  UINT32 HypEnable;
+
+  Status = HypLogInit();
+  if (EFI_ERROR(Status)) {
+    return Status;
+  }
 
   if (ArmReadCurrentEL() != AARCH64_EL2) {
-    DEBUG((EFI_D_INFO, "Not in EL2, nothing to do\n"));
+    HLOG((HLOG_INFO, "Not in EL2, nothing to do\n"));
     return EFI_UNSUPPORTED;
   }
 
-  DoEL1 = PcdGet32(PcdBootInEL1);
-  if (!DoEL1) {
-    DEBUG((EFI_D_INFO, "Boot doesn't require EL1\n"));
+  HypEnable = PcdGet32(PcdHypEnable);
+  if (!HypEnable) {
+    HLOG((HLOG_INFO, "Boot doesn't require hypervisor\n"));
     return EFI_UNSUPPORTED;
   }
 
   Status = HypMemInit(ImageHandle);
   if (EFI_ERROR(Status)) {
-    DEBUG((EFI_D_ERROR, "Could't initialize hypervisor memory\n"));
+    HLOG((HLOG_ERROR, "Couldn't initialize hypervisor memory\n"));
     return Status;
   }
 

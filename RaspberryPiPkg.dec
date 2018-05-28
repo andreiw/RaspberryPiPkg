@@ -40,5 +40,6 @@
   gRaspberryPiTokenSpaceGuid.PcdBootEpochSeconds|0x0|UINT64|0x00000008
 
 [PcdsFixedAtBuild, PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
-  gRaspberryPiTokenSpaceGuid.PcdBootInEL1|0|UINT32|0x00000009
-  gRaspberryPiTokenSpaceGuid.PcdCpuClock|0|UINT32|0x0000000a
+  gRaspberryPiTokenSpaceGuid.PcdHypEnable|0|UINT32|0x00000009
+  gRaspberryPiTokenSpaceGuid.PcdHypLogMask|0|UINT32|0x0000000a
+  gRaspberryPiTokenSpaceGuid.PcdCpuClock|0|UINT32|0x0000000b

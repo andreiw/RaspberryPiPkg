@@ -123,9 +123,9 @@ HypWSProbeKdVerBlock(
     return FALSE;
   }
 
-  DEBUG((EFI_D_INFO, "Detected arm64%a build %u, NT base = 0x%lx\n",
-         KdVer->MajorVersion == 0xf ? "fre" : "chk",
-         KdVer->MinorVersion, KdVer->KernBase));
+  HLOG((HLOG_INFO, "Detected arm64%a build %u, NT base = 0x%lx\n",
+        KdVer->MajorVersion == 0xf ? "fre" : "chk",
+        KdVer->MinorVersion, KdVer->KernBase));
 
   mWSBuild = KdVer->MinorVersion;
   return TRUE;
@@ -288,9 +288,9 @@ HypWSFindKdVerBlock(
       goto next;
     }
 
-    DEBUG((EFI_D_VERBOSE,
-           "Matched DBGKD_GET_VERSION64 @ %lx relative to %lx\n",
-           VerProbeVA, ProbeVA));
+    HLOG((HLOG_VERBOSE,
+          "Matched DBGKD_GET_VERSION64 @ %lx relative to %lx\n",
+          VerProbeVA, ProbeVA));
     return TRUE;
 
   next:
@@ -339,7 +339,7 @@ HypWSSupported(
 
   KPCR = Probe(KPCRVA);
   if (KPCR == INVALID_HVA) {
-    DEBUG((EFI_D_ERROR, "Couldn't probe KPCR\n"));
+    HLOG((HLOG_ERROR, "Couldn't probe KPCR\n"));
     return FALSE;
   }
 
@@ -356,9 +356,9 @@ HypWSSupported(
     return TRUE;
   }
 
-  DEBUG((EFI_D_INFO, "Searching for DBGKD_GET_VERSION64...\n"));
+  HLOG((HLOG_INFO, "Searching for DBGKD_GET_VERSION64...\n"));
   if (!HypWSFindKdVerBlock(KPCR, KPCRVA)) {
-    DEBUG((EFI_D_ERROR, "Cannot identify build, try with debug enabled in BCD\n"));
+    HLOG((HLOG_ERROR, "Cannot identify build, try with debug enabled in BCD\n"));
   }
 
   /*
@@ -431,13 +431,13 @@ PatchHalpInterruptRegisterController(
      * Unknown build Let's try finding
      * the area of interest..
      */
-    DEBUG((EFI_D_ERROR, "Unknown build %u, trying to match\n",
-           mWSBuild));
+    HLOG((HLOG_ERROR, "Unknown build %u, trying to match\n",
+          mWSBuild));
     PC = FindHalpInterruptRegisterControllerLoc(PC);
   }
 
   if (PC == INVALID_GVA) {
-    DEBUG((EFI_D_ERROR, "Couldn't locate hal!HalpInterruptRegisterController patch site\n"));
+    HLOG((HLOG_ERROR, "Couldn't locate hal!HalpInterruptRegisterController patch site\n"));
     return FALSE;
   }
 
@@ -453,10 +453,10 @@ PatchHalpInterruptRegisterController(
 
   Insn = HVA_2_P(Probe(PC));
   if (*Insn == 0x14000003) {
-    DEBUG((EFI_D_ERROR, "Already patched?\n"));
+    HLOG((HLOG_ERROR, "Already patched?\n"));
     return TRUE;
   } else if (*Insn != 0x54000069) {
-    DEBUG((EFI_D_ERROR, "Invalid hal!HalpInterruptRegisterController patch site (0x%x)\n", *Insn));
+    HLOG((HLOG_ERROR, "Invalid hal!HalpInterruptRegisterController patch site (0x%x)\n", *Insn));
     return FALSE;
   }
 
@@ -481,7 +481,7 @@ HypWSTryPatch(
 
   PatchStatus = PatchHalpInterruptRegisterController(Context);
   if (!PatchStatus) {
-    DEBUG((EFI_D_ERROR, "Patching WoA failed, good luck!\n"));
+    HLOG((HLOG_ERROR, "Patching WoA failed, good luck!\n"));
   }
 
 done:

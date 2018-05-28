@@ -25,7 +25,7 @@
   PLATFORM_VERSION               = 0.1
   DSC_SPECIFICATION              = 0x00010005
   OUTPUT_DIRECTORY               = Build/RaspberryPiPkg-$(ARCH)
-  SUPPORTED_ARCHITECTURES        = AARCH64|ARM
+  SUPPORTED_ARCHITECTURES        = AARCH64
   BUILD_TARGETS                  = DEBUG|RELEASE
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = RaspberryPiPkg/RaspberryPiPkg.fdf
@@ -45,11 +45,22 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
 !endif
 !endif
 
+!ifndef HYP_LOG_MASK
+#
+# HLOG_ERROR   0x00000000
+# HLOG_INFO    0x00000001
+# HLOG_VERBOSE 0x00000002
+# HLOG_VM      0x00000004
+#
+!if $(TARGET) == RELEASE
+DEFINE HYP_LOG_MASK = 0x4
+!else
+DEFINE HYP_LOG_MASK = 0xffffffff
+!endif
+!endif
 
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
-  GCC:*_*_ARM_DLINK_FLAGS = -z common-page-size=0x1000
   GCC:*_*_AARCH64_DLINK_FLAGS = -z common-page-size=0x10000
-  RVCT:*_*_ARM_DLINK_FLAGS = --scatter $(EDK_TOOLS_PATH)/Scripts/Rvct-Align4K.sct
 
 [LibraryClasses.common]
 !if $(TARGET) == RELEASE
@@ -224,9 +235,6 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/RuntimeCryptLib.inf
 !endif
 
-[LibraryClasses.ARM]
-  ArmSoftFloatLib|ArmPkg/Library/ArmSoftFloatLib/ArmSoftFloatLib.inf
-
 ################################################################################
 #
 # Pcd Section - list of all EDK II PCD Entries defined by this Platform
@@ -350,12 +358,6 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
 [BuildOptions]
   GCC:RELEASE_*_*_CC_FLAGS  = -DMDEPKG_NDEBUG
 
-[BuildOptions.ARM.EDKII.SEC, BuildOptions.ARM.EDKII.BASE]
-  # Avoid MOVT/MOVW instruction pairs in code that may end up in the PIE
-  # executable we build for the relocatable PrePi. They are not runtime
-  # relocatable in ELF.
-  *_CLANG35_*_CC_FLAGS = -mno-movt
-
 ################################################################################
 #
 # Pcd Section - list of all EDK II PCD Entries defined by this Platform
@@ -363,17 +365,13 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
 ################################################################################
 
 [PcdsFeatureFlag.common]
-  ## If TRUE, Graphics Output Protocol will be installed on virtual handle created by ConsplitterDxe.
-  #  It could be set FALSE to save size.
   gEfiMdeModulePkgTokenSpaceGuid.PcdConOutGopSupport|TRUE
   gEfiMdeModulePkgTokenSpaceGuid.PcdConOutUgaSupport|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdInstallAcpiSdtProtocol|TRUE
 
 [PcdsFixedAtBuild.common]
   gArmPlatformTokenSpaceGuid.PcdCoreCount|4
-!if $(ARCH) == AARCH64
   gArmTokenSpaceGuid.PcdVFPEnabled|1
-!endif
 
   gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize|0x4000
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize|0x2000
@@ -412,13 +410,12 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
   # May 9th, 2018. This is used if RtcEpochSeconds NVRAM variable is not present.
   #
   gRaspberryPiTokenSpaceGuid.PcdBootEpochSeconds|1525842369
-
-[PcdsFixedAtBuild.AARCH64]
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
 
 [PcdsDynamicHii.common.DEFAULT]
+  gRaspberryPiTokenSpaceGuid.PcdHypEnable|L"HypEnable"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdHypLogMask|L"HypLogMask"|gConfigDxeFormSetGuid|0x0|$(HYP_LOG_MASK)
   gRaspberryPiTokenSpaceGuid.PcdCpuClock|L"CpuClock"|gConfigDxeFormSetGuid|0x0|0
-  gRaspberryPiTokenSpaceGuid.PcdBootInEL1|L"HypBootInEL1"|gConfigDxeFormSetGuid|0x0|0
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|L"Timeout"|gEfiGlobalVariableGuid|0x0|5
   #
   # This is silly, but by pointing SetupConXXX and ConXXX PCDs to

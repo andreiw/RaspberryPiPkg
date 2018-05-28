@@ -44,10 +44,10 @@ HypMemInit(
 
   mHypFirst = (MPA) LoadedImage->ImageBase;
   mHypLast = mHypFirst +  LoadedImage->ImageSize - 1;
-  DEBUG((EFI_D_INFO, "HypDxe at 0x%lx-0x%lx\n",
-         mHypFirst, mHypLast));
-  DEBUG((EFI_D_INFO, "mPages at 0x%lx-0x%lx\n",
-         UN(mPages), UN(mPageEnd) - 1));
+  HLOG((HLOG_INFO, "HypDxe at 0x%lx-0x%lx\n",
+        mHypFirst, mHypLast));
+  HLOG((HLOG_VERBOSE, "mPages at 0x%lx-0x%lx\n",
+        UN(mPages), UN(mPageEnd) - 1));
 
   return EFI_SUCCESS;
 }
@@ -65,13 +65,13 @@ HypMemAlloc(
   P = mNextPage;
   Size = EFI_PAGE_SIZE * Pages;
   if ((P + Size > mPageEnd)) {
-    DEBUG((EFI_D_ERROR, "Not enough pages\n"));
+    HLOG((HLOG_ERROR, "Not enough pages\n"));
     return NULL;
   }
 
   mNextPage += Size;
-  DEBUG((EFI_D_VERBOSE, "Remaining pages: %u\n",
-         (mPageEnd - mNextPage) / EFI_PAGE_SIZE));
+  HLOG((HLOG_VERBOSE, "Remaining pages: %u\n",
+        (mPageEnd - mNextPage) / EFI_PAGE_SIZE));
   return P;
 }
 

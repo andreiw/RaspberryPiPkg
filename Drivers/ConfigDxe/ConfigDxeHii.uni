@@ -31,6 +31,9 @@
 #string STR_HYP_EL_SELECT_EL1    #language en-US "Boot in EL1"
 #string STR_HYP_EL_SELECT_EL2    #language en-US "Boot in EL2"
 
+#string STR_HYP_LOG_MASK_PROMPT  #language en-US "Debug Log Mask"
+#string STR_HYP_LOG_MASK_HELP    #language en-US "HypDxe Verbosity"
+
 /*
  * Hardware clock/frequency settings go here.
  */

@@ -105,11 +105,19 @@ SetupVariables (
    */
 
   Size = sizeof (UINT32);
-  Status = gRT->GetVariable(L"HypBootInEL1",
+  Status = gRT->GetVariable(L"HypEnable",
                             &gConfigDxeFormSetGuid,
                             NULL,  &Size, &Var32);
   if (EFI_ERROR (Status)) {
-    PcdSet32 (PcdBootInEL1, PcdGet32 (PcdBootInEL1));
+    PcdSet32 (PcdHypEnable, PcdGet32 (PcdHypEnable));
+  }
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"HypLogMask",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdHypLogMask, PcdGet32 (PcdHypLogMask));
   }
 
   Size = sizeof (UINT32);

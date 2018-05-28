@@ -57,7 +57,8 @@
   gRaspberryPiFirmwareProtocolGuid ## CONSUMES
 
 [Pcd]
-  gRaspberryPiTokenSpaceGuid.PcdBootInEL1
+  gRaspberryPiTokenSpaceGuid.PcdHypEnable
+  gRaspberryPiTokenSpaceGuid.PcdHypLogMask
   gRaspberryPiTokenSpaceGuid.PcdCpuClock
 
 [FeaturePcd]

@@ -35,9 +35,9 @@ HypSMCProcess(
     }
   }
 
-  DEBUG((EFI_D_VERBOSE, "0x%lx: Forwarding SMC(%u) %x %x %x %x\n",
-         SystemContext->ELR, ESR_2_ISS(SystemContext->ESR),
-         SystemContext->X0, SystemContext->X1,
-         SystemContext->X2, SystemContext->X3));
+  HLOG((HLOG_VERBOSE, "0x%lx: Forwarding SMC(%u) %x %x %x %x\n",
+        SystemContext->ELR, ESR_2_ISS(SystemContext->ESR),
+        SystemContext->X0, SystemContext->X1,
+        SystemContext->X2, SystemContext->X3));
   ArmCallSmc((ARM_SMC_ARGS *) &(SystemContext->X0));
 }

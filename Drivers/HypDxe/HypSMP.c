@@ -83,8 +83,8 @@ HypSMPOn(
   CPU_ON_STATE *State;
   ARM_SMC_ARGS PsciArgs;
 
-  DEBUG((EFI_D_VERBOSE, "CPU_ON for core %lx 0x%lx(0x%lx)\n",
-         MPIDR, EL1PC, EL1Arg));
+  HLOG((HLOG_VERBOSE, "CPU_ON for core %lx 0x%lx(0x%lx)\n",
+        MPIDR, EL1PC, EL1Arg));
 
   /*
    * One page should be more than enough ;-).
@@ -92,12 +92,12 @@ HypSMPOn(
   StackSize = EFI_PAGE_SIZE;
   Stack = HypMemAlloc(EFI_SIZE_TO_PAGES(StackSize));
   if (Stack == NULL) {
-    DEBUG((EFI_D_ERROR, "No memory for stack\n"));
+    HLOG((HLOG_ERROR, "No memory for stack\n"));
     return PSCI_RETURN_INTERNAL_FAILURE;
   }
 
-  DEBUG((EFI_D_VERBOSE, "%u of EL2 stack at %p\n",
-         StackSize, Stack));
+  HLOG((HLOG_VERBOSE, "%u of EL2 stack at %p\n",
+        StackSize, Stack));
 
   State = Stack;
   State->SPx = UN(Stack) + StackSize;
