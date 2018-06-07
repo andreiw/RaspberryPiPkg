@@ -26,15 +26,61 @@
 #define SPSR_2_BITNESS(spsr) (X((spsr), 4, 4) ? 32 : 64)
 #define SPSR_2_SPSEL(spsr) (X((spsr), 0, 0) ? 1 : 0)
 
-#define HPFAR_2_GPA(hpfar) I(X((hpfar), 4, 39), 12, 47)
+#define HPFAR_2_GPA(hpfar, far) (I(X((hpfar), 4, 39), 12, 47) | \
+                                 I((far), 11, 0))
 #define ESR_EC_HVC64   0x16
 #define ESR_EC_SMC64   0x17
+#define ESR_EC_MSR     0x18
 #define ESR_EC_IABT_LO 0x20
 #define ESR_EC_DABT_LO 0x24
+#define ESR_EC_BRK     0x3C
 #define ESR_2_IL(x)  (X((x), 25, 25))
 #define ESR_2_EC(x)  (X((x), 26, 31))
 #define ESR_2_ISS(x) (X((x), 0, 24))
 
+#define ISS_SYS_WRITE(x) ((X((x), 0, 0)) == 0)
+#define ISS_SYS_CRm(x)   (X((x), 4, 1))
+#define ISS_SYS_Rt(x)    (X((x), 9, 5))
+#define ISS_SYS_CRn(x)   (X((x), 13, 10))
+#define ISS_SYS_Op1(x)   (X((x), 16, 14))
+#define ISS_SYS_Op2(x)   (X((x), 19, 17))
+#define ISS_SYS_Op0(x)   (X((x), 21, 20))
+#define ISS_SYS_MSR(x)   (X(ISS_SYS_Op0((x)), 1, 1) == 1)
+#define ISS_SYS_O0(x)    X(ISS_SYS_Op0((x)), 0, 0)
+
+/*
+ * Cook an ISS MSR access field into a common form,
+ * where we saturate the access and register fields into
+ * to known values.
+ */
+#define ISS_SYS_2_MSRDEF(x) ((x) | I(1, 0, 0) | I(0x1F, 9, 5))
+#define MSRDEF(O0, Op1, CRn, CRm, Op2) \
+  ISS_SYS_2_MSRDEF(I(CRm, 4, 1) | I(CRn, 13, 10) | \
+                   I(Op1, 16, 14) | I(Op2, 19, 17) | \
+                   I(1, 21, 21) | I(O0, 20, 20))
+
+#define MSRDEF_OSDTRRX_EL1     MSRDEF(0, 0, 0, 0, 2)
+#define MSRDEF_MDCCINT_EL1     MSRDEF(0, 0, 0, 2, 0)
+#define MSRDEF_MDSCR_EL1       MSRDEF(0, 0, 0, 2, 2)
+#define MSRDEF_OSDTRTX_EL1     MSRDEF(0, 0, 0, 3, 2)
+#define MSRDEF_OSECCR_EL1      MSRDEF(0, 0, 0, 6, 2)
+#define MSRDEF_DBGBVR_EL1(x)   MSRDEF(0, 0, 0, (x), 4)
+#define MSRDEF_DBGBCR_EL1(x)   MSRDEF(0, 0, 0, (x), 5)
+#define MSRDEF_DBGWVR_EL1(x)   MSRDEF(0, 0, 0, (x), 6)
+#define MSRDEF_DBGWCR_EL1(x)   MSRDEF(0, 0, 0, (x), 7)
+#define MSRDEF_MDRAR_EL1       MSRDEF(0, 0, 1, 0, 0)
+#define MSRDEF_OSLAR_EL1       MSRDEF(0, 0, 1, 0, 4)
+#define MSRDEF_OSLSR_EL1       MSRDEF(0, 0, 1, 1, 4)
+#define MSRDEF_OSDLR_EL1       MSRDEF(0, 0, 1, 3, 4)
+#define MSRDEF_DBGPRCR_EL1     MSRDEF(0, 0, 1, 4, 4)
+#define MSRDEF_DBGCLAIMSET_EL1 MSRDEF(0, 0, 7, 8, 6)
+#define MSRDEF_DBGCLAIMCLR_EL1 MSRDEF(0, 0, 7, 9, 6)
+#define MSRDEF_DBGAUTHSTAT_EL1 MSRDEF(0, 0, 7, 14, 6)
+#define MSRDEF_MDCCSR_EL0      MSRDEF(0, 3, 0, 1, 0)
+#define MSRDEF_DBGDTR_EL0      MSRDEF(0, 3, 0, 4, 0)
+#define MSRDEF_DBGDTRF_EL0     MSRDEF(0, 3, 0, 5, 0)
+
+#define MDCR_TDE  BIT8
 #define HCR_VM    BIT0
 #define HCR_AMO   BIT5
 #define HCR_VSE   BIT8

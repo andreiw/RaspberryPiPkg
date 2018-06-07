@@ -121,6 +121,23 @@ SetupVariables (
   }
 
   Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"HypWindowsDebugHook",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdHypWindowsDebugHook,
+              PcdGet32 (PcdHypWindowsDebugHook));
+  }
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"HypWin2000Mask",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdHypWin2000Mask, PcdGet32 (PcdHypWin2000Mask));
+  }
+
+  Size = sizeof (UINT32);
   Status = gRT->GetVariable(L"CpuClock",
                             &gConfigDxeFormSetGuid,
                             NULL,  &Size, &Var32);

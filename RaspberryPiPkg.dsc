@@ -415,6 +415,8 @@ DEFINE HYP_LOG_MASK = 0xffffffff
 [PcdsDynamicHii.common.DEFAULT]
   gRaspberryPiTokenSpaceGuid.PcdHypEnable|L"HypEnable"|gConfigDxeFormSetGuid|0x0|0
   gRaspberryPiTokenSpaceGuid.PcdHypLogMask|L"HypLogMask"|gConfigDxeFormSetGuid|0x0|$(HYP_LOG_MASK)
+  gRaspberryPiTokenSpaceGuid.PcdHypWindowsDebugHook|L"HypWindowsDebugHook"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask|L"HypWin2000Mask"|gConfigDxeFormSetGuid|0x0|0
   gRaspberryPiTokenSpaceGuid.PcdCpuClock|L"CpuClock"|gConfigDxeFormSetGuid|0x0|0
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|L"Timeout"|gEfiGlobalVariableGuid|0x0|5
   #

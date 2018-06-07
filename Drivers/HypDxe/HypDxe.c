@@ -23,6 +23,7 @@ CaptureEL2State(
   OUT CAPTURED_EL2_STATE *State
 )
 {
+  ReadSysReg(State->Mdcr, mdcr_el2);
   ReadSysReg(State->Hcr, hcr_el2);
   ReadSysReg(State->Cptr, cptr_el2);
   ReadSysReg(State->Cnthctl, cnthctl_el2);
@@ -356,15 +357,14 @@ HypExceptionFatal (
   IN OUT EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
 )
 {
+  UINTN EL = SPSR_2_EL(SystemContext->SPSR);
+
   if (SPSR_2_BITNESS(SystemContext->SPSR) == 32) {
     HLOG((HLOG_ERROR, "Unexpected exception from AArch32!\n"));
     goto done;
   }
 
-  if (SPSR_2_EL(SystemContext->SPSR) == 2) {
-    HLOG((HLOG_ERROR, "Unexpected exception in EL2!\n"));
-    goto done;
-  }
+  HLOG((HLOG_ERROR, "Unexpected exception from EL%u!\n", EL));
 
 done:
   HLOG((HLOG_ERROR, "ESR 0x%lx (EC 0x%x ISS 0x%x)\n",
@@ -373,10 +373,22 @@ done:
          ESR_2_ISS(SystemContext->ESR)));
   HLOG((HLOG_ERROR, "FAR = 0x%lx\n",
          SystemContext->FAR));
-  if (SPSR_2_EL(SystemContext->SPSR) < 2) {
-    HLOG((HLOG_ERROR, "Faulting GPA = 0x%lx\n",
-           FaultingGPA));
+
+  if (EL < 2) {
+    UINT64 Hcr;
+    ReadSysReg(Hcr, hcr_el2);
+
+    HLOG((HLOG_ERROR, "Faulting GPA = 0x%lx\n", FaultingGPA));
+
+    /*
+     * Do an EA.
+     */
+    WriteSysReg(far_el1, SystemContext->FAR);
+    WriteSysReg(hcr_el2, Hcr | HCR_VSE);
+    HLOG((HLOG_ERROR, "Injecting EA!\n"));
+    return;
   }
+
   while(1);
 }
 
@@ -388,9 +400,10 @@ HypExceptionHandler (
 )
 {
   GPA FaultingGPA;
+  BOOLEAN Handled = FALSE;
 
   ReadSysReg(FaultingGPA, hpfar_el2);
-  FaultingGPA = HPFAR_2_GPA(FaultingGPA);
+  FaultingGPA = HPFAR_2_GPA(FaultingGPA, SystemContext->FAR);
 
   if (SPSR_2_BITNESS(SystemContext->SPSR) == 32 ||
       SPSR_2_EL(SystemContext->SPSR) == 2) {
@@ -404,6 +417,7 @@ HypExceptionHandler (
     if (FaultingGPA >= MMIO_EMU_START &&
         HypMmio(SystemContext) == EFI_SUCCESS) {
       SystemContext->ELR += 4;
+      Handled = TRUE;
       break;
     }
 
@@ -418,6 +432,7 @@ HypExceptionHandler (
        * memory ranges to be reported that way.
        */
       SystemContext->ELR += 4;
+      Handled = TRUE;
       break;
     }
 
@@ -425,27 +440,38 @@ HypExceptionHandler (
      * Fall-through.
      */
   case ESR_EC_IABT_LO: {
-    UINT64 Hcr;
-
-    ReadSysReg(Hcr, hcr_el2);
-    /*
-     * Do an EA.
-     */
-    HLOG((HLOG_ERROR, "Unhandled access to 0x%lx, injecting EA\n",
-           FaultingGPA));
-    WriteSysReg(far_el1, SystemContext->FAR);
-    WriteSysReg(hcr_el2, Hcr | HCR_VSE);
+    HLOG((HLOG_ERROR, "Unhandled access to 0x%lx\n",
+          FaultingGPA));
   } break;
   case ESR_EC_HVC64:
     HypHVCProcess(SystemContext);
+    Handled = TRUE;
     break;
   case ESR_EC_SMC64: {
     HypWSTryPatch(SystemContext);
     HypSMCProcess(SystemContext);
     SystemContext->ELR += 4;
+    Handled = TRUE;
   } break;
-
+  case ESR_EC_MSR: {
+    Handled = HypSYSProcess(SystemContext);
+    if (Handled) {
+      SystemContext->ELR += 4;
+    }
+  } break;
+  case ESR_EC_BRK: {
+    if (SPSR_2_EL(SystemContext->SPSR) < 2) {
+      Handled = HypWSTryBRK(SystemContext);
+    } else {
+      HLOG((HLOG_ERROR, "Unexpected BRK\n"));
+    }
+  } break;
   default:
+    HLOG((HLOG_ERROR, "Unhandled fault reason 0x%lx\n",
+          ESR_2_EC(SystemContext->ESR)));
+  }
+
+  if (!Handled) {
     HypExceptionFatal(ExceptionType, FaultingGPA,
                       SystemContext);
   }

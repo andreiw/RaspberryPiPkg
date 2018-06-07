@@ -52,6 +52,7 @@ HypSMPContinueStartup(
   WriteSysReg(vttbr_el2, State->EL2.Vttbr);
   WriteSysReg(cptr_el2, State->EL2.Cptr);
   WriteSysReg(hcr_el2, State->EL2.Hcr);
+  WriteSysReg(mdcr_el2, State->EL2.Mdcr);
   TLBI_S12();
 
   /*

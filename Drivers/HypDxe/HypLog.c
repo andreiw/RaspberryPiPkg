@@ -75,6 +75,31 @@ HypLogSetColors(
 }
 
 
+STATIC VOID
+HypLogWrite(
+  IN  CHAR8 *String,
+  IN  UINTN Len
+  )
+{
+  CHAR8 *NL = "\r\n";
+  CHAR8 *End = String + Len;
+
+  while (String < End) {
+    if (*String == '\0') {
+      break;
+    }
+
+    if (*String != '\n') {
+      SerialPortWrite(U8P(String), 1);
+    } else {
+      SerialPortWrite(U8P(NL), 2);
+    }
+
+    String++;
+  }
+}
+
+
 VOID
 HypLog (
   IN  UINT32       ErrorLevel,
@@ -108,11 +133,13 @@ HypLog (
     Color = COL_RED;
   } else if (ErrorLevel == HLOG_INFO) {
     Color = BRIGHT(COL_GREEN);
+  } else if (ErrorLevel == HLOG_VM) {
+    Color = BRIGHT(COL_BLUE);
   } else {
     Color = COL_DEFAULT;
   }
   HypLogSetColors(Color);
-  SerialPortWrite (U8P(mBuffer), Printed);
+  HypLogWrite (mBuffer, Printed);
   if (Color != COL_DEFAULT) {
     HypLogSetColors(COL_DEFAULT);
   }
@@ -135,7 +162,7 @@ HypAssert (
                          gEfiCallerBaseName, FileName, LineNumber,
                          Description);
 
-  SerialPortWrite ((UINT8 *) mBuffer, Printed);
+  HypLogWrite (mBuffer, Printed);
   SUnlock(&mLogLock);
 
   CpuBreakpoint ();

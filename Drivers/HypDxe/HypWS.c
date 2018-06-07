@@ -15,6 +15,13 @@
 #include "HypDxe.h"
 #include "ArmDefs.h"
 
+#define BRK_BREAKPOINT   0xf000
+#define BRK_ASSERT       0xf001
+#define BRK_SERVICE      0xf002
+#define SERVICE_PRINT          1
+#define SERVICE_LOAD_SYMBOLS   3
+#define SERVICE_UNLOAD_SYMBOLS 4
+
 #define NT_MIN_ILM       0xFFFFF80000000000ul
 #define NT_MAX_ILM       0xFFFFF87FFFFFFFFFul
 #define WS_BUILD_UNKNOWN 0
@@ -32,6 +39,12 @@
 #define KPCR_KD_VER_BLOCK(KPCR) *((UINT64 *) (U8P((KPCR)) + 0x80))
 
 typedef BOOLEAN (*ContigGPASearchCheck)(HVA, VOID *);
+
+typedef struct {
+  UINT16 Length;
+  UINT16 MaximumLength;
+  GVA Buffer;
+} OEM_STRING;
 
 typedef struct {
   UINT16 MajorVersion;
@@ -54,6 +67,9 @@ typedef struct {
 
 STATIC UINTN mWSBuild;
 STATIC BOOLEAN mWSCanPatch;
+STATIC BOOLEAN mWSDebugHook;
+STATIC UINT32 mWSWin2000Mask;
+STATIC GVA mWSKernBase;
 
 
 STATIC HVA
@@ -128,6 +144,7 @@ HypWSProbeKdVerBlock(
         KdVer->MinorVersion, KdVer->KernBase));
 
   mWSBuild = KdVer->MinorVersion;
+  mWSKernBase = KdVer->KernBase;
   return TRUE;
 }
 
@@ -311,10 +328,6 @@ HypWSSupported(
   GVA KPCRVA;
   VOID *KdVersionBlock;
 
-  if (!mWSCanPatch) {
-    return FALSE;
-  }
-
   /*
    * ntddk.h defines KIPCR() by masking
    * off low bits.
@@ -351,6 +364,7 @@ HypWSSupported(
     return FALSE;
   }
 
+  HLOG((HLOG_INFO, "Probing for DBGKD_GET_VERSION64...\n"));
   KdVersionBlock = HVA_2_P(ProbeIgnZero(KPCR_KD_VER_BLOCK(KPCR)));
   if (HypWSProbeKdVerBlock(KdVersionBlock, 0)) {
     return TRUE;
@@ -366,6 +380,100 @@ HypWSSupported(
    * may try matching a known instruction sequence, and still
    * work.
    */
+  return TRUE;
+}
+
+
+BOOLEAN
+HypWSTryBRK(
+  IN  EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
+  )
+{
+  BOOLEAN GiveUp = FALSE;
+  GVA PreferredReturn = SystemContext->ELR + 4;
+  UINTN BrkCall = ESR_2_ISS(SystemContext->ESR);
+
+  if (!mWSDebugHook) {
+    /*
+     * Another CPU gave up on the hooking.
+     */
+    WriteSysReg(mdcr_el2, 0);
+    return TRUE;
+  }
+
+  if (BrkCall == BRK_BREAKPOINT) {
+    HLOG((HLOG_INFO, "DbgBreakPointWithStatus(0x%x)\n",
+          SystemContext->X0));
+    GiveUp = TRUE;
+  } else if (BrkCall == BRK_SERVICE) {
+    UINTN Service = SystemContext->X16;
+    switch (Service) {
+    case SERVICE_PRINT: {
+      CHAR8 *String = HVA_2_P(Probe(SystemContext->X0));
+
+      if (String != NULL) {
+        /*
+         * Yeah yeah, I know :-/.
+         */
+        UINTN Len = AsciiStrLen(String);
+        if (String[Len - 1] == '\r' ||
+            String[Len - 1] == '\n') {
+          Len--;
+        }
+        HLOG((HLOG_VM, "%.*a\n", Len, String));
+      }
+    } break;
+    case SERVICE_LOAD_SYMBOLS:
+    case SERVICE_UNLOAD_SYMBOLS: {
+      CHAR8 *String = NULL;
+      OEM_STRING *StringStruct = HVA_2_P(Probe(SystemContext->X0));
+
+      if (StringStruct != NULL) {
+        String = HVA_2_P(Probe(StringStruct->Buffer));
+      }
+
+      if (String != NULL) {
+        HLOG((HLOG_VM, "%aoading module '%.*a'\n",
+              Service == SERVICE_LOAD_SYMBOLS ? "L" : "Unl",
+              StringStruct->Length, String));
+      } else {
+        HLOG((HLOG_VM, "%aoading unknown module\n",
+              Service == SERVICE_LOAD_SYMBOLS ? "L" : "Unl"));
+      }
+    } break;
+    default:
+      HLOG((HLOG_ERROR, "Unsupported NT debug service %u\n",
+            Service));
+      GiveUp = TRUE;
+    }
+
+    /*
+     * Services must ELR + 8 overall to jump over the following
+     * brk #F000 guard.
+     */
+    PreferredReturn += 4;
+  } else {
+    HLOG((HLOG_ERROR, "Ignoring unknown BRK #0x%x\n", BrkCall));
+  }
+
+  if (GiveUp) {
+    /*
+     * May simulate BRK delivery into EL1 in the future,
+     * but right now just bail on trapping. This replays
+     * the BRK inside EL1 but means we'll miss any future
+     * ones.
+     */
+    HLOG((HLOG_ERROR, "Giving up on debug hooking\n"));
+    mWSDebugHook = FALSE;
+    WriteSysReg(mdcr_el2, 0);
+  } else {
+    /*
+     * Report no debugger break-in.
+     */
+    SystemContext->X0 = 0;
+    SystemContext->ELR = PreferredReturn;
+  }
+
   return TRUE;
 }
 
@@ -404,13 +512,14 @@ FindHalpInterruptRegisterControllerLoc(
 
 
 STATIC
-BOOLEAN
-PatchHalpInterruptRegisterController(
+VOID
+HypWSPatchHalpInterruptRegisterController(
   IN  EFI_SYSTEM_CONTEXT_AARCH64 *Context
   )
 {
   UINT32 *Insn;
   GVA PC = Context->ELR;
+  BOOLEAN Status = FALSE;
 
   /*
    * hal!HalpPowerInvokeSmc:
@@ -438,7 +547,7 @@ PatchHalpInterruptRegisterController(
 
   if (PC == INVALID_GVA) {
     HLOG((HLOG_ERROR, "Couldn't locate hal!HalpInterruptRegisterController patch site\n"));
-    return FALSE;
+    goto done;
   }
 
   /*
@@ -447,21 +556,56 @@ PatchHalpInterruptRegisterController(
    * 0x64: 51000da8 sub  w8, w13, #3
    * 0x68: 7100051f cmp  w8, #1
    * 0x6c: 54000069 bls  <func>+0x78  <-- PC
-   *
-   * Patch the `bls` (54000069) to `b` (14000003).
    */
 
   Insn = HVA_2_P(Probe(PC));
   if (*Insn == 0x14000003) {
     HLOG((HLOG_ERROR, "Already patched?\n"));
-    return TRUE;
+    Status = TRUE;
+    goto done;
   } else if (*Insn != 0x54000069) {
     HLOG((HLOG_ERROR, "Invalid hal!HalpInterruptRegisterController patch site (0x%x)\n", *Insn));
-    return FALSE;
+    goto done;
   }
 
+  /*
+   * Patch the `bls` (54000069) to `b` (14000003).
+   */
   *Insn = 0x14000003;
-  return TRUE;
+  Status = TRUE;
+done:
+  if (!Status) {
+    HLOG((HLOG_ERROR, "Couldn't patch HAL for InterruptControllerBcm\n"));
+  }
+}
+
+
+STATIC VOID
+HypWSPatchWin2000Mask(
+  VOID
+  )
+{
+  UINT32 *Mask;
+  GVA MaskGVA = mWSKernBase;
+
+  if (mWSBuild == 17125) {
+    /*
+     * nt!HalDispatchTable+0x100+0x260.
+     */
+    MaskGVA += 0x336260;
+  } else if (mWSBuild == 17672) {
+    /*
+     * nt!HalPrivateDispatchTable+0x3d10+0xd30.
+     */
+    MaskGVA += 0x329d30;
+  } else {
+    HLOG((HLOG_ERROR, "Kd_Win2000_Mask patch doesn't support build %u\n",
+          mWSBuild));
+    return;
+  }
+
+  Mask = HVA_2_P(Probe(MaskGVA));
+  *Mask = mWSWin2000Mask;
 }
 
 
@@ -470,7 +614,9 @@ HypWSTryPatch(
   IN  EFI_SYSTEM_CONTEXT_AARCH64 *Context
   )
 {
-  BOOLEAN PatchStatus = FALSE;
+  if (!mWSCanPatch) {
+    return;
+  }
 
   if (!HypWSSupported(Context)) {
     /*
@@ -479,11 +625,19 @@ HypWSTryPatch(
     goto done;
   }
 
-  PatchStatus = PatchHalpInterruptRegisterController(Context);
-  if (!PatchStatus) {
-    HLOG((HLOG_ERROR, "Patching WoA failed, good luck!\n"));
+  HypWSPatchHalpInterruptRegisterController(Context);
+
+  if (mWSWin2000Mask != 0) {
+    HypWSPatchWin2000Mask();
   }
 
+  if (mWSDebugHook) {
+    /*
+     * Trap all debug registers and route
+     * debugging exceptions.
+     */
+    WriteSysReg(mdcr_el2, MDCR_TDE);
+  }
 done:
   mWSCanPatch = FALSE;
 }
@@ -495,5 +649,7 @@ HypWSInit(
   )
 {
   mWSBuild = WS_BUILD_UNKNOWN;
+  mWSDebugHook = PcdGet32(PcdHypWindowsDebugHook);
+  mWSWin2000Mask = PcdGet32(PcdHypWin2000Mask);
   mWSCanPatch = TRUE;
 }

@@ -18,6 +18,7 @@
 #include <Uefi.h>
 #include <Chipset/AArch64.h>
 #include <Protocol/DebugSupport.h>
+#include <Library/BaseLib.h>
 #include <Utils.h>
 
 typedef struct
@@ -48,6 +49,7 @@ typedef struct
   UINT64 Vttbr;
   UINT64 Cptr;
   UINT64 Hcr;
+  UINT64 Mdcr;
 } CAPTURED_EL2_STATE;
 
 #define MMIO_EMU_START 0x80000000
@@ -137,10 +139,16 @@ HypWSInit(
   VOID
   );
 
+BOOLEAN
+HypWSTryBRK(
+  IN  EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
+  );
+
 VOID
 HypWSTryPatch(
   IN  EFI_SYSTEM_CONTEXT_AARCH64 *Context
   );
+
 
 VOID
 HypHVCProcess(
@@ -149,6 +157,11 @@ HypHVCProcess(
 
 VOID
 HypSMCProcess(
+  IN  EFI_SYSTEM_CONTEXT_AARCH64 *Context
+  );
+
+BOOLEAN
+HypSYSProcess(
   IN  EFI_SYSTEM_CONTEXT_AARCH64 *Context
   );
 

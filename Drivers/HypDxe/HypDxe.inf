@@ -35,6 +35,7 @@
   HypWS.c
   HypSMC.c
   HypHVC.c
+  HypSYS.c
   HypSMP.c
   HypLog.c
 
@@ -73,6 +74,8 @@
 [Pcd]
   gRaspberryPiTokenSpaceGuid.PcdHypEnable
   gRaspberryPiTokenSpaceGuid.PcdHypLogMask
+  gRaspberryPiTokenSpaceGuid.PcdHypWindowsDebugHook
+  gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask
 
 [FeaturePcd]
 
