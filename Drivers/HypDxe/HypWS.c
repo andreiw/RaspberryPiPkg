@@ -384,7 +384,7 @@ HypWSSupported(
 }
 
 
-BOOLEAN
+VOID
 HypWSTryBRK(
   IN  EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
   )
@@ -398,7 +398,7 @@ HypWSTryBRK(
      * Another CPU gave up on the hooking.
      */
     WriteSysReg(mdcr_el2, 0);
-    return TRUE;
+    return;
   }
 
   if (BrkCall == BRK_BREAKPOINT) {
@@ -473,8 +473,6 @@ HypWSTryBRK(
     SystemContext->X0 = 0;
     SystemContext->ELR = PreferredReturn;
   }
-
-  return TRUE;
 }
 
 

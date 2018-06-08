@@ -139,7 +139,7 @@ HypWSInit(
   VOID
   );
 
-BOOLEAN
+VOID
 HypWSTryBRK(
   IN  EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
   );

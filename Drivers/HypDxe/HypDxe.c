@@ -353,7 +353,6 @@ HypSwitchToEL1(IN  CAPTURED_EL2_STATE *State,
 STATIC VOID
 HypExceptionFatal (
   IN     EFI_EXCEPTION_TYPE ExceptionType,
-  IN     UINT64 FaultingGPA,
   IN OUT EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
 )
 {
@@ -378,8 +377,6 @@ done:
     UINT64 Hcr;
     ReadSysReg(Hcr, hcr_el2);
 
-    HLOG((HLOG_ERROR, "Faulting GPA = 0x%lx\n", FaultingGPA));
-
     /*
      * Do an EA.
      */
@@ -399,49 +396,46 @@ HypExceptionHandler (
   IN OUT EFI_SYSTEM_CONTEXT_AARCH64 *SystemContext
 )
 {
-  GPA FaultingGPA;
   BOOLEAN Handled = FALSE;
-
-  ReadSysReg(FaultingGPA, hpfar_el2);
-  FaultingGPA = HPFAR_2_GPA(FaultingGPA, SystemContext->FAR);
+  UINTN EC = ESR_2_EC(SystemContext->ESR);
 
   if (SPSR_2_BITNESS(SystemContext->SPSR) == 32 ||
       SPSR_2_EL(SystemContext->SPSR) == 2) {
-    HypExceptionFatal(ExceptionType,
-                      FaultingGPA,
-                      SystemContext);
+    HypExceptionFatal(ExceptionType, SystemContext);
   }
 
-  switch (ESR_2_EC(SystemContext->ESR)) {
-  case ESR_EC_DABT_LO:
-    if (FaultingGPA >= MMIO_EMU_START &&
-        HypMmio(SystemContext) == EFI_SUCCESS) {
-      SystemContext->ELR += 4;
-      Handled = TRUE;
-      break;
+  switch (EC) {
+  case ESR_EC_IABT_LO:
+  case ESR_EC_DABT_LO: {
+    GPA FaultingGPA;
+    ReadSysReg(FaultingGPA, hpfar_el2);
+    FaultingGPA = HPFAR_2_GPA(FaultingGPA, SystemContext->FAR);
+
+    if (EC == ESR_EC_DABT_LO) {
+      if (FaultingGPA >= MMIO_EMU_START &&
+          HypMmio(SystemContext) == EFI_SUCCESS) {
+        SystemContext->ELR += 4;
+        Handled = TRUE;
+        break;
+      }
+
+      if (HypMemIsHypAddr(GPA_2_MPA(FaultingGPA))) {
+        /*
+         * Ignore it.
+         *
+         * This is not just a malicious EL1, this could
+         * be RuntimeDxe trying to "move" us, which is
+         * not something we care about, because we're
+         * not a runtime servce - we just want our
+         * memory ranges to be reported that way.
+         */
+        SystemContext->ELR += 4;
+        Handled = TRUE;
+        break;
+      }
     }
 
-    if (HypMemIsHypAddr(GPA_2_MPA(FaultingGPA))) {
-      /*
-       * Ignore it.
-       *
-       * This is not just a malicious EL1, this could
-       * be RuntimeDxe trying to "move" us, which is
-       * not something we care about, because we're
-       * not a runtime servce - we just want our
-       * memory ranges to be reported that way.
-       */
-      SystemContext->ELR += 4;
-      Handled = TRUE;
-      break;
-    }
-
-    /*
-     * Fall-through.
-     */
-  case ESR_EC_IABT_LO: {
-    HLOG((HLOG_ERROR, "Unhandled access to 0x%lx\n",
-          FaultingGPA));
+    HLOG((HLOG_ERROR, "Faulting GPA = 0x%lx\n", FaultingGPA));
   } break;
   case ESR_EC_HVC64:
     HypHVCProcess(SystemContext);
@@ -461,7 +455,8 @@ HypExceptionHandler (
   } break;
   case ESR_EC_BRK: {
     if (SPSR_2_EL(SystemContext->SPSR) < 2) {
-      Handled = HypWSTryBRK(SystemContext);
+      HypWSTryBRK(SystemContext);
+      Handled = TRUE;
     } else {
       HLOG((HLOG_ERROR, "Unexpected BRK\n"));
     }
@@ -472,8 +467,7 @@ HypExceptionHandler (
   }
 
   if (!Handled) {
-    HypExceptionFatal(ExceptionType, FaultingGPA,
-                      SystemContext);
+    HypExceptionFatal(ExceptionType, SystemContext);
   }
 }
 
