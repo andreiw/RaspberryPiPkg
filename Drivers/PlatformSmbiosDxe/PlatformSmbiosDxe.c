@@ -65,9 +65,9 @@ SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
   { EFI_SMBIOS_TYPE_BIOS_INFORMATION, sizeof (SMBIOS_TABLE_TYPE0), 0 },
   1,                    // Vendor String
   2,                    // BiosVersion String
-  0xE000,               // BiosSegment
+  0x0,                  // BiosSegment
   3,                    // BiosReleaseDate String
-  0x7F,                 // BiosSize
+  0x1F,                 // BiosSize
   {                     // BiosCharacteristics
     0,    //  Reserved                          :2;  ///< Bits 0-1.
     0,    //  Unknown                           :1;
@@ -79,8 +79,8 @@ SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
     0,    //  PcmciaIsSupported                 :1;
     0,    //  PlugAndPlayIsSupported            :1;
     0,    //  ApmIsSupported                    :1;
-    1,    //  BiosIsUpgradable                  :1;
-    1,    //  BiosShadowingAllowed              :1;
+    0,    //  BiosIsUpgradable                  :1;
+    0,    //  BiosShadowingAllowed              :1;
     0,    //  VlVesaIsSupported                 :1;
     0,    //  EscdSupportIsAvailable            :1;
     0,    //  BootFromCdIsSupported             :1;
@@ -104,7 +104,7 @@ SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
     ///< and bits 48-63 reserved for System Vendor.
   },
   {       // BIOSCharacteristicsExtensionBytes[]
-    0x81, //  AcpiIsSupported                   :1;
+    0x01, //  AcpiIsSupported                   :1;
           //  UsbLegacyIsSupported              :1;
           //  AgpIsSupported                    :1;
           //  I2OBootIsSupported                :1;
@@ -113,23 +113,23 @@ SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
           //  Boot1394IsSupported               :1;
           //  SmartBatteryIsSupported           :1;
           //  BIOSCharacteristicsExtensionBytes[1]
-    0x0e, //  BiosBootSpecIsSupported              :1;
+    0x08, //  BiosBootSpecIsSupported              :1;
           //  FunctionKeyNetworkBootIsSupported    :1;
           //  TargetContentDistributionEnabled     :1;
           //  UefiSpecificationSupported           :1;
           //  VirtualMachineSupported              :1;
           //  ExtensionByte2Reserved               :3;
   },
-  0x00,                    // SystemBiosMajorRelease
-  0x01,                    // SystemBiosMinorRelease
+  0xFF,                    // SystemBiosMajorRelease
+  0xFF,                    // SystemBiosMinorRelease
   0xFF,                    // EmbeddedControllerFirmwareMajorRelease
   0xFF,                    // EmbeddedControllerFirmwareMinorRelease
 };
 
 CHAR8 *mBIOSInfoType0Strings[] = {
   "https://github.org/andreiw/RaspberryPiPkg",      // Vendor String
-  "Raspberry Pi 64-bit UEFI (Built: " __DATE__ ")", // BiosVersion String
-  "Built: " __DATE__,                               // BiosReleaseDate String
+  "Raspberry Pi 64-bit UEFI (" S(BUILD_COMMIT)" on " S(BUILD_DATE) ")", // BiosVersion String
+  S(BUILD_DATE),
   NULL
 };
 

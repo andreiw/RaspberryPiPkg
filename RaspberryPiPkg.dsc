@@ -45,6 +45,13 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
 !endif
 !endif
 
+!ifndef BUILD_DATE
+DEFINE BUILD_DATE = 01/01/2018
+!endif
+!ifndef BUILD_COMMIT
+DEFINE BUILD_COMMIT = current
+!endif
+
 !ifndef HYP_LOG_MASK
 #
 # HLOG_ERROR   0x00000000
@@ -357,6 +364,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
 
 [BuildOptions]
   GCC:RELEASE_*_*_CC_FLAGS  = -DMDEPKG_NDEBUG
+  GCC:*_*_*_CC_FLAGS = -DBUILD_DATE=$(BUILD_DATE) -DBUILD_COMMIT=$(BUILD_COMMIT)
 
 ################################################################################
 #

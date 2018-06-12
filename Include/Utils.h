@@ -42,4 +42,7 @@
 
 #define ELES(x) (sizeof((x)) / sizeof((x)[0]))
 
+#define _S(x) #x
+#define S(x) _S(x)
+
 #endif /* UTILS_H */
