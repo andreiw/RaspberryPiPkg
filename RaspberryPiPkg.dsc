@@ -577,9 +577,9 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   #
   # SD/MMC support
   #
-  # RaspberryPiPkg/Drivers/SdHostDxe/SdHostDxe.inf
-  RaspberryPiPkg/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
-  EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
+  RaspberryPiPkg/Drivers/SdHostDxe/SdHostDxe.inf
+  # RaspberryPiPkg/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
+  RaspberryPiPkg/Drivers/MmcDxe/MmcDxe.inf
 
   #
   # Networking stack

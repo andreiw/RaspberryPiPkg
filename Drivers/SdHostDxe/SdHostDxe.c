@@ -34,6 +34,7 @@
 #include <IndustryStandard/Bcm2836.h>
 #include <IndustryStandard/RpiFirmware.h>
 #include <IndustryStandard/Bcm2836SdHost.h>
+#include <IndustryStandard/Bcm2836Gpio.h>
 
 #define SDHOST_BLOCK_BYTE_LENGTH            512
 
@@ -119,7 +120,7 @@ SdHostDumpSdCardStatus(
     UINT32 SdCardStatus;
     EFI_STATUS Status = SdHostGetSdStatus(&SdCardStatus);
     if (!EFI_ERROR(Status)) {
-        UINT32 CurrState = SDHOST_R0_CURRENTSTATE(SdCardStatus);
+        /*UINT32 CurrState = SDHOST_R0_CURRENTSTATE(SdCardStatus);
         DEBUG((
             DEBUG_MMCHOST_SD,
             "SdHost: SdCardStatus 0x%8.8X: ReadyForData?%d, State[%d]: %a\n",
@@ -127,7 +128,7 @@ SdHostDumpSdCardStatus(
             ((SdCardStatus & SDHOST_R0_READY_FOR_DATA) ? 1 : 0),
             CurrState,
             ((CurrState < (sizeof(mStrSdState) / sizeof(*mStrSdState))) ?
-                mStrSdState[CurrState] : "UNDEF")));
+                mStrSdState[CurrState] : "UNDEF")));*/
     }
 }
 
@@ -155,7 +156,7 @@ SdHostDumpStatus(
             DEBUG((DEBUG_MMCHOST_SD, "  - Read/Erase/Write Transfer Timeout\n"));
     }
 
-    UINT32 Edm = MmioRead32(SDHOST_EDM);
+    /*UINT32 Edm = MmioRead32(SDHOST_EDM);
     DEBUG((DEBUG_MMCHOST_SD, "SdHost: Diagnose EDM: 0x%8.8X\n", Edm));
     DEBUG((DEBUG_MMCHOST_SD, "  - FSM: 0x%x\n", (Edm & 0xF)));
     DEBUG((DEBUG_MMCHOST_SD, "  - Fifo Count: %d\n", ((Edm >> 4) & 0x1F)));
@@ -164,7 +165,7 @@ SdHostDumpStatus(
         ((Edm >> SDHOST_EDM_WRITE_THRESHOLD_SHIFT) & SDHOST_EDM_THRESHOLD_MASK)));
     DEBUG((DEBUG_MMCHOST_SD,
         "  - Fifo Read Threshold: %d\n",
-        ((Edm >> SDHOST_EDM_READ_THRESHOLD_SHIFT) & SDHOST_EDM_THRESHOLD_MASK)));
+        ((Edm >> SDHOST_EDM_READ_THRESHOLD_SHIFT) & SDHOST_EDM_THRESHOLD_MASK)));*/
 
     SdHostDumpSdCardStatus();
 }
@@ -892,6 +893,88 @@ SdHostInitialize(
     DEBUG((DEBUG_MMCHOST_SD, " - CMD_MAX_POLL_COUNT=%d\n", CMD_MAX_POLL_COUNT));
     DEBUG((DEBUG_MMCHOST_SD, " - CMD_MAX_RETRY_COUNT=%d\n", CMD_MAX_RETRY_COUNT));
     DEBUG((DEBUG_MMCHOST_SD, " - CMD_STALL_AFTER_RETRY_US=%dus\n", CMD_STALL_AFTER_RETRY_US));
+
+    // Claim the SD0 bus (MicroSD card)
+    // Configure pins 40-49 (GPFSEL4)
+    {
+      const UINT32 modifyMask =
+        (GPIO_FSEL_MASK << (48 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (49 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN));
+
+      const UINT32 functionMask =
+        (GPIO_FSEL_ALT0 << (48 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |     // SD0_CLK
+        (GPIO_FSEL_ALT0 << (49 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN));      // SD0_CMD
+
+      //C_ASSERT((functionMask & ~modifyMask) == 0);
+
+      UINT32 u32GPSEL4 = MmioRead32(GPIO_GPFSEL4);
+
+      // Mask off to 0 the 3 function bits for these GPIO pins
+      u32GPSEL4 &= ~modifyMask;
+
+      // OR in the GPIO pins required setting
+      u32GPSEL4 |= functionMask;
+
+      MmioWrite32(GPIO_GPFSEL4, u32GPSEL4);
+    } // GPFSEL4
+
+    // Configure pins 50-53 (GPFSEL5)
+    {
+      const UINT32 modifyMask =
+        (GPIO_FSEL_MASK << (50 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (51 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (52 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (53 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN));
+
+      const UINT32 functionMask =
+        (GPIO_FSEL_ALT0 << (50 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |     // SD0_DAT0
+        (GPIO_FSEL_ALT0 << (51 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |     // SD0_DAT1
+        (GPIO_FSEL_ALT0 << (52 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |     // SD0_DAT2
+        (GPIO_FSEL_ALT0 << (53 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN));      // SD0_DAT3
+
+      //C_ASSERT((functionMask & ~modifyMask) == 0);
+
+      UINT32 u32GPSEL5 = MmioRead32(GPIO_GPFSEL5);
+
+      //// Mask off to 0 the 3 function bits for these GPIO pins
+      u32GPSEL5 &= ~modifyMask;
+
+      //// OR in the GPIO pins required setting
+      u32GPSEL5 |= functionMask;
+
+      MmioWrite32(GPIO_GPFSEL5, u32GPSEL5);
+    } // GPFSEL5
+
+  
+    // Route the SD1 bus to Arasan (802.11 SDIO)
+    // FIXME this doesn't really belong here...
+    {
+      const UINT32 modifyMask =
+        (GPIO_FSEL_MASK << (34 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (35 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (36 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (37 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (38 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |
+        (GPIO_FSEL_MASK << (39 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN));
+
+      const UINT32 functionMask =
+        (GPIO_FSEL_ALT3 << (34 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |   // SD1_CLK
+        (GPIO_FSEL_ALT3 << (35 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |   // SD1_CMD
+        (GPIO_FSEL_ALT3 << (36 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |   // SD1_DAT0
+        (GPIO_FSEL_ALT3 << (37 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |   // SD1_DAT1
+        (GPIO_FSEL_ALT3 << (38 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN)) |   // SD1_DAT2
+        (GPIO_FSEL_ALT3 << (39 % GPIO_FSEL_PINS_PER_REGISTER * GPIO_FSEL_BITS_PER_PIN));    // SD1_DAT3
+
+      UINT32 u32GPSEL3 = MmioRead32(GPIO_GPFSEL3);
+
+      // Mask off to 0 the 3 function bits for these GPIO pins
+      u32GPSEL3 &= ~modifyMask;
+
+      // OR in the GPIO pins for the required setting
+      u32GPSEL3 |= functionMask;
+
+      MmioWrite32(GPIO_GPFSEL3, u32GPSEL3);
+    } // GPFSEL3
 
     Status = gBS->InstallMultipleProtocolInterfaces(
         &Handle,
