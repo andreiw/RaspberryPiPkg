@@ -51,7 +51,7 @@ HypLogInit(
 
 STATIC VOID
 HypLogSetColors(
-  IN  Color
+  IN  UINTN Color
   )
 {
   UINTN BrightControl;
