@@ -185,6 +185,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   AuthVariableLib|MdeModulePkg/Library/AuthVariableLibNull/AuthVariableLibNull.inf
 !endif
   VarCheckLib|MdeModulePkg/Library/VarCheckLib/VarCheckLib.inf
+  GpioLib|RaspberryPiPkg/Library/GpioLib/GpioLib.inf
 
 [LibraryClasses.common.SEC]
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
@@ -361,7 +362,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   UefiScsiLib|MdePkg/Library/UefiScsiLib/UefiScsiLib.inf
 
 [BuildOptions]
-  GCC:RELEASE_*_*_CC_FLAGS  = -DMDEPKG_NDEBUG
+  GCC:RELEASE_*_*_CC_FLAGS  = -DMDEPKG_NDEBUG -DNDEBUG
   GCC:*_*_*_CC_FLAGS = -DBUILD_DATE=$(BUILD_DATE) -DBUILD_COMMIT=$(BUILD_COMMIT)
 
 ################################################################################
@@ -424,6 +425,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   gRaspberryPiTokenSpaceGuid.PcdHypWindowsDebugHook|L"HypWindowsDebugHook"|gConfigDxeFormSetGuid|0x0|0
   gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask|L"HypWin2000Mask"|gConfigDxeFormSetGuid|0x0|0
   gRaspberryPiTokenSpaceGuid.PcdCpuClock|L"CpuClock"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdSdIsArasan|L"SdIsArasan"|gConfigDxeFormSetGuid|0x0|1
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|L"Timeout"|gEfiGlobalVariableGuid|0x0|5
   #
   # This is silly, but by pointing SetupConXXX and ConXXX PCDs to
@@ -575,7 +577,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   #
   # SD/MMC support
   #
-  # RaspberryPiPkg/Drivers/SdHostDxe/SdHostDxe.inf
+  RaspberryPiPkg/Drivers/SdHostDxe/SdHostDxe.inf
   RaspberryPiPkg/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
   EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
 

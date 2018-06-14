@@ -18,6 +18,7 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/DevicePathLib.h>
+#include <Library/GpioLib.h>
 #include <Protocol/RaspberryPiFirmware.h>
 #include <IndustryStandard/RpiFirmware.h>
 #include "ConfigDxeFormSetGuid.h"
@@ -142,11 +143,15 @@ SetupVariables (
                             &gConfigDxeFormSetGuid,
                             NULL,  &Size, &Var32);
   if (EFI_ERROR (Status)) {
-    /*
-     * Create the var. If we don't, forms won't
-     * be able to update.
-     */
     PcdSet32 (PcdCpuClock, PcdGet32 (PcdCpuClock));
+  }
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"SdIsArasan",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdSdIsArasan, PcdGet32 (PcdSdIsArasan));
   }
 
   return EFI_SUCCESS;
@@ -158,6 +163,8 @@ ApplyVariables (
   VOID
   )
 {
+  UINTN Gpio34Group;
+  UINTN Gpio48Group;
   EFI_STATUS Status;
   UINT32 CpuClock = PcdGet32 (PcdCpuClock);
   UINT32 Rate = 0;
@@ -194,6 +201,34 @@ ApplyVariables (
   } else {
     DEBUG((EFI_D_INFO, "Current CPU speed is %uHz\n", Rate));
   }
+
+  if (PcdGet32 (PcdSdIsArasan)) {
+    DEBUG((EFI_D_INFO, "Routing SD to Arasan\n"));
+    Gpio48Group = GPIO_FSEL_ALT3;
+    /*
+     * Route SDIO to SdHost.
+     */
+    Gpio34Group = GPIO_FSEL_ALT0;
+  } else {
+    DEBUG((EFI_D_INFO, "Routing SD to SdHost\n"));
+    Gpio48Group = GPIO_FSEL_ALT0;
+    /*
+     * Route SDIO to Arasan.
+     */
+    Gpio34Group = GPIO_FSEL_ALT3;
+  }
+  GpioPinFuncSet(34, Gpio34Group);
+  GpioPinFuncSet(35, Gpio34Group);
+  GpioPinFuncSet(36, Gpio34Group);
+  GpioPinFuncSet(37, Gpio34Group);
+  GpioPinFuncSet(38, Gpio34Group);
+  GpioPinFuncSet(39, Gpio34Group);
+  GpioPinFuncSet(48, Gpio48Group);
+  GpioPinFuncSet(49, Gpio48Group);
+  GpioPinFuncSet(50, Gpio48Group);
+  GpioPinFuncSet(51, Gpio48Group);
+  GpioPinFuncSet(52, Gpio48Group);
+  GpioPinFuncSet(53, Gpio48Group);
 }
 
 
@@ -219,10 +254,12 @@ ConfigInitialize(
            Status));
   }
 
-  /*
-   * FIXME: not the right place either.
-   */
   ApplyVariables();
+  Status = gBS->InstallProtocolInterface (&ImageHandle,
+                                          &gRaspberryPiConfigAppliedProtocolGuid,
+                                          EFI_NATIVE_INTERFACE,
+                                          NULL);
+  ASSERT_EFI_ERROR (Status);
 
   Status = InstallHiiPages();
   if (Status != EFI_SUCCESS) {

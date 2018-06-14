@@ -45,4 +45,6 @@
 #define _S(x) #x
 #define S(x) _S(x)
 
+#define C_ASSERT(e) { typedef char __C_ASSERT__[(e)?0:-1]; __C_ASSERT__ c; (void)c; }
+
 #endif /* UTILS_H */

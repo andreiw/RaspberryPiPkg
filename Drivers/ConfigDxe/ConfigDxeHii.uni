@@ -25,23 +25,21 @@
 #string STR_HYP_FORM_TITLE       #language en-US "HypDxe Configuration"
 #string STR_HYP_FORM_SUBTITLE    #language en-US "Experimental Windows on Arm Support"
 
-#string STR_HYP_EL_SELECT_PROMPT #language en-US "System Boot Mode"
-#string STR_HYP_EL_SELECT_HELP   #language en-US "Boot UEFI/OS in EL1 (for Windows) or EL2 (KVM)."
+#string STR_HYP_EL_PROMPT           #language en-US "System Boot Mode"
+#string STR_HYP_EL_HELP             #language en-US "Boot UEFI/OS in EL1 (for Windows) or EL2 (KVM)."
+#string STR_HYP_EL_EL1              #language en-US "Boot in EL1"
+#string STR_HYP_EL_EL2              #language en-US "Boot in EL2"
 
-#string STR_HYP_EL_SELECT_EL1    #language en-US "Boot in EL1"
-#string STR_HYP_EL_SELECT_EL2    #language en-US "Boot in EL2"
+#string STR_HYP_WIN_DBG_HOOK_PROMPT #language en-US "Windows Debug Hook"
+#string STR_HYP_WIN_DBG_HOOK_HELP   #language en-US "Redirect NT dmesg to UART. WinDBG will not work."
+#string STR_HYP_WIN_DBG_HOOK_YES    #language en-US "Hook"
+#string STR_HYP_WIN_DBG_HOOK_NO     #language en-US "Don't Hook"
 
-#string STR_HYP_WIN_DBG_HOOK_SELECT_PROMPT #language en-US "Windows Debug Hook"
-#string STR_HYP_WIN_DBG_HOOK_SELECT_HELP   #language en-US "Redirect NT dmesg to UART. WinDBG will not work."
-
-#string STR_HYP_WIN_DBG_HOOK_SELECT_YES #language en-US "Hook"
-#string STR_HYP_WIN_DBG_HOOK_SELECT_NO  #language en-US "Don't Hook"
-
-#string STR_HYP_WIN2000_MASK_PROMPT  #language en-US "Kd_WIN2000_Mask Override"
-#string STR_HYP_WIN2000_MASK_HELP    #language en-US "Only on builds 17125, 17672. 0 leaves the mask alone."
-
-#string STR_HYP_LOG_MASK_PROMPT  #language en-US "Debug Log Mask"
-#string STR_HYP_LOG_MASK_HELP    #language en-US "HypDxe Verbosity"
+#string STR_HYP_WIN2000_MASK_PROMPT #language en-US "Kd_WIN2000_Mask Override"
+#string STR_HYP_WIN2000_MASK_HELP   #language en-US "Only on builds 17125, 17672. 0 leaves the mask alone.
+"
+#string STR_HYP_LOG_MASK_PROMPT     #language en-US "Debug Log Mask"
+#string STR_HYP_LOG_MASK_HELP       #language en-US "HypDxe Verbosity"
 
 /*
  * Hardware clock/frequency settings go here.
@@ -49,9 +47,21 @@
 #string STR_CLOCK_FORM_TITLE        #language en-US "System Frequencies and Clocks"
 #string STR_CLOCK_FORM_SUBTITLE     #language en-US "Note: OS may override system clocks when booted."
 
-#string STR_CLOCK_CPU_SELECT_PROMPT #language en-US "CPU Clock"
-#string STR_CLOCK_CPU_SELECT_HELP   #language en-US "CPU Speed"
+#string STR_CLOCK_CPU_PROMPT        #language en-US "CPU Clock"
+#string STR_CLOCK_CPU_HELP          #language en-US "CPU Speed"
 
 #string STR_CLOCK_CPU_NA            #language en-US "Don't Override"
 #string STR_CLOCK_CPU_600MHZ        #language en-US "Min (600MHz)"
 #string STR_CLOCK_CPU_MAX           #language en-US "Max"
+
+/*
+ * Chipset config.
+ */
+#string STR_CHIPSET_FORM_TITLE      #language en-US "Chipset Configuration"
+#string STR_CHIPSET_FORM_SUBTITLE   #language en-US "Various hardware configuration."
+
+#string STR_CHIPSET_SD_PROMPT       #language en-US "Boot uSD Routing"
+#string STR_CHIPSET_SD_HELP         #language en-US "Choose host controller to drive uSD slot"
+
+#string STR_CHIPSET_SD_SDHOST       #language en-US "Broadcom SDHOST"
+#string STR_CHIPSET_SD_ARASAN       #language en-US "Arasan SDHCI"

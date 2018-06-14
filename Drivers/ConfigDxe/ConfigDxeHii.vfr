@@ -44,6 +44,14 @@ typedef struct {
   UINT32 Clock;
 } CPU_CLOCK_VARSTORE_DATA;
 
+typedef struct {
+  /*
+   * 0 - uSD slot routed to Broadcom SDHOST.
+   * 1 - uSD slot routed to Arasan SDHCI.
+   */
+  UINT32 Routing;
+} CHIPSET_SD_VARSTORE_DATA;
+
 //
 // EFI Variable attributes
 //
@@ -83,6 +91,11 @@ formset
       name  = CpuClock,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
+    efivarstore CHIPSET_SD_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = SdIsArasan,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
     form formid = 1,
         title  = STRING_TOKEN(STR_FORM_SET_TITLE);
         subtitle text = STRING_TOKEN(STR_NULL_STRING);
@@ -94,6 +107,10 @@ formset
         goto 0x1001,
            prompt = STRING_TOKEN(STR_CLOCK_FORM_TITLE),
            help = STRING_TOKEN(STR_NULL_STRING);
+
+        goto 0x1002,
+           prompt = STRING_TOKEN(STR_CHIPSET_FORM_TITLE),
+           help = STRING_TOKEN(STR_NULL_STRING);
     endform;
 
     form formid = 0x1000,
@@ -101,11 +118,11 @@ formset
         subtitle text = STRING_TOKEN(STR_HYP_FORM_SUBTITLE);
 
         oneof varid = HypEnable.Enable,
-            prompt      = STRING_TOKEN(STR_HYP_EL_SELECT_PROMPT),
-            help        = STRING_TOKEN(STR_HYP_EL_SELECT_HELP),
+            prompt      = STRING_TOKEN(STR_HYP_EL_PROMPT),
+            help        = STRING_TOKEN(STR_HYP_EL_HELP),
             flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-            option text = STRING_TOKEN(STR_HYP_EL_SELECT_EL2), value = 0, flags = DEFAULT;
-            option text = STRING_TOKEN(STR_HYP_EL_SELECT_EL1), value = 1, flags = 0;
+            option text = STRING_TOKEN(STR_HYP_EL_EL2), value = 0, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_HYP_EL_EL1), value = 1, flags = 0;
         endoneof;
 
         grayoutif ideqval HypEnable.Enable == 0;
@@ -119,11 +136,11 @@ formset
             endnumeric;
 
             oneof varid = HypWindowsDebugHook.Enable,
-                prompt      = STRING_TOKEN(STR_HYP_WIN_DBG_HOOK_SELECT_PROMPT),
-                help        = STRING_TOKEN(STR_HYP_WIN_DBG_HOOK_SELECT_HELP),
+                prompt      = STRING_TOKEN(STR_HYP_WIN_DBG_HOOK_PROMPT),
+                help        = STRING_TOKEN(STR_HYP_WIN_DBG_HOOK_HELP),
                 flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-                option text = STRING_TOKEN(STR_HYP_WIN_DBG_HOOK_SELECT_NO), value = 0, flags = DEFAULT;
-                option text = STRING_TOKEN(STR_HYP_WIN_DBG_HOOK_SELECT_YES), value = 1, flags = 0;
+                option text = STRING_TOKEN(STR_HYP_WIN_DBG_HOOK_NO), value = 0, flags = DEFAULT;
+                option text = STRING_TOKEN(STR_HYP_WIN_DBG_HOOK_YES), value = 1, flags = 0;
             endoneof;
 
             numeric varid = HypWin2000Mask.Mask,
@@ -142,12 +159,25 @@ formset
         subtitle text = STRING_TOKEN(STR_CLOCK_FORM_SUBTITLE);
 
         oneof varid = CpuClock.Clock,
-            prompt      = STRING_TOKEN(STR_CLOCK_CPU_SELECT_PROMPT),
-            help        = STRING_TOKEN(STR_CLOCK_CPU_SELECT_HELP),
+            prompt      = STRING_TOKEN(STR_CLOCK_CPU_PROMPT),
+            help        = STRING_TOKEN(STR_CLOCK_CPU_HELP),
             flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
             option text = STRING_TOKEN(STR_CLOCK_CPU_NA), value = 0, flags = DEFAULT;
             option text = STRING_TOKEN(STR_CLOCK_CPU_600MHZ), value = 1, flags = 0;
             option text = STRING_TOKEN(STR_CLOCK_CPU_MAX), value = 2, flags = 0;
+        endoneof;
+    endform;
+
+    form formid = 0x1002,
+        title  = STRING_TOKEN(STR_CHIPSET_FORM_TITLE);
+        subtitle text = STRING_TOKEN(STR_CHIPSET_FORM_SUBTITLE);
+
+        oneof varid = SdIsArasan.Routing,
+            prompt      = STRING_TOKEN(STR_CHIPSET_SD_PROMPT),
+            help        = STRING_TOKEN(STR_CHIPSET_SD_HELP),
+            flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+            option text = STRING_TOKEN(STR_CHIPSET_SD_ARASAN), value = 1, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_CHIPSET_SD_SDHOST), value = 0, flags = 0;
         endoneof;
     endform;
 endformset;

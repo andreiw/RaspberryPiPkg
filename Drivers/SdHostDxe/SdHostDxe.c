@@ -49,47 +49,47 @@
 #define IDENT_MODE_SD_CLOCK_FREQ_HZ         400000 // 400KHz
 
 // Macros adopted from MmcDxe internal header
-#define SDHOST_CSD_GET_TRANSPEED(Response)  ((Response[2] >> 24)& 0xFF)
 #define SDHOST_R0_READY_FOR_DATA            BIT8
 #define SDHOST_R0_CURRENTSTATE(Response)    ((Response >> 9) & 0xF)
-#define SDHOST_RCA_SHIFT                    16
 
-#ifndef MMC_ACMD6
-#define MMC_ACMD6 (MMC_INDX(6) | MMC_CMD_WAIT_RESPONSE | MMC_CMD_NO_CRC_RESPONSE)
-#endif
-
-#define DEBUG_MMCHOST_SD DEBUG_ERROR
+#define DEBUG_MMCHOST_SD       DEBUG_VERBOSE
+#define DEBUG_MMCHOST_SD_INFO  DEBUG_INFO
+#define DEBUG_MMCHOST_SD_ERROR DEBUG_ERROR
 
 STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL   *mFwProtocol;
 
 // Per Physical Layer Simplified Specs
-CONST CHAR8* mStrSdState[] = { "idle", "ready", "ident", "stby", "tran", "data", "rcv", "prg", "dis", "ina" };
-UINT8 mMaxDataTransferRate = 0;
-UINT32 mReconfigSdClock = FALSE;
-UINT32 mRca = 0;
-UINT32 mLastExecutedMmcCmd = MMC_GET_INDX(MMC_CMD0);
-BOOLEAN mIsSdBusSwitched4BitMode = FALSE;
-UINT64 mScr = 0;
+#ifndef NDEBUG
+STATIC CONST CHAR8* mStrSdState[] = { "idle", "ready", "ident", "stby",
+                                      "tran", "data", "rcv", "prg", "dis",
+                                      "ina" };
+STATIC CONST CHAR8 *mFsmState[] = { "identmode", "datamode", "readdata",
+                                    "writedata", "readwait", "readcrc",
+                                    "writecrc", "writewait1", "powerdown",
+                                    "powerup", "writestart1", "writestart2",
+                                    "genpulses", "writewait2", "?",
+                                    "startpowdown" };
+#endif /* NDEBUG */
+STATIC UINT32 mLastExecutedMmcCmd = MMC_GET_INDX(MMC_CMD0);
 
-EFI_STATUS SdHostGetSdStatus(UINT32* StatusR0);
+STATIC BOOLEAN IsAppCmd() { return mLastExecutedMmcCmd == MMC_CMD55; }
 
-BOOLEAN IsAppCmd() { return mLastExecutedMmcCmd == MMC_CMD55; }
+STATIC BOOLEAN IsBusyCmd(UINT32 MmcCmd) { return ((MmcCmd == MMC_CMD7 || MmcCmd == MMC_CMD12) && !IsAppCmd()); }
 
-BOOLEAN IsBusyCmd(UINT32 MmcCmd) { return ((MmcCmd == MMC_CMD7 || MmcCmd == MMC_CMD12) && !IsAppCmd()); }
+STATIC BOOLEAN IsWriteCmd(UINT32 MmcCmd) { return (MmcCmd == MMC_CMD24 && !IsAppCmd()); }
 
-BOOLEAN IsWriteCmd(UINT32 MmcCmd) { return (MmcCmd == MMC_CMD24 && !IsAppCmd()); }
-
-BOOLEAN IsReadCmd(UINT32 MmcCmd)
+STATIC BOOLEAN IsReadCmd(UINT32 MmcCmd)
 {
     BOOLEAN CmdIsAppCmd = IsAppCmd();
     return
         (MmcCmd == MMC_CMD6 && !CmdIsAppCmd) ||
         (MmcCmd == MMC_CMD17 && !CmdIsAppCmd) ||
         (MmcCmd == MMC_CMD18 && !CmdIsAppCmd) ||
-        (MmcCmd == MMC_CMD13 && CmdIsAppCmd);
+        (MmcCmd == MMC_CMD13 && CmdIsAppCmd) ||
+        (MmcCmd == MMC_ACMD51 && CmdIsAppCmd);
 }
 
-VOID
+STATIC VOID
 SdHostDumpRegisters(
     VOID
     )
@@ -111,11 +111,32 @@ SdHostDumpRegisters(
     DEBUG((DEBUG_MMCHOST_SD, "  HBLC: 0x%8.8X\n\n", MmioRead32(SDHOST_HBLC)));
 }
 
-VOID
+#ifndef NDEBUG
+STATIC EFI_STATUS
+SdHostGetSdStatus(
+    UINT32* SdStatus
+    )
+{
+    ASSERT(SdStatus != NULL);
+
+    // On command completion with R1 or R1b response type
+    // the SDCard status will be in RSP0
+    UINT32 Rsp0 = MmioRead32(SDHOST_RSP0);
+    if (Rsp0 != 0xFFFFFFFF) {
+        *SdStatus = Rsp0;
+        return EFI_SUCCESS;
+    }
+
+    return EFI_NO_RESPONSE;
+}
+#endif /* NDEBUG */
+
+STATIC VOID
 SdHostDumpSdCardStatus(
     VOID
     )
 {
+#ifndef NDEBUG
     UINT32 SdCardStatus;
     EFI_STATUS Status = SdHostGetSdStatus(&SdCardStatus);
     if (!EFI_ERROR(Status)) {
@@ -129,47 +150,63 @@ SdHostDumpSdCardStatus(
             ((CurrState < (sizeof(mStrSdState) / sizeof(*mStrSdState))) ?
                 mStrSdState[CurrState] : "UNDEF")));
     }
+#endif /* NDEBUG */
 }
 
-VOID
+STATIC VOID
 SdHostDumpStatus(
     VOID
     )
 {
     SdHostDumpRegisters();
 
+#ifndef NDEBUG
     UINT32 Hsts = MmioRead32(SDHOST_HSTS);
 
     if (Hsts & SDHOST_HSTS_ERROR) {
-        DEBUG((DEBUG_MMCHOST_SD, "SdHost: Diagnose HSTS: 0x%8.8X\n", Hsts));
+      DEBUG((DEBUG_MMCHOST_SD_ERROR,
+               "SdHost: Diagnose HSTS: 0x%8.8X\n", Hsts));
 
-        if (Hsts & SDHOST_HSTS_FIFO_ERROR)
-            DEBUG((DEBUG_MMCHOST_SD, "  - Fifo Error\n"));
-        if (Hsts & SDHOST_HSTS_CRC7_ERROR)
-            DEBUG((DEBUG_MMCHOST_SD, "  - CRC7 Error\n"));
-        if (Hsts & SDHOST_HSTS_CRC16_ERROR)
-            DEBUG((DEBUG_MMCHOST_SD, "  - CRC16 Error\n"));
-        if (Hsts & SDHOST_HSTS_CMD_TIME_OUT)
-            DEBUG((DEBUG_MMCHOST_SD, "  - CMD Timeout\n"));
-        if (Hsts & SDHOST_HSTS_REW_TIME_OUT)
-            DEBUG((DEBUG_MMCHOST_SD, "  - Read/Erase/Write Transfer Timeout\n"));
+      DEBUG((DEBUG_MMCHOST_SD_ERROR, "SdHost: Previous CMD = %u\n",
+             MMC_GET_INDX(mLastExecutedMmcCmd)));
+      if (Hsts & SDHOST_HSTS_FIFO_ERROR)
+        DEBUG((DEBUG_MMCHOST_SD_ERROR, "  - Fifo Error\n"));
+      if (Hsts & SDHOST_HSTS_CRC7_ERROR)
+        DEBUG((DEBUG_MMCHOST_SD_ERROR, "  - CRC7 Error\n"));
+      if (Hsts & SDHOST_HSTS_CRC16_ERROR)
+        DEBUG((DEBUG_MMCHOST_SD_ERROR, "  - CRC16 Error\n"));
+      if (Hsts & SDHOST_HSTS_CMD_TIME_OUT)
+        DEBUG((DEBUG_MMCHOST_SD_ERROR, "  - CMD Timeout (TOUT %x)\n",
+               MmioRead32(SDHOST_TOUT)));
+      if (Hsts & SDHOST_HSTS_REW_TIME_OUT)
+        DEBUG((DEBUG_MMCHOST_SD_ERROR, "  - Read/Erase/Write Transfer Timeout\n"));
     }
 
     UINT32 Edm = MmioRead32(SDHOST_EDM);
-    DEBUG((DEBUG_MMCHOST_SD, "SdHost: Diagnose EDM: 0x%8.8X\n", Edm));
-    DEBUG((DEBUG_MMCHOST_SD, "  - FSM: 0x%x\n", (Edm & 0xF)));
-    DEBUG((DEBUG_MMCHOST_SD, "  - Fifo Count: %d\n", ((Edm >> 4) & 0x1F)));
-    DEBUG((DEBUG_MMCHOST_SD,
-        "  - Fifo Write Threshold: %d\n",
-        ((Edm >> SDHOST_EDM_WRITE_THRESHOLD_SHIFT) & SDHOST_EDM_THRESHOLD_MASK)));
-    DEBUG((DEBUG_MMCHOST_SD,
+    DEBUG(((Hsts & SDHOST_HSTS_ERROR) ?
+           DEBUG_MMCHOST_SD_ERROR : DEBUG_MMCHOST_SD,
+           "SdHost: Diagnose EDM: 0x%8.8X\n", Edm));
+    DEBUG(((Hsts & SDHOST_HSTS_ERROR) ?
+           DEBUG_MMCHOST_SD_ERROR : DEBUG_MMCHOST_SD,
+           "  - FSM: 0x%x (%a)\n", (Edm & 0xF), mFsmState[Edm & 0xF]));
+    DEBUG(((Hsts & SDHOST_HSTS_ERROR) ?
+           DEBUG_MMCHOST_SD_ERROR : DEBUG_MMCHOST_SD,
+           "  - Fifo Count: %d\n", ((Edm >> 4) & 0x1F)));
+    DEBUG(((Hsts & SDHOST_HSTS_ERROR) ?
+           DEBUG_MMCHOST_SD_ERROR : DEBUG_MMCHOST_SD,
+           "  - Fifo Write Threshold: %d\n",
+           ((Edm >> SDHOST_EDM_WRITE_THRESHOLD_SHIFT) &
+            SDHOST_EDM_THRESHOLD_MASK)));
+    DEBUG(((Hsts & SDHOST_HSTS_ERROR) ?
+           DEBUG_MMCHOST_SD_ERROR : DEBUG_MMCHOST_SD,
         "  - Fifo Read Threshold: %d\n",
         ((Edm >> SDHOST_EDM_READ_THRESHOLD_SHIFT) & SDHOST_EDM_THRESHOLD_MASK)));
+#endif
 
     SdHostDumpSdCardStatus();
 }
 
-EFI_STATUS
+STATIC EFI_STATUS
 SdHostSetClockFrequency(
     IN UINTN TargetSdFreqHz
     )
@@ -190,7 +227,7 @@ SdHostSetClockFrequency(
     UINT32 ActualSdFreqHz = CoreClockFreqHz / (ClockDiv + 2);
 
     DEBUG((
-        DEBUG_MMCHOST_SD,
+        DEBUG_MMCHOST_SD_INFO,
         "SdHost: CoreClock=%dHz, CDIV=%d, Requested SdClock=%dHz, Actual SdClock=%dHz\n",
         CoreClockFreqHz,
         ClockDiv,
@@ -201,30 +238,28 @@ SdHostSetClockFrequency(
     // Set timeout after 1 second, i.e ActualSdFreqHz SD clock cycles
     MmioWrite32(SDHOST_TOUT, ActualSdFreqHz);
 
+    gBS->Stall(STALL_TO_STABILIZE_US);
+
     return Status;
 }
 
-BOOLEAN
+STATIC BOOLEAN
 SdIsCardPresent(
     IN EFI_MMC_HOST_PROTOCOL *This
     )
 {
-    BOOLEAN IsCardPresent = TRUE;
-    DEBUG((DEBUG_MMCHOST_SD, "SdHost: SdIsCardPresent(): %d\n", IsCardPresent));
-    return IsCardPresent;
+  return TRUE;
 }
 
-BOOLEAN
+STATIC BOOLEAN
 SdIsReadOnly(
     IN EFI_MMC_HOST_PROTOCOL *This
     )
 {
-    BOOLEAN IsReadOnly = FALSE;
-    DEBUG((DEBUG_MMCHOST_SD, "SdHost: SdIsReadOnly(): %d\n", IsReadOnly));
-    return IsReadOnly;
+  return FALSE;
 }
 
-EFI_STATUS
+STATIC EFI_STATUS
 SdBuildDevicePath(
     IN EFI_MMC_HOST_PROTOCOL       *This,
     IN EFI_DEVICE_PATH_PROTOCOL    **DevicePath
@@ -242,16 +277,20 @@ SdBuildDevicePath(
     return EFI_SUCCESS;
 }
 
-EFI_STATUS
+STATIC EFI_STATUS
 SdSendCommand(
     IN EFI_MMC_HOST_PROTOCOL    *This,
     IN MMC_CMD                  MmcCmd,
     IN UINT32                   Argument
     )
 {
-    // Fail fast, CMD5 (CMD_IO_SEND_OP_COND) is only valid for SDIO cards and thus expected to always fail
-    if (MmcCmd == MMC_CMD5)
-    {
+  //
+  // Fail fast, CMD5 (CMD_IO_SEND_OP_COND)
+  // is only valid for SDIO cards and thus
+  // expected to always fail.
+  //
+  if (MmcCmd == MMC_CMD5) {
+
         DEBUG((
             DEBUG_MMCHOST_SD,
             "SdHost: SdSendCommand(CMD%d, Argument: %08x) ignored\n",
@@ -262,7 +301,7 @@ SdSendCommand(
 
     if (MmioRead32(SDHOST_CMD) & SDHOST_CMD_NEW_FLAG) {
         DEBUG((
-            DEBUG_ERROR,
+            DEBUG_MMCHOST_SD_ERROR,
             "SdHost: SdSendCommand(): Failed to execute CMD%d, a CMD is already being executed.\n",
             MMC_GET_INDX(MmcCmd)));
         SdHostDumpStatus();
@@ -295,8 +334,18 @@ SdSendCommand(
         SdCmd |= MMC_GET_INDX(MmcCmd);
     }
 
+    if (IsReadCmd(MmcCmd) || IsWriteCmd(MmcCmd)) {
+      if (IsAppCmd() && MMC_GET_INDX(MmcCmd) == 51) {
+        MmioWrite32(SDHOST_HBCT, 0x8);
+      } else if (!IsAppCmd() && MMC_GET_INDX(MmcCmd) == 6) {
+        MmioWrite32(SDHOST_HBCT, 0x40);
+      } else {
+        MmioWrite32(SDHOST_HBCT, SDHOST_BLOCK_BYTE_LENGTH);
+      }
+    }
+
     DEBUG((
-        DEBUG_MMCHOST_SD,
+           DEBUG_MMCHOST_SD,
         "SdHost: SdSendCommand(CMD%d, Argument: %08x): BUSY=%d, RESP=%d, WRITE=%d, READ=%d\n",
         MMC_GET_INDX(MmcCmd),
         Argument,
@@ -354,8 +403,6 @@ SdSendCommand(
         Status = EFI_TIMEOUT;
     }
 
-
-
     if (EFI_ERROR(Status) ||
         (MmioRead32(SDHOST_HSTS) & SDHOST_HSTS_ERROR)) {
         // Deselecting the SDCard with CMD7 and RCA=0x0 always timeout on SDHost
@@ -365,7 +412,7 @@ SdSendCommand(
 
         } else {
             DEBUG((
-                DEBUG_ERROR,
+                DEBUG_MMCHOST_SD_ERROR,
                 "SdHost: SdSendCommand(): CMD%d execution failed after %d trial(s)\n",
                 MMC_GET_INDX(MmcCmd),
                 RetryCount));
@@ -386,7 +433,7 @@ SdSendCommand(
     return Status;
 }
 
-EFI_STATUS
+STATIC EFI_STATUS
 SdReceiveResponse(
     IN EFI_MMC_HOST_PROTOCOL    *This,
     IN MMC_RESPONSE_TYPE        Type,
@@ -394,7 +441,8 @@ SdReceiveResponse(
     )
 {
     if (Buffer == NULL) {
-        DEBUG((DEBUG_ERROR, "SdHost: SdReceiveResponse(): Input Buffer is NULL\n"));
+        DEBUG((DEBUG_MMCHOST_SD_ERROR,
+               "SdHost: SdReceiveResponse(): Input Buffer is NULL\n"));
         return EFI_INVALID_PARAMETER;
     }
 
@@ -415,212 +463,16 @@ SdReceiveResponse(
         Buffer[2] = MmioRead32(SDHOST_RSP2);
         Buffer[3] = MmioRead32(SDHOST_RSP3);
 
-        //
-        // Shift the whole response right 8-bits to strip down CRC. It is common for standard
-        // SDHCs to not store in the RSP registers the first 8-bits for R2 responses CID[0:7]
-        // and CSD[0:7] since those 8-bits contain the CRC which is already handled by the SDHC HW FSM
-        //
-        UINT8 *BufferAsBytes = (UINT8*)Buffer;
-        const UINT32 BufferSizeMax = sizeof(UINT32) * 4;
-        UINT32 ByteIdx;
-        for (ByteIdx = 0; ByteIdx < BufferSizeMax - 1; ++ByteIdx) {
-            BufferAsBytes[ByteIdx] = BufferAsBytes[ByteIdx + 1];
-        }
-        BufferAsBytes[BufferSizeMax - 1] = 0;
-
         DEBUG((
             DEBUG_MMCHOST_SD,
             "SdHost: SdReceiveResponse(Type: %x), Buffer[0-3]: %08x, %08x, %08x, %08x\n",
             Type, Buffer[0], Buffer[1], Buffer[2], Buffer[3]));
     }
 
-    // During initialization per Specs, MmcDxe will select the SDCard
-    // and ask it to publish an RCA address for further commands
-    if (mLastExecutedMmcCmd == MMC_CMD3) {
-        mRca = Buffer[0] >> SDHOST_RCA_SHIFT;
-    }
-
-    // MmcDxe will be querying for CSD register during initialization,
-    // this is a good place to capture the SDCard transfer rate fields
-    if (mLastExecutedMmcCmd == MMC_CMD9) {
-        UINT32 NewMaxDataTransferRate = SDHOST_CSD_GET_TRANSPEED(Buffer);
-        if (NewMaxDataTransferRate != mMaxDataTransferRate) {
-            DEBUG((
-                DEBUG_MMCHOST_SD,
-                "SdHost: SdReceiveResponse(), TRAN_SPEED got updated from %X"
-                " to %X and SD clock needs reprogramming\n",
-                mMaxDataTransferRate,
-                NewMaxDataTransferRate));
-
-            mReconfigSdClock = TRUE;
-            mMaxDataTransferRate = NewMaxDataTransferRate;
-        }
-    }
-
     return EFI_SUCCESS;
 }
 
-EFI_STATUS
-SdHostGetSdStatus(
-    UINT32* SdStatus
-    )
-{
-    ASSERT(mRca != 0);
-    ASSERT(SdStatus != NULL);
-
-    // On command completion with R1 or R1b response type
-    // the SDCard status will be in RSP0
-    UINT32 Rsp0 = MmioRead32(SDHOST_RSP0);
-    if (Rsp0 != 0xFFFFFFFF) {
-        *SdStatus = Rsp0;
-        return EFI_SUCCESS;
-    }
-
-    return EFI_NO_RESPONSE;
-}
-
-EFI_STATUS
-CalculateSdCardMaxFreq(
-    UINT32* SdClkFreqHz
-    )
-{
-    UINT32 TransferRateBitPerSecond = 0;
-    UINT32 TimeValue = 0;
-
-    ASSERT(SdClkFreqHz != NULL);
-    ASSERT(mMaxDataTransferRate != 0);
-
-    // Calculate Transfer rate unit (Bits 2:0 of TRAN_SPEED)
-    switch (mMaxDataTransferRate & 0x7) { // 2
-    case 0: // 100kbit/s
-        TransferRateBitPerSecond = 100 * 1000;
-        break;
-
-    case 1: // 1Mbit/s
-        TransferRateBitPerSecond = 1 * 1000 * 1000;
-        break;
-
-    case 2: // 10Mbit/s
-        TransferRateBitPerSecond = 10 * 1000 * 1000;
-        break;
-
-    case 3: // 100Mbit/s
-        TransferRateBitPerSecond = 100 * 1000 * 1000;
-        break;
-
-    default:
-        DEBUG((DEBUG_ERROR, "SdHost: CalculateSdCardMaxFreq(): Invalid parameter\n"));
-        ASSERT(FALSE);
-        return EFI_INVALID_PARAMETER;
-    }
-
-    //Calculate Time value (Bits 6:3 of TRAN_SPEED)
-    switch ((mMaxDataTransferRate >> 3) & 0xF) { // 6
-    case 0x1:
-        TimeValue = 10;
-        break;
-
-    case 0x2:
-        TimeValue = 12;
-        break;
-
-    case 0x3:
-        TimeValue = 13;
-        break;
-
-    case 0x4:
-        TimeValue = 15;
-        break;
-
-    case 0x5:
-        TimeValue = 20;
-        break;
-
-    case 0x6:
-        TimeValue = 25;
-        break;
-
-    case 0x7:
-        TimeValue = 30;
-        break;
-
-    case 0x8:
-        TimeValue = 35;
-        break;
-
-    case 0x9:
-        TimeValue = 40;
-        break;
-
-    case 0xA:
-        TimeValue = 45;
-        break;
-
-    case 0xB:
-        TimeValue = 50;
-        break;
-
-    case 0xC:
-        TimeValue = 55;
-        break;
-
-    case 0xD:
-        TimeValue = 60;
-        break;
-
-    case 0xE:
-        TimeValue = 70;
-        break;
-
-    case 0xF:
-        TimeValue = 80;
-        break;
-
-    default:
-        DEBUG((DEBUG_ERROR, "SdHost: CalculateSdCardMaxFreq(): Invalid parameter\n"));
-        ASSERT(FALSE);
-        return EFI_INVALID_PARAMETER;
-    }
-
-    *SdClkFreqHz = (TransferRateBitPerSecond * TimeValue) / 10;
-
-    DEBUG((
-        DEBUG_MMCHOST_SD,
-        "SdHost: TransferRateUnitId=%d TimeValue*10=%d, SdCardFrequency=%dKHz\n",
-        (mMaxDataTransferRate & 0x7),
-        TimeValue,
-        *SdClkFreqHz / 1000));
-
-    return EFI_SUCCESS;
-}
-
-EFI_STATUS
-SdHostSwitch4BitBusWidth(
-    VOID
-    )
-{
-    ASSERT(mRca != 0);
-
-    // Tell the SDCard to interpret the next command as an application
-    // specific command
-    UINT32 CmdArg = mRca << SDHOST_RCA_SHIFT;
-    EFI_STATUS Status = SdSendCommand(NULL, MMC_CMD55, CmdArg);
-    if (EFI_ERROR(Status)) {
-        return Status;
-    }
-
-    CmdArg = 0x2; // 4-Bit Bus Width Flag
-    Status = SdSendCommand(NULL, MMC_ACMD6, CmdArg);
-    if (EFI_ERROR(Status)) {
-        return Status;
-    }
-
-    MmioOr32(SDHOST_HCFG, SDHOST_HCFG_WIDE_EXT_BUS);
-
-    return Status;
-}
-
-EFI_STATUS
+STATIC EFI_STATUS
 SdReadBlockData(
     IN EFI_MMC_HOST_PROTOCOL    *This,
     IN EFI_LBA                  Lba,
@@ -634,7 +486,7 @@ SdReadBlockData(
         (UINT32)Lba, Length, Buffer));
 
     ASSERT(Buffer != NULL);
-    ASSERT(Length % SDHOST_BLOCK_BYTE_LENGTH == 0);
+    ASSERT(Length % 4 == 0);
 
     EFI_STATUS Status = EFI_SUCCESS;
 
@@ -646,17 +498,18 @@ SdReadBlockData(
         for (WordIdx = 0; WordIdx < NumWords; ++WordIdx) {
             UINT32 PollCount = 0;
             while (PollCount < FIFO_MAX_POLL_COUNT) {
-                if (MmioRead32(SDHOST_HSTS) & SDHOST_HSTS_DATA_FLAG) {
-                    Buffer[WordIdx] = MmioRead32(SDHOST_DATA);
-                    break;
-                }
+              UINT32 Hsts = MmioRead32(SDHOST_HSTS);
+              if ((Hsts & SDHOST_HSTS_DATA_FLAG) != 0) {
+                Buffer[WordIdx] = MmioRead32(SDHOST_DATA);
+                break;
+              }
 
-                ++PollCount;
+              ++PollCount;
             }
 
             if (PollCount == FIFO_MAX_POLL_COUNT) {
                 DEBUG(
-                    (DEBUG_ERROR,
+                    (DEBUG_MMCHOST_SD_ERROR,
                         "SdHost: SdReadBlockData(): Block Word%d read poll timed-out\n",
                         WordIdx));
                 SdHostDumpStatus();
@@ -671,7 +524,7 @@ SdReadBlockData(
     return Status;
 }
 
-EFI_STATUS
+STATIC EFI_STATUS
 SdWriteBlockData(
     IN EFI_MMC_HOST_PROTOCOL    *This,
     IN EFI_LBA                  Lba,
@@ -689,7 +542,7 @@ SdWriteBlockData(
 
     EFI_STATUS Status = EFI_SUCCESS;
 
-    //    LedSetOk(TRUE);
+    mFwProtocol->SetLed(TRUE);
     {
         UINT32 NumWords = Length / 4;
         UINT32 WordIdx;
@@ -707,7 +560,7 @@ SdWriteBlockData(
 
             if (PollCount == FIFO_MAX_POLL_COUNT) {
                 DEBUG((
-                    DEBUG_ERROR,
+                    DEBUG_MMCHOST_SD_ERROR,
                     "SdHost: SdWriteBlockData(): Block Word%d write poll timed-out\n",
                     WordIdx));
                 SdHostDumpStatus();
@@ -722,7 +575,37 @@ SdWriteBlockData(
     return Status;
 }
 
-EFI_STATUS
+STATIC EFI_STATUS
+SdSetIos (
+  IN EFI_MMC_HOST_PROTOCOL      *This,
+  IN  UINT32                    BusClockFreq,
+  IN  UINT32                    BusWidth,
+  IN  UINT32                    TimingMode
+  )
+{
+  if (BusWidth != 0) {
+    UINT32 Hcfg = MmioRead32(SDHOST_HCFG);
+
+    DEBUG((DEBUG_MMCHOST_SD_INFO, "Setting BusWidth %u\n", BusWidth));
+    if (BusWidth == 4) {
+      Hcfg |= SDHOST_HCFG_WIDE_EXT_BUS;
+    } else {
+      Hcfg &= ~SDHOST_HCFG_WIDE_EXT_BUS;
+    }
+
+    Hcfg |= SDHOST_HCFG_WIDE_INT_BUS | SDHOST_HCFG_SLOW_CARD;
+    MmioWrite32(SDHOST_HCFG, Hcfg);
+  }
+
+  if (BusClockFreq != 0) {
+    DEBUG((DEBUG_MMCHOST_SD_INFO, "Setting Freq %u Hz\n", BusClockFreq));
+    SdHostSetClockFrequency(BusClockFreq);
+  }
+
+  return EFI_SUCCESS;
+}
+
+STATIC EFI_STATUS
 SdNotifyState(
     IN EFI_MMC_HOST_PROTOCOL    *This,
     IN MMC_STATE                State
@@ -743,6 +626,8 @@ SdNotifyState(
             MmioWrite32(SDHOST_ARG, 0);
             // Reset clock divider
             MmioWrite32(SDHOST_CDIV, 0);
+            // Default timeout
+            MmioWrite32(SDHOST_TOUT, 0xffffffff);
             // Clear status flags
             MmioWrite32(SDHOST_HSTS, SDHOST_HSTS_CLEAR);;
             // Reset controller configs
@@ -767,7 +652,7 @@ SdNotifyState(
         EFI_STATUS Status = SdHostSetClockFrequency(IDENT_MODE_SD_CLOCK_FREQ_HZ);
         if (EFI_ERROR(Status)) {
             DEBUG((
-                DEBUG_ERROR,
+                DEBUG_MMCHOST_SD_ERROR,
                 "SdHost: SdNotifyState(): Fail to initialize SD clock to %dHz\n",
                 IDENT_MODE_SD_CLOCK_FREQ_HZ));
             SdHostDumpStatus();
@@ -788,53 +673,8 @@ SdNotifyState(
         DEBUG((DEBUG_MMCHOST_SD, "MmcStandByState\n", State));
         break;
     case MmcTransferState:
-    {
         DEBUG((DEBUG_MMCHOST_SD, "MmcTransferState\n", State));
-
-        // Switch to 4-Bit mode if not switched yet to use DAT[0-3] lines
-        // Bus width switch is only allowed in transfer state
-        if (!mIsSdBusSwitched4BitMode) {
-            EFI_STATUS Status = SdHostSwitch4BitBusWidth();
-            if (EFI_ERROR(Status)) {
-                DEBUG((
-                    DEBUG_ERROR,
-                    "SdHost: SdNotifyState(): Failed to switch to 4-Bit mode\n"));
-                SdHostDumpStatus();
-                return Status;
-            }
-
-            DEBUG((DEBUG_INIT, "SdHost: Switched SDCard to 4-Bit Mode\n"));
-
-            mIsSdBusSwitched4BitMode = TRUE;
-        }
-
-        if (mReconfigSdClock) {
-
-            UINT32 sdCardMaxClockFreqHz;
-            EFI_STATUS Status;
-
-            Status = CalculateSdCardMaxFreq(&sdCardMaxClockFreqHz);
-            if (EFI_ERROR(Status)) {
-                DEBUG((
-                    DEBUG_ERROR,
-                    "SdHost: SdNotifyState(): Failed to retrieve SD Card max frequency\n"));
-                SdHostDumpStatus();
-                return Status;
-            }
-
-            Status = SdHostSetClockFrequency(sdCardMaxClockFreqHz);
-            if (EFI_ERROR(Status)) {
-                DEBUG((
-                    DEBUG_ERROR,
-                    "SdHost: SdNotifyState(): Failed to configure SD clock to %dHz\n",
-                    sdCardMaxClockFreqHz));
-                SdHostDumpStatus();
-                return Status;
-            }
-
-            mReconfigSdClock = FALSE;
-        }
-    }
+        break;
     break;
     case MmcSendingDataState:
         DEBUG((DEBUG_MMCHOST_SD, "MmcSendingDataState\n", State));
@@ -848,7 +688,8 @@ SdNotifyState(
     case MmcDisconnectState:
     case MmcInvalidState:
     default:
-        DEBUG((DEBUG_ERROR, "SdHost: SdNotifyState(): Invalid State: %d\n", State));
+        DEBUG((DEBUG_MMCHOST_SD_ERROR,
+               "SdHost: SdNotifyState(): Invalid State: %d\n", State));
         ASSERT(0);
     }
 
@@ -865,7 +706,8 @@ EFI_MMC_HOST_PROTOCOL gMmcHost =
     SdSendCommand,
     SdReceiveResponse,
     SdReadBlockData,
-    SdWriteBlockData
+    SdWriteBlockData,
+    SdSetIos
 };
 
 EFI_STATUS
@@ -876,6 +718,11 @@ SdHostInitialize(
 {
     EFI_STATUS Status;
     EFI_HANDLE Handle = NULL;
+
+    if (PcdGet32 (PcdSdIsArasan)) {
+      DEBUG((EFI_D_INFO, "SD is not routed to SdHost\n"));
+      return EFI_REQUEST_UNLOAD_IMAGE;
+    }
 
     Status = gBS->LocateProtocol (&gRaspberryPiFirmwareProtocolGuid, NULL,
                                   (VOID **)&mFwProtocol);

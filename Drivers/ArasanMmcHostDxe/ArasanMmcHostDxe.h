@@ -37,8 +37,6 @@
 #include <IndustryStandard/Bcm2836MMCHS.h>
 #include <IndustryStandard/RpiFirmware.h>
 
-// #include <LedLib.h>
-
 #define MAX_RETRY_COUNT (1000 * 20)
 
 #define STALL_AFTER_SEND_CMD_US (200) // in microseconds

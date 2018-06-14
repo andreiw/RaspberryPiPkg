@@ -45,6 +45,7 @@
   gRaspberryPiFirmwareProtocolGuid ## CONSUMES
 
 [Pcd]
+  gRaspberryPiTokenSpaceGuid.PcdSdIsArasan
 
 [Depex]
-  gRaspberryPiFirmwareProtocolGuid
+  gRaspberryPiFirmwareProtocolGuid AND gRaspberryPiConfigAppliedProtocolGuid

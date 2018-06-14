@@ -49,12 +49,14 @@
   UefiRuntimeServicesTableLib
   UefiDriverEntryPoint
   HiiLib
+  GpioLib
 
 [Guids]
   gConfigDxeFormSetGuid
 
 [Protocols]
   gRaspberryPiFirmwareProtocolGuid ## CONSUMES
+  gRaspberryPiConfigAppliedProtocolGuid ## PRODUCES
 
 [Pcd]
   gRaspberryPiTokenSpaceGuid.PcdHypEnable
@@ -62,6 +64,7 @@
   gRaspberryPiTokenSpaceGuid.PcdHypWindowsDebugHook
   gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask
   gRaspberryPiTokenSpaceGuid.PcdCpuClock
+  gRaspberryPiTokenSpaceGuid.PcdSdIsArasan
 
 [FeaturePcd]
 

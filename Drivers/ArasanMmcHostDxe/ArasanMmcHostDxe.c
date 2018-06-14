@@ -659,6 +659,11 @@ MMCInitialize(
 
   DEBUG((DEBUG_MMCHOST_SD, "ArasanMMCHost: MMCInitialize()\n"));
 
+  if (!PcdGet32 (PcdSdIsArasan)) {
+    DEBUG((EFI_D_INFO, "SD is not routed to Arasan\n"));
+    return EFI_REQUEST_UNLOAD_IMAGE;
+  }
+
   Status = gBS->LocateProtocol (&gRaspberryPiFirmwareProtocolGuid, NULL,
                                 (VOID **)&mFwProtocol);
   ASSERT_EFI_ERROR (Status);

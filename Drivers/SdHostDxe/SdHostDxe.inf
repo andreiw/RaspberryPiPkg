@@ -45,5 +45,8 @@
   gEfiMmcHostProtocolGuid ## PRODUCES
   gRaspberryPiFirmwareProtocolGuid ## CONSUMES
 
-[depex]
-  gRaspberryPiFirmwareProtocolGuid
+[Pcd]
+  gRaspberryPiTokenSpaceGuid.PcdSdIsArasan
+
+[Depex]
+  gRaspberryPiFirmwareProtocolGuid AND gRaspberryPiConfigAppliedProtocolGuid
