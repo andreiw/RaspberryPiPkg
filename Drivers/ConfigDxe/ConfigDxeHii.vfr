@@ -121,8 +121,8 @@ formset
             prompt      = STRING_TOKEN(STR_HYP_EL_PROMPT),
             help        = STRING_TOKEN(STR_HYP_EL_HELP),
             flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-            option text = STRING_TOKEN(STR_HYP_EL_EL2), value = 0, flags = DEFAULT;
-            option text = STRING_TOKEN(STR_HYP_EL_EL1), value = 1, flags = 0;
+            option text = STRING_TOKEN(STR_HYP_EL_EL2), value = 0, flags = 0;
+            option text = STRING_TOKEN(STR_HYP_EL_EL1), value = 1, flags = DEFAULT;
         endoneof;
 
         grayoutif ideqval HypEnable.Enable == 0;

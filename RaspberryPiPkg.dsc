@@ -420,7 +420,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
 
 [PcdsDynamicHii.common.DEFAULT]
-  gRaspberryPiTokenSpaceGuid.PcdHypEnable|L"HypEnable"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdHypEnable|L"HypEnable"|gConfigDxeFormSetGuid|0x0|1
   gRaspberryPiTokenSpaceGuid.PcdHypLogMask|L"HypLogMask"|gConfigDxeFormSetGuid|0x0|$(HYP_LOG_MASK)
   gRaspberryPiTokenSpaceGuid.PcdHypWindowsDebugHook|L"HypWindowsDebugHook"|gConfigDxeFormSetGuid|0x0|0
   gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask|L"HypWin2000Mask"|gConfigDxeFormSetGuid|0x0|0
