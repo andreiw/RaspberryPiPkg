@@ -1,7 +1,7 @@
 From ab68eb589c7e3ac6f2b1e044751e2637ae554786 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Fri, 18 May 2018 22:54:14 -0400
-Subject: [PATCH 6/6] Ax88772b: not a runtime driver
+Subject: [PATCH 6/8] Ax88772b: not a runtime driver
 
 No need to tie up precious memory.
 
