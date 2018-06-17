@@ -1,7 +1,7 @@
 From cadf8cdf82cdd41ab5f20703ff2ec49164c0ce12 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sat, 16 Jun 2018 02:55:52 -0400
-Subject: [PATCH 8/8] MmcDxe: deal with slow cards
+Subject: [PATCH 8/9] MmcDxe: deal with slow cards
 
 Some bad cards slow down to a crawl in 4-bit mode and
 a train of CMD24 writes start timing out. So we ought to
