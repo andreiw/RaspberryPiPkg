@@ -39,6 +39,7 @@
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   RaspberryPiPkg/RaspberryPiPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
 
 [LibraryClasses]
   BaseLib
@@ -65,6 +66,10 @@
   gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask
   gRaspberryPiTokenSpaceGuid.PcdCpuClock
   gRaspberryPiTokenSpaceGuid.PcdSdIsArasan
+  gEmbeddedTokenSpaceGuid.PcdMmcForce1Bit
+  gEmbeddedTokenSpaceGuid.PcdMmcForceDefaultSpeed
+  gEmbeddedTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz
+  gEmbeddedTokenSpaceGuid.PcdMmcSdHighSpeedMHz
 
 [FeaturePcd]
 

@@ -154,6 +154,38 @@ SetupVariables (
     PcdSet32 (PcdSdIsArasan, PcdGet32 (PcdSdIsArasan));
   }
 
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"MmcForce1Bit",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdMmcForce1Bit, PcdGet32 (PcdMmcForce1Bit));
+  }
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"MmcForceDefaultSpeed",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdMmcForceDefaultSpeed, PcdGet32 (PcdMmcForceDefaultSpeed));
+  }
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"MmcSdDefaultSpeedMHz",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdMmcSdDefaultSpeedMHz, PcdGet32 (PcdMmcSdDefaultSpeedMHz));
+  }
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"MmcSdHighSpeedMHz",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdMmcSdHighSpeedMHz, PcdGet32 (PcdMmcSdHighSpeedMHz));
+  }
+
   return EFI_SUCCESS;
 }
   

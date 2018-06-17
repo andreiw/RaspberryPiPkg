@@ -42,7 +42,7 @@ typedef struct {
    * 2 - maximum.
    */
   UINT32 Clock;
-} CPU_CLOCK_VARSTORE_DATA;
+} CHIPSET_CPU_CLOCK_VARSTORE_DATA;
 
 typedef struct {
   /*
@@ -51,6 +51,36 @@ typedef struct {
    */
   UINT32 Routing;
 } CHIPSET_SD_VARSTORE_DATA;
+
+typedef struct {
+  /*
+   * 0 - Don't force 1 bit mode.
+   * 1 - Force 1 bit mode.
+   */
+  UINT32 Force1Bit;
+} MMC_FORCE1BIT_VARSTORE_DATA;
+
+typedef struct {
+  /*
+   * 0 - Don't force default speed.
+   * 1 - Force default speed.
+   */
+  UINT32 ForceDS;
+} MMC_FORCEDS_VARSTORE_DATA;
+
+typedef struct {
+  /*
+   * Default Speed MHz override (25MHz default).
+   */
+  UINT32 MHz;
+} MMC_SD_DS_MHZ_VARSTORE_DATA;
+
+typedef struct {
+  /*
+   * High Speed MHz override (50MHz default).
+   */
+  UINT32 MHz;
+} MMC_SD_HS_MHZ_VARSTORE_DATA;
 
 //
 // EFI Variable attributes
@@ -86,7 +116,7 @@ formset
       name  = HypWin2000Mask,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
-    efivarstore CPU_CLOCK_VARSTORE_DATA,
+    efivarstore CHIPSET_CPU_CLOCK_VARSTORE_DATA,
       attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
       name  = CpuClock,
       guid  = CONFIGDXE_FORM_SET_GUID;
@@ -94,6 +124,26 @@ formset
     efivarstore CHIPSET_SD_VARSTORE_DATA,
       attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
       name  = SdIsArasan,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore MMC_FORCE1BIT_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = MmcForce1Bit,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore MMC_FORCEDS_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = MmcForceDefaultSpeed,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore MMC_SD_DS_MHZ_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = MmcSdDefaultSpeedMHz,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore MMC_SD_HS_MHZ_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = MmcSdHighSpeedMHz,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
     form formid = 1,
@@ -105,11 +155,11 @@ formset
             help = STRING_TOKEN(STR_NULL_STRING);
 
         goto 0x1001,
-           prompt = STRING_TOKEN(STR_CLOCK_FORM_TITLE),
+           prompt = STRING_TOKEN(STR_CHIPSET_FORM_TITLE),
            help = STRING_TOKEN(STR_NULL_STRING);
 
         goto 0x1002,
-           prompt = STRING_TOKEN(STR_CHIPSET_FORM_TITLE),
+           prompt = STRING_TOKEN(STR_MMC_FORM_TITLE),
            help = STRING_TOKEN(STR_NULL_STRING);
     endform;
 
@@ -155,22 +205,17 @@ formset
     endform;
 
     form formid = 0x1001,
-        title  = STRING_TOKEN(STR_CLOCK_FORM_TITLE);
-        subtitle text = STRING_TOKEN(STR_CLOCK_FORM_SUBTITLE);
-
-        oneof varid = CpuClock.Clock,
-            prompt      = STRING_TOKEN(STR_CLOCK_CPU_PROMPT),
-            help        = STRING_TOKEN(STR_CLOCK_CPU_HELP),
-            flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-            option text = STRING_TOKEN(STR_CLOCK_CPU_NA), value = 0, flags = DEFAULT;
-            option text = STRING_TOKEN(STR_CLOCK_CPU_600MHZ), value = 1, flags = 0;
-            option text = STRING_TOKEN(STR_CLOCK_CPU_MAX), value = 2, flags = 0;
-        endoneof;
-    endform;
-
-    form formid = 0x1002,
         title  = STRING_TOKEN(STR_CHIPSET_FORM_TITLE);
         subtitle text = STRING_TOKEN(STR_CHIPSET_FORM_SUBTITLE);
+
+        oneof varid = CpuClock.Clock,
+            prompt      = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_PROMPT),
+            help        = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_HELP),
+            flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_NA), value = 0, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_600MHZ), value = 1, flags = 0;
+            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_MAX), value = 2, flags = 0;
+        endoneof;
 
         oneof varid = SdIsArasan.Routing,
             prompt      = STRING_TOKEN(STR_CHIPSET_SD_PROMPT),
@@ -180,4 +225,44 @@ formset
             option text = STRING_TOKEN(STR_CHIPSET_SD_SDHOST), value = 0, flags = 0;
         endoneof;
     endform;
+
+    form formid = 0x1002,
+        title  = STRING_TOKEN(STR_MMC_FORM_TITLE);
+        subtitle text = STRING_TOKEN(STR_MMC_FORM_SUBTITLE);
+
+        oneof varid = MmcForce1Bit.Force1Bit,
+            prompt      = STRING_TOKEN(STR_MMC_FORCE1BIT_PROMPT),
+            help        = STRING_TOKEN(STR_MMC_FORCE1BIT_HELP),
+            flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+            option text = STRING_TOKEN(STR_MMC_FORCE1BIT_N), value = 0, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_MMC_FORCE1BIT_Y), value = 1, flags = 0;
+        endoneof;
+
+        oneof varid = MmcForceDefaultSpeed.ForceDS,
+            prompt      = STRING_TOKEN(STR_MMC_FORCEDS_PROMPT),
+            help        = STRING_TOKEN(STR_MMC_FORCEDS_HELP),
+            flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+            option text = STRING_TOKEN(STR_MMC_FORCEDS_N), value = 0, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_MMC_FORCEDS_Y), value = 1, flags = 0;
+        endoneof;
+
+        numeric varid = MmcSdDefaultSpeedMHz.MHz,
+             prompt  = STRING_TOKEN(STR_MMC_SD_DS_PROMPT),
+             help    = STRING_TOKEN(STR_MMC_SD_DS_HELP),
+             flags   = DISPLAY_UINT_DEC | NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+             minimum = 25,
+             maximum = 100,
+             default = 25,
+        endnumeric;
+
+        numeric varid = MmcSdHighSpeedMHz.MHz,
+             prompt  = STRING_TOKEN(STR_MMC_SD_HS_PROMPT),
+             help    = STRING_TOKEN(STR_MMC_SD_HS_HELP),
+             flags   = DISPLAY_UINT_DEC | NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+             minimum = 50,
+             maximum = 100,
+             default = 50,
+        endnumeric;
+endform;
+
 endformset;

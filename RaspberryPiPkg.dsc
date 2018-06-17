@@ -420,12 +420,36 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
 
 [PcdsDynamicHii.common.DEFAULT]
+
+  #
+  # HypDxe/Windows related.
+  #
+
   gRaspberryPiTokenSpaceGuid.PcdHypEnable|L"HypEnable"|gConfigDxeFormSetGuid|0x0|1
   gRaspberryPiTokenSpaceGuid.PcdHypLogMask|L"HypLogMask"|gConfigDxeFormSetGuid|0x0|$(HYP_LOG_MASK)
   gRaspberryPiTokenSpaceGuid.PcdHypWindowsDebugHook|L"HypWindowsDebugHook"|gConfigDxeFormSetGuid|0x0|0
   gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask|L"HypWin2000Mask"|gConfigDxeFormSetGuid|0x0|0
+
+  #
+  # Clock overrides.
+  #
+
   gRaspberryPiTokenSpaceGuid.PcdCpuClock|L"CpuClock"|gConfigDxeFormSetGuid|0x0|0
+
+  #
+  # SD-related.
+  #
+
   gRaspberryPiTokenSpaceGuid.PcdSdIsArasan|L"SdIsArasan"|gConfigDxeFormSetGuid|0x0|1
+  gEmbeddedTokenSpaceGuid.PcdMmcForce1Bit|L"MmcForce1Bit"|gConfigDxeFormSetGuid|0x0|0
+  gEmbeddedTokenSpaceGuid.PcdMmcForceDefaultSpeed|L"MmcForceDefaultSpeed"|gConfigDxeFormSetGuid|0x0|0
+  gEmbeddedTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz|L"MmcSdDefaultSpeedMHz"|gConfigDxeFormSetGuid|0x0|25
+  gEmbeddedTokenSpaceGuid.PcdMmcSdHighSpeedMHz|L"MmcSdHighSpeedMHz"|gConfigDxeFormSetGuid|0x0|50
+
+  #
+  # Common UEFI ones.
+  #
+
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|L"Timeout"|gEfiGlobalVariableGuid|0x0|5
   #
   # This is silly, but by pointing SetupConXXX and ConXXX PCDs to
