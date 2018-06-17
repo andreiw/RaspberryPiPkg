@@ -53,10 +53,61 @@ typedef struct {
   EFI_DEVICE_PATH_PROTOCOL      EndDevicePath;
 } PLATFORM_USB_DEV;
 
+typedef struct {
+  VENDOR_DEVICE_PATH            Custom;
+  EFI_DEVICE_PATH_PROTOCOL      EndDevicePath;
+} PLATFORM_SD_DEV;
+
 #define DW_USB_DXE_FILE_GUID { \
           0x4bf1704c, 0x03f4, 0x46d5, \
           { 0xbc, 0xa6, 0x82, 0xfa, 0x58, 0x0b, 0xad, 0xfd } \
           }
+
+#define ARASAN_MMC_DXE_FILE_GUID { \
+          0x100c2cfa, 0xb586, 0x4198, \
+          { 0x9b, 0x4c, 0x16, 0x83, 0xd1, 0x95, 0xb1, 0xda } \
+          }
+
+#define SDHOST_MMC_DXE_FILE_GUID { \
+          0x58abd787, 0xf64d, 0x4ca2, \
+          { 0xa0, 0x34, 0xb9, 0xac, 0x2d, 0x5a, 0xd0, 0xcf } \
+          }
+
+STATIC PLATFORM_SD_DEV mArasan = {
+  //
+  // VENDOR_DEVICE_PATH ArasanMMCHostDxe
+  //
+  {
+    { HARDWARE_DEVICE_PATH, HW_VENDOR_DP, DP_NODE_LEN (VENDOR_DEVICE_PATH) },
+    ARASAN_MMC_DXE_FILE_GUID
+  },
+
+  //
+  // EFI_DEVICE_PATH_PROTOCOL End
+  //
+  {
+    END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE,
+    DP_NODE_LEN (EFI_DEVICE_PATH_PROTOCOL)
+  }
+};
+
+STATIC PLATFORM_SD_DEV mSDHost = {
+  //
+  // VENDOR_DEVICE_PATH SdHostDxe
+  //
+  {
+    { HARDWARE_DEVICE_PATH, HW_VENDOR_DP, DP_NODE_LEN (VENDOR_DEVICE_PATH) },
+    SDHOST_MMC_DXE_FILE_GUID
+  },
+
+  //
+  // EFI_DEVICE_PATH_PROTOCOL End
+  //
+  {
+    END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE,
+    DP_NODE_LEN (EFI_DEVICE_PATH_PROTOCOL)
+  }
+};
 
 STATIC PLATFORM_USB_DEV mUsbHubPort = {
   //
@@ -617,6 +668,13 @@ PlatformBootManagerAfterConsole (
     PlatformRegisterBootOption ((VOID *) &mUsbHubPort,
                                 Desc, LOAD_OPTION_ACTIVE);
   }
+
+  PlatformRegisterBootOption ((VOID *) &mArasan,
+                              L"uSD on Arasan MMC Host",
+                              LOAD_OPTION_ACTIVE);
+  PlatformRegisterBootOption ((VOID *) &mSDHost,
+                              L"uSD on SD Host",
+                              LOAD_OPTION_ACTIVE);
 
   EfiBootManagerRefreshAllBootOption ();
 
