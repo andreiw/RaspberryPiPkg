@@ -99,6 +99,10 @@ SUnlock(
   __atomic_clear(Lock, __ATOMIC_RELEASE);
 }
 
+BOOLEAN
+HypIsEnabled(
+  VOID
+  );
 
 VOID
 CaptureEL2State(

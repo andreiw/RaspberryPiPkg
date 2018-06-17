@@ -111,6 +111,17 @@ HypLog (
   UINTN Printed;
   UINTN Color;
 
+  if (ArmReadCurrentEL() != AARCH64_EL2 &&
+      HypIsEnabled()) {
+    /*
+     * HypDxe is already protected from EL1. Cannot use own
+     * logging facilities directly.
+     *
+     * FIXME: go through EL2.
+     */
+    return;
+  }
+
   if (ErrorLevel != HLOG_ERROR &&
       (ErrorLevel & mLogMask) == 0) {
     return;

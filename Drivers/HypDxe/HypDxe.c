@@ -17,6 +17,17 @@
 #include <Library/BaseMemoryLib.h>
 #include <IndustryStandard/Bcm2836.h>
 
+STATIC BOOLEAN HypEnabled = FALSE;
+
+
+BOOLEAN
+HypIsEnabled(
+  VOID
+  )
+{
+  return HypEnabled;
+}
+
 
 VOID
 CaptureEL2State(
@@ -344,8 +355,14 @@ HypSwitchToEL1(IN  CAPTURED_EL2_STATE *State,
                "dsb sy\n\t");
   ISB();
 
+  /*
+   * No logging from EL1 until HypEnabled is set.
+   */
+  HypEnabled = TRUE;
   SwitchStackAndEL(ExceptionStack);
-
+  /*
+   * Everything in HypDxe is RO now.
+   */
   HLOG((HLOG_INFO, "Switched to EL1\n"));
 }
 
