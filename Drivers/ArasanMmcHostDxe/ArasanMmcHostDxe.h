@@ -45,8 +45,6 @@
 #define STALL_AFTER_READ_US (20)
 #define STALL_AFTER_RETRY_US (20)
 
-#define HC_MMC_CSD_GET_DEVICESIZE(Response)    ((Response[1] >> 16) | ((Response[2] & 0x3F) << 16));
-
 #define MAX_DIVISOR_VALUE 1023
 
 #endif

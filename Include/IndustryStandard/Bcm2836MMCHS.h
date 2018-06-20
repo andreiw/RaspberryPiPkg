@@ -36,7 +36,14 @@
 #define CCCE_ENABLE       BIT19
 #define CICE_ENABLE       BIT20
 #define DP_ENABLE         BIT21
-#define INDX(CMD_INDX)    ((CMD_INDX & 0x3F) << 24)
+
+#define CMD_TYPE_NORMAL      0
+#define CMD_TYPE_ABORT       3
+#define TYPE(CMD_TYPE)       (((CMD_TYPE) & 0x3) << 22)
+#define _INDX(CMD_INDX)      ((CMD_INDX & 0x3F) << 24)
+#define MMC_CMD_NUM(CMD)     (((CMD) >> 24) & 0x3F)
+#define INDX(CMD_INDX)       (TYPE(CMD_TYPE_NORMAL) | _INDX(CMD_INDX))
+#define INDX_ABORT(CMD_INDX) (TYPE(CMD_TYPE_ABORT) | _INDX(CMD_INDX))
 
 #define MMCHS_RSP10       (MMCHS1BASE + 0x10)
 #define MMCHS_RSP32       (MMCHS1BASE + 0x14)
@@ -134,16 +141,16 @@
 #define BLOCK_COUNT_SHIFT 16
 #define RCA_SHIFT         16
 
-#define CMD_R1            RSP_TYPE_48BITS | CCCE_ENABLE | CICE_ENABLE
-#define CMD_R1B           RSP_TYPE_48BUSY | CCCE_ENABLE | CICE_ENABLE
-#define CMD_R2            RSP_TYPE_136BITS | CCCE_ENABLE
-#define CMD_R3            RSP_TYPE_48BITS
-#define CMD_R6            RSP_TYPE_48BITS | CCCE_ENABLE | CICE_ENABLE
-#define CMD_R7            RSP_TYPE_48BITS | CCCE_ENABLE | CICE_ENABLE
+#define CMD_R1            (RSP_TYPE_48BITS | CCCE_ENABLE | CICE_ENABLE)
+#define CMD_R1B           (RSP_TYPE_48BUSY | CCCE_ENABLE | CICE_ENABLE)
+#define CMD_R2            (RSP_TYPE_136BITS | CCCE_ENABLE)
+#define CMD_R3            (RSP_TYPE_48BITS)
+#define CMD_R6            (RSP_TYPE_48BITS | CCCE_ENABLE | CICE_ENABLE)
+#define CMD_R7            (RSP_TYPE_48BITS | CCCE_ENABLE | CICE_ENABLE)
 
-#define CMD_R1_ADTC       CMD_R1 | DP_ENABLE
-#define CMD_R1_ADTC_READ  CMD_R1_ADTC | DDIR_READ
-#define CMD_R1_ADTC_WRITE CMD_R1_ADTC | DDIR_WRITE
+#define CMD_R1_ADTC       (CMD_R1 | DP_ENABLE)
+#define CMD_R1_ADTC_READ  (CMD_R1_ADTC | DDIR_READ)
+#define CMD_R1_ADTC_WRITE (CMD_R1_ADTC | DDIR_WRITE)
 
 
 #define CMD0              (INDX(0)) // Go idle
@@ -159,20 +166,21 @@
 #define CMD9              (INDX(9) | CMD_R2) // Send CSD
 #define CMD10             (INDX(10) | CMD_R2) // Send CID
 #define CMD11             (INDX(11) | CMD_R1) // Voltage Switch
-#define CMD12             (INDX(12) | CMD_R1B) // Stop Transmission
+#define CMD12             (INDX_ABORT(12) | CMD_R1B) // Stop Transmission
 #define CMD13             (INDX(13) | CMD_R1) // Send Status
 #define CMD15             (INDX(15)) // Go inactive state
 #define CMD16             (INDX(16) | CMD_R1) // Set Blocklen
 #define CMD17             (INDX(17) | CMD_R1_ADTC_READ) // Read Single Block
-#define CMD18             (INDX(18) | CMD_R1_ADTC_READ | MSBS_MULTBLK | BCE_ENABLE) // Read Multiple Blocks
+#define CMD18             (INDX(18) | CMD_R1_ADTC_READ | MSBS_MULTBLK) // Read Multiple Blocks
 #define CMD19             (INDX(19) | CMD_R1_ADTC_READ) // SD: Send Tuning Block (64 bytes)
 #define CMD20             (INDX(20) | CMD_R1B) // SD: Speed Class Control
 #define CMD23             (INDX(23) | CMD_R1) // Set Block Count for CMD18 and CMD25
 #define CMD24             (INDX(24) | CMD_R1_ADTC_WRITE) // Write Block
-#define CMD25             (INDX(25) | CMD_R1_ADTC_WRITE | MSBS_MULTBLK | BCE_ENABLE) // Write Multiple Blocks
+#define CMD25             (INDX(25) | CMD_R1_ADTC_WRITE | MSBS_MULTBLK) // Write Multiple Blocks
 #define CMD55             (INDX(55) | CMD_R1) // App Cmd
 
 #define ACMD6             (INDX(6) | CMD_R1) // Set Bus Width
+#define ACMD22            (INDX(22) | CMD_R1_ADTC_READ) // SEND_NUM_WR_BLOCKS
 #define ACMD41            (INDX(41) | CMD_R3) // Send Op Cond
 #define ACMD51            (INDX(51) | CMD_R1_ADTC_READ) // Send SCR
 
@@ -180,6 +188,7 @@
 #define CMD_IO_SEND_OP_COND      CMD5
 #define CMD_SEND_CSD             CMD9  // CSD: Card-Specific Data
 #define CMD_STOP_TRANSMISSION    CMD12
+#define CMD_SEND_STATUS          CMD13
 #define CMD_READ_SINGLE_BLOCK    CMD17
 #define CMD_READ_MULTIPLE_BLOCK  CMD18
 #define CMD_SET_BLOCK_COUNT      CMD23

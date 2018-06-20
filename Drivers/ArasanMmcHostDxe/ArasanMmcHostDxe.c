@@ -56,6 +56,10 @@ TranslateCommand(
       Translation = ACMD6;
       DEBUG((DEBUG_MMCHOST_SD, "ACMD6\n"));
       break;
+    case MMC_ACMD22:
+      Translation = ACMD22;
+      DEBUG((DEBUG_MMCHOST_SD, "ACMD22\n"));
+      break;
     case MMC_ACMD41:
       Translation = ACMD41;
       DEBUG((DEBUG_MMCHOST_SD, "ACMD41\n"));
@@ -86,7 +90,6 @@ TranslateCommand(
       break;
     case MMC_CMD6:
       Translation = CMD6;
-      DEBUG((DEBUG_MMCHOST_SD, "CMD6\n"));
       break;
     case MMC_CMD7:
       Translation = CMD7;
@@ -121,9 +124,11 @@ TranslateCommand(
     case MMC_CMD24:
       Translation = CMD24;
       break;
+    case MMC_CMD25:
+      Translation = CMD25;
+      break;
     case MMC_CMD55:
       Translation = CMD55;
-      DEBUG((DEBUG_MMCHOST_SD, "APP command NEXT\n"));
       break;
     default:
       DEBUG((DEBUG_ERROR, "ArasanMMCHost: TranslateCommand(): Unrecognized Command: %d\n", Command));
@@ -161,6 +166,21 @@ PollRegisterWithMask(
   return EFI_SUCCESS;
 }
 
+STATIC
+EFI_STATUS
+SoftReset(
+  IN UINT32 Mask
+  )
+{
+  MmioOr32(MMCHS_SYSCTL, Mask);
+  if (PollRegisterWithMask(MMCHS_SYSCTL, Mask, 0) == EFI_TIMEOUT) {
+    DEBUG((DEBUG_ERROR, "Failed to SoftReset with mask 0x%x\n", Mask));
+    return EFI_TIMEOUT;
+  }
+
+  return EFI_SUCCESS;
+}
+
 /**
    Calculate the clock divisor
 **/
@@ -177,7 +197,7 @@ CalculateClockFrequencyDivisor(
 
   Status = mFwProtocol->GetClockRate(RPI_FW_CLOCK_RATE_EMMC, &BaseFrequency);
   if (EFI_ERROR(Status)) {
-    DEBUG((DEBUG_MMCHOST_SD, "Couldn't get RPI_FW_CLOCK_RATE_EMMC\n"));
+    DEBUG((DEBUG_ERROR, "Couldn't get RPI_FW_CLOCK_RATE_EMMC\n"));
     return Status;
   }
 
@@ -223,20 +243,7 @@ MMCIsCardPresent(
                  IN EFI_MMC_HOST_PROTOCOL *This
                  )
 {
-  BOOLEAN IsCardPresent;
-
-  // Enable all Interrupts ('Interrupts' is badly named, these are not ARM IRQ/FIQ Interrupts, but simply a register
-  // that is repeatedly polled)
-  MmioWrite32(MMCHS_IE, ALL_EN);
-  IsCardPresent = (MmioRead32(MMCHS_INT_STAT) & CARD_INS) == CARD_INS;
-
-  // This function is called multiple times per second. To reduce the number of DebugPrints, only print if the card
-  // is NOT present, OR if the CardPresent state changes.
-  if (IsCardPresent == FALSE || IsCardPresent != PreviousIsCardPresent) {
-    DEBUG((DEBUG_MMCHOST_SD, "ArasanMMCHost: MMCIsCardPresent(): %d\n", IsCardPresent));
-  }
-  PreviousIsCardPresent = IsCardPresent;
-  return IsCardPresent;
+  return TRUE;
 }
 
 BOOLEAN
@@ -279,6 +286,9 @@ MMCSendCommand(
   UINTN CmdSendOKMask;
   EFI_STATUS Status = EFI_SUCCESS;
   BOOLEAN IsAppCmd = (LastExecutedCommand == CMD55);
+  BOOLEAN IsDATCmd = FALSE;
+  BOOLEAN IsADTCCmd = FALSE;
+  UINT32 BlockLenCount = 0;
 
   DEBUG((DEBUG_MMCHOST_SD, "ArasanMMCHost: MMCSendCommand(MmcCmd: %08x, Argument: %08x)\n", MmcCmd, Argument));
 
@@ -291,56 +301,55 @@ MMCSendCommand(
     return EFI_UNSUPPORTED;
   }
 
-  // Check if command and data lines are in use or not. Poll till both lines are available
-  // However, for CMD12 (Stop Transmission), no need to wait for data line to be available
-  if (MmcCmd == CMD_STOP_TRANSMISSION) {
-    CmdSendOKMask = CMDI_MASK;
-  } else {
-    CmdSendOKMask = CMDI_MASK | DATI_MASK;
+  if ((MmcCmd & CMD_R1_ADTC) == CMD_R1_ADTC) {
+    IsADTCCmd = TRUE;
+  }
+  if (((MmcCmd & CMD_R1B) == CMD_R1B &&
+       /*
+        * Abort commands don't get inhibited by DAT.
+        */
+       (MmcCmd & TYPE(CMD_TYPE_ABORT)) != TYPE(CMD_TYPE_ABORT)) ||
+      IsADTCCmd ||
+      /*
+       * We want to detect BRR/BWR change.
+       */
+      MmcCmd == CMD_SEND_STATUS) {
+    IsDATCmd = TRUE;
   }
 
-  if (PollRegisterWithMask(MMCHS_PRES_STATE, CmdSendOKMask, 0) == EFI_TIMEOUT) {
-    // CMD13 COULD time out (especially if following a WRITE). The Port Driver will automatically call CMD13
-    // again many times. If THAT also fails, then the Port Driver will also print out an error message.
-    // So sporadic printouts of the message below for CMD13 shoud be fine.
-    DEBUG((DEBUG_ERROR, "ArasanMMCHost: MMCSendCommand(): TIMEOUT: Wait for CMD/DATA line, CMD: %x ", MmcCmd));
-    if (MmcCmd == CMD13) {
-      DEBUG((DEBUG_ERROR, "CMD13 (GET_STATUS) timing out",
-             MmcCmd));
-    }
-    DEBUG((DEBUG_ERROR, "\n"));
-    Status = EFI_TIMEOUT;
+  CmdSendOKMask = CMDI_MASK;
+  if (IsDATCmd) {
+    CmdSendOKMask |= DATI_MASK;
+  }
+
+  if (PollRegisterWithMask(MMCHS_PRES_STATE,
+                           CmdSendOKMask, 0) == EFI_TIMEOUT) {
+    DEBUG((DEBUG_ERROR, "%a(%u): MMC_CMD%u ALREADY_STARTED MmcStatus 0x%x\n",
+           __FUNCTION__, __LINE__, MMC_CMD_NUM(MmcCmd), MmcStatus));
+    Status = EFI_ALREADY_STARTED;
     goto out;
   }
 
-  if (IsAppCmd) {
-    if (MmcCmd == ACMD51) {
-      MmioWrite32(MMCHS_BLK, 8);
-    } else {
-      MmioWrite32(MMCHS_BLK, BLEN_512BYTES);
-    }
-  } else {
-    // Provide (Block Count << 16 | Block Size)
-    // CMD23 (SET_BLOCK_COUNT) is sent before CMD18 (READ_MULTIPLE_BLOCK),
-    // and sets the number of blocks to read in CMD18
-    if (MmcCmd == CMD_SET_BLOCK_COUNT) {
-      MmioWrite32(MMCHS_BLK, Argument << BLOCK_COUNT_SHIFT | BLEN_512BYTES);
-    } else if (MmcCmd == CMD_READ_SINGLE_BLOCK || MmcCmd == CMD_WRITE_SINGLE_BLOCK) {
-      // For CMD17 and CMD24 (read and write single block), Block Count is 0
-      MmioWrite32(MMCHS_BLK, BLEN_512BYTES);
-    } else if (MmcCmd == CMD6) {
-      MmioWrite32(MMCHS_BLK, 64);
-    } else {
-      MmioWrite32(MMCHS_BLK, BLEN_512BYTES);
-    }
+  if (IsAppCmd && MmcCmd == ACMD22) {
+    BlockLenCount = 4;
+  } else if (IsAppCmd && MmcCmd == ACMD51) {
+    BlockLenCount = 8;
+  } else if (!IsAppCmd && MmcCmd == CMD6) {
+    BlockLenCount = 64;
+  } else if (IsADTCCmd) {
+    BlockLenCount = BLEN_512BYTES;
   }
+
+  MmioWrite32(MMCHS_BLK, BlockLenCount);
 
   // Set Data timeout counter value to max value.
   MmioAndThenOr32(MMCHS_SYSCTL, (UINT32) ~DTO_MASK, DTO_VAL);
 
-  // Clear Interrupt Status Register, but not the Card Inserted bit, because the SD port driver polls
-  // the Card Inserted bit periodically and assumes card is removed if Card Inserted bit is cleared
-  MmioWrite32(MMCHS_INT_STAT, ALL_EN & (~CARD_INS));
+  //
+  // Clear Interrupt Status Register, but not the Card Inserted bit
+  // to avoid messing with card detection logic.
+  //
+  MmioWrite32(MMCHS_INT_STAT, ALL_EN & ~(CARD_INS));
 
   // Set command argument register
   MmioWrite32(MMCHS_ARG, Argument);
@@ -354,14 +363,16 @@ MMCSendCommand(
 
     // Read status of command response
     if ((MmcStatus & ERRI) != 0) {
-      // Perform soft-reset for mmci_cmd line.
-      MmioOr32(MMCHS_SYSCTL, SRC);
-      while ((MmioRead32(MMCHS_SYSCTL) & SRC));
-
-      // CMD5 (CMD_IO_SEND_OP_COND) is only valid for SDIO cards and thus expected to fail
+      //
+      // CMD5 (CMD_IO_SEND_OP_COND) is only valid for SDIO
+      // cards and thus expected to fail.
+      //
       if (MmcCmd != CMD_IO_SEND_OP_COND) {
-        DEBUG((DEBUG_ERROR, "ArasanMMCHost: MMCSendCommand(): ERROR in Pres Status Reg: %08x\n", MmcStatus));
+        DEBUG((DEBUG_ERROR, "%a(%u): MMC_CMD%u ERRI MmcStatus 0x%x\n",
+               __FUNCTION__, __LINE__, MMC_CMD_NUM(MmcCmd), MmcStatus));
       }
+
+      SoftReset(SRC);
 
       Status = EFI_DEVICE_ERROR;
       goto out;
@@ -380,7 +391,8 @@ MMCSendCommand(
   gBS->Stall(STALL_AFTER_SEND_CMD_US);
 
   if (RetryCount == MAX_RETRY_COUNT) {
-    DEBUG((DEBUG_ERROR, "ArasanMMCHost: MMCSendCommand(): TIMEOUT: No response for Send Command\n"));
+    DEBUG((DEBUG_ERROR, "%a(%u): MMC_CMD%u TIMEOUT MmcStatus 0x%x\n",
+           __FUNCTION__, __LINE__, MMC_CMD_NUM(MmcCmd), MmcStatus));
     Status = EFI_TIMEOUT;
     goto out;
   }
@@ -407,11 +419,10 @@ MMCNotifyState(
     {
       EFI_STATUS Status;
       UINT32 Divisor;
-      // Soft reset for all
-      MmioOr32(MMCHS_SYSCTL, SRC);
-      if (PollRegisterWithMask(MMCHS_SYSCTL, SRA, 0) == EFI_TIMEOUT) {
-        DEBUG((DEBUG_MMCHOST_SD, "ArasanMMCHost: MMCNotifyState(): TIMEOUT: Soft reset for all\n"));
-        return EFI_TIMEOUT;
+
+      Status = SoftReset(SRA);
+      if (EFI_ERROR(Status)) {
+        return Status;
       }
 
       // Attempt to set the clock to 400Khz which is the expected initialization speed
@@ -513,6 +524,10 @@ MMCReceiveResponse(
   }
 
   gBS->Stall(STALL_AFTER_REC_RESP_US);
+  if (LastExecutedCommand == CMD_STOP_TRANSMISSION) {
+    DEBUG((DEBUG_MMCHOST_SD, "ArasanMMCHost: soft-resetting after CMD12\n"));
+    return SoftReset(SRC | SRD);
+  }
   return EFI_SUCCESS;
 }
 
@@ -525,36 +540,42 @@ MMCReadBlockData(
                  )
 {
   UINTN MmcStatus;
+  UINTN RemLength;
   UINTN Count;
-  UINTN RetryCount = 0;
 
-  // Make DebugPrints more manageable
-  if (Lba % 2000 == 0) {
-    DEBUG((DEBUG_MMCHOST_SD, "ArasanMMCHost: MMCReadBlockData(LBA: 0x%x, Length: 0x%x, Buffer: 0x%x)\n",
-           Lba, Length, Buffer));
-  }
+  DEBUG((DEBUG_VERBOSE, "%a(%u): LBA: 0x%x, Length: 0x%x, Buffer: 0x%x)\n",
+         __FUNCTION__, __LINE__, Lba, Length, Buffer));
 
   if (Buffer == NULL) {
-    DEBUG((DEBUG_ERROR, "ArasanMMCHost: MMCReadBlockData(): Input Buffer is NULL\n"));
+    DEBUG((DEBUG_ERROR, "%a(%u): NULL Buffer\n",
+           __FUNCTION__, __LINE__));
     return EFI_INVALID_PARAMETER;
   }
 
-  mFwProtocol->SetLed(TRUE);
-  {
+  if (Length % sizeof(UINT32) != 0) {
+    DEBUG((DEBUG_ERROR, "%a(%u): bad Length %u\n",
+           __FUNCTION__, __LINE__, Length));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  RemLength = Length;
+  while (RemLength != 0) {
+    UINTN RetryCount = 0;
+    UINT32 BlockLen = MIN(RemLength, BLEN_512BYTES);
+
     while (RetryCount < MAX_RETRY_COUNT) {
-      // Read Status
       MmcStatus = MmioRead32(MMCHS_INT_STAT);
-
-      // Check if Buffer Read Ready (BRR) bit is set
-      if (MmcStatus & BRR) {
-        // Clear BRR bit
+      if ((MmcStatus & BRR) != 0) {
         MmioWrite32(MMCHS_INT_STAT, BRR);
-
-        for (Count = 0; Count < Length / 4; Count++) {
-          UINT32 data = MmioRead32(MMCHS_DATA);
-          Buffer[Count] = data;
+        /*
+         * Data is ready.
+         */
+        mFwProtocol->SetLed(TRUE);
+        for (Count = 0; Count < BlockLen; Count += 4, Buffer++) {
+          *Buffer = MmioRead32(MMCHS_DATA);
         }
 
+        mFwProtocol->SetLed(FALSE);
         break;
       }
 
@@ -562,14 +583,15 @@ MMCReadBlockData(
       RetryCount++;
     }
 
-    gBS->Stall(STALL_AFTER_READ_US);
-  }
-  mFwProtocol->SetLed(FALSE);
+    if (RetryCount == MAX_RETRY_COUNT) {
+      DEBUG((DEBUG_ERROR, "%a(%u): %lu/%lu MMCHS_INT_STAT: %08x\n",
+             __FUNCTION__, __LINE__, Length - RemLength,
+             Length, MmcStatus));
+      return EFI_TIMEOUT;
+    }
 
-  if (RetryCount == MAX_RETRY_COUNT) {
-    DEBUG((DEBUG_ERROR, "ArasanMMCHost: MMCReadBlockData(): TIMEOUT waiting for BRR, MMCHS_INT_STAT: %08x\n",
-           MmcStatus));
-    return EFI_TIMEOUT;
+    RemLength -= BlockLen;
+    gBS->Stall(STALL_AFTER_READ_US);
   }
 
   return EFI_SUCCESS;
@@ -584,37 +606,42 @@ MMCWriteBlockData(
                   )
 {
   UINTN MmcStatus;
+  UINTN RemLength;
   UINTN Count;
-  UINTN RetryCount = 0;
 
-  DEBUG((DEBUG_MMCHOST_SD, "ArasanMMCHost: MMCWriteBlockData(LBA: 0x%x, Length: 0x%x, Buffer: 0x%x)\n",
-         Lba, Length, Buffer));
+  DEBUG((DEBUG_VERBOSE, "%a(%u): LBA: 0x%x, Length: 0x%x, Buffer: 0x%x)\n",
+         __FUNCTION__, __LINE__, Lba, Length, Buffer));
 
   if (Buffer == NULL) {
-    DEBUG((DEBUG_ERROR, "ArasanMMCHost: MMCWriteBlockData(): Input Buffer is NULL\n"));
+    DEBUG((DEBUG_ERROR, "%a(%u): NULL Buffer\n",
+           __FUNCTION__, __LINE__));
     return EFI_INVALID_PARAMETER;
   }
 
-  if (Length % BLEN_512BYTES != 0) {
-    DEBUG((DEBUG_ERROR, "ArasanMMCHost: MMCWriteBlockData(): Length (%d B) is not a multiple of 512\n", Length));
+  if (Length % sizeof(UINT32) != 0) {
+    DEBUG((DEBUG_ERROR, "%a(%u): bad Length %u\n",
+           __FUNCTION__, __LINE__, Length));
     return EFI_INVALID_PARAMETER;
   }
 
-  mFwProtocol->SetLed(TRUE);
-  {
+  RemLength = Length;
+  while (RemLength != 0) {
+    UINTN RetryCount = 0;
+    UINT32 BlockLen = MIN(RemLength, BLEN_512BYTES);
+
     while (RetryCount < MAX_RETRY_COUNT) {
-      // Read Status
       MmcStatus = MmioRead32(MMCHS_INT_STAT);
-
-      // Check if Buffer Write Ready (BWR) bit is set
-      if (MmcStatus & BWR) {
-        // Clear BWR bit
+      if ((MmcStatus & BWR) != 0) {
         MmioWrite32(MMCHS_INT_STAT, BWR);
-
-        for (Count = 0; Count < Length / 4; Count++) {
-          MmioWrite32(MMCHS_DATA, Buffer[Count]);
+        /*
+         * Can write data.
+         */
+        mFwProtocol->SetLed(TRUE);
+        for (Count = 0; Count < BlockLen; Count += 4, Buffer++) {
+          MmioWrite32(MMCHS_DATA, *Buffer);
         }
 
+        mFwProtocol->SetLed(FALSE);
         break;
       }
 
@@ -622,17 +649,26 @@ MMCWriteBlockData(
       RetryCount++;
     }
 
-    gBS->Stall(STALL_AFTER_WRITE_US);
-  }
-  mFwProtocol->SetLed(FALSE);
+    if (RetryCount == MAX_RETRY_COUNT) {
+      DEBUG((DEBUG_ERROR, "%a(%u): %lu/%lu MMCHS_INT_STAT: %08x\n",
+             __FUNCTION__, __LINE__, Length - RemLength,
+             Length, MmcStatus));
+      return EFI_TIMEOUT;
+    }
 
-  if (RetryCount == MAX_RETRY_COUNT) {
-    DEBUG((DEBUG_ERROR, "ArasanMMCHost: MMCWriteBlockData(): TIMEOUT waiting for BWR, MMCHS_INT_STAT: %08x\n",
-           MmcStatus));
-    return EFI_TIMEOUT;
+    RemLength -= BlockLen;
+    gBS->Stall(STALL_AFTER_WRITE_US);
   }
 
   return EFI_SUCCESS;
+}
+
+BOOLEAN
+MMCIsMultiBlock (
+  IN EFI_MMC_HOST_PROTOCOL *This
+  )
+{
+  return TRUE;
 }
 
 EFI_MMC_HOST_PROTOCOL gMMCHost =
@@ -645,7 +681,9 @@ EFI_MMC_HOST_PROTOCOL gMMCHost =
     MMCSendCommand,
     MMCReceiveResponse,
     MMCReadBlockData,
-    MMCWriteBlockData
+    MMCWriteBlockData,
+    NULL,
+    MMCIsMultiBlock
   };
 
 EFI_STATUS
