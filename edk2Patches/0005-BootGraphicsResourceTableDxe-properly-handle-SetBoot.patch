@@ -1,8 +1,8 @@
 From 84c4b9dac780976c560100a761f341462025d916 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Mon, 14 May 2018 01:10:50 -0400
-Subject: [PATCH 5/9] BootGraphicsResourceTableDxe: properly handle SetBootLogo
- with NULL buffer
+Subject: [PATCH 05/10] BootGraphicsResourceTableDxe: properly handle
+ SetBootLogo with NULL buffer
 
 SetBootLogo would not free the previous logo memory, which in turn
 means that a BGRT would still be installed, even if marked as not valid.
