@@ -531,11 +531,13 @@ SdReadBlockData(
       while (PollCount < FIFO_MAX_POLL_COUNT) {
         UINT32 Hsts = MmioRead32(SDHOST_HSTS);
         if ((Hsts & SDHOST_HSTS_DATA_FLAG) != 0) {
+          MmioWrite32(SDHOST_HSTS, SDHOST_HSTS_DATA_FLAG);
           Buffer[WordIdx] = MmioRead32(SDHOST_DATA);
           break;
         }
 
         ++PollCount;
+        gBS->Stall(CMD_STALL_AFTER_RETRY_US);
       }
 
       if (PollCount == FIFO_MAX_POLL_COUNT) {
@@ -582,11 +584,13 @@ SdWriteBlockData(
       UINT32 PollCount = 0;
       while (PollCount < FIFO_MAX_POLL_COUNT) {
         if (MmioRead32(SDHOST_HSTS) & SDHOST_HSTS_DATA_FLAG) {
+          MmioWrite32(SDHOST_HSTS, SDHOST_HSTS_DATA_FLAG);
           MmioWrite32(SDHOST_DATA, Buffer[WordIdx]);
           break;
         }
 
         ++PollCount;
+        gBS->Stall(CMD_STALL_AFTER_RETRY_US);
       }
 
       if (PollCount == FIFO_MAX_POLL_COUNT) {
