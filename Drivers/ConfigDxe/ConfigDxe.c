@@ -155,6 +155,14 @@ SetupVariables (
   }
 
   Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"MmcDisableMulti",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdMmcDisableMulti, PcdGet32 (PcdMmcDisableMulti));
+  }
+
+  Size = sizeof (UINT32);
   Status = gRT->GetVariable(L"MmcForce1Bit",
                             &gConfigDxeFormSetGuid,
                             NULL,  &Size, &Var32);

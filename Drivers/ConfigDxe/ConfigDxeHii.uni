@@ -67,6 +67,11 @@
 #string STR_MMC_FORM_TITLE       #language en-US "SD/MMC Tweaks"
 #string STR_MMC_FORM_SUBTITLE    #language en-US "Note: UEFI only, OS will override settings when booted."
 
+#string STR_MMC_DISMULTI_PROMPT  #language en-US "Multi-Block Support"
+#string STR_MMC_DISMULTI_HELP    #language en-US "Use CMD18/CMD25 for transfers when possible"
+#string STR_MMC_DISMULTI_N       #language en-US "Multi-block transfers"
+#string STR_MMC_DISMULTI_Y       #language en-US "Single-block transfers"
+
 #string STR_MMC_FORCE1BIT_PROMPT #language en-US "uSD Max Bus Width"
 #string STR_MMC_FORCE1BIT_HELP   #language en-US "Tweak for bad media"
 #string STR_MMC_FORCE1BIT_Y      #language en-US "1 Bit Mode"

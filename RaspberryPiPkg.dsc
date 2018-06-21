@@ -445,6 +445,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   gEmbeddedTokenSpaceGuid.PcdMmcForceDefaultSpeed|L"MmcForceDefaultSpeed"|gConfigDxeFormSetGuid|0x0|0
   gEmbeddedTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz|L"MmcSdDefaultSpeedMHz"|gConfigDxeFormSetGuid|0x0|25
   gEmbeddedTokenSpaceGuid.PcdMmcSdHighSpeedMHz|L"MmcSdHighSpeedMHz"|gConfigDxeFormSetGuid|0x0|50
+  gEmbeddedTokenSpaceGuid.PcdMmcDisableMulti|L"MmcDisableMulti"|gConfigDxeFormSetGuid|0x0|0
 
   #
   # Common UEFI ones.

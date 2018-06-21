@@ -70,6 +70,7 @@
   gEmbeddedTokenSpaceGuid.PcdMmcForceDefaultSpeed
   gEmbeddedTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz
   gEmbeddedTokenSpaceGuid.PcdMmcSdHighSpeedMHz
+  gEmbeddedTokenSpaceGuid.PcdMmcDisableMulti
 
 [FeaturePcd]
 
