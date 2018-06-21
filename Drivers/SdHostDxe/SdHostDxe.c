@@ -72,23 +72,51 @@ STATIC CONST CHAR8 *mFsmState[] = { "identmode", "datamode", "readdata",
 #endif /* NDEBUG */
 STATIC UINT32 mLastExecutedMmcCmd = MMC_GET_INDX(MMC_CMD0);
 
-STATIC BOOLEAN IsAppCmd() { return mLastExecutedMmcCmd == MMC_CMD55; }
-
-STATIC BOOLEAN IsBusyCmd(UINT32 MmcCmd) { return ((MmcCmd == MMC_CMD7 || MmcCmd == MMC_CMD12) && !IsAppCmd()); }
-
-STATIC BOOLEAN IsWriteCmd(UINT32 MmcCmd) { return (MmcCmd == MMC_CMD24 && !IsAppCmd()); }
-
-STATIC BOOLEAN IsReadCmd(
-  UINT32 MmcCmd
+STATIC inline BOOLEAN
+IsAppCmd(
+  VOID
   )
 {
-  BOOLEAN CmdIsAppCmd = IsAppCmd();
+  return mLastExecutedMmcCmd == MMC_CMD55;
+}
+
+STATIC BOOLEAN
+IsBusyCmd(
+  IN  UINT32 MmcCmd
+  )
+{
+  if (IsAppCmd()) {
+    return FALSE;
+  }
+
+  return MmcCmd == MMC_CMD7 || MmcCmd == MMC_CMD12;
+}
+
+STATIC BOOLEAN
+IsWriteCmd(
+  IN  UINT32 MmcCmd
+  )
+{
+  if (IsAppCmd()) {
+    return FALSE;
+  }
+
+  return MmcCmd == MMC_CMD24 || MmcCmd == MMC_CMD25;
+}
+
+STATIC BOOLEAN
+IsReadCmd(
+  IN  UINT32 MmcCmd
+  )
+{
   return
-    (MmcCmd == MMC_CMD6 && !CmdIsAppCmd) ||
-    (MmcCmd == MMC_CMD17 && !CmdIsAppCmd) ||
-    (MmcCmd == MMC_CMD18 && !CmdIsAppCmd) ||
-    (MmcCmd == MMC_CMD13 && CmdIsAppCmd) ||
-    (MmcCmd == MMC_ACMD51 && CmdIsAppCmd);
+    (MmcCmd == MMC_CMD6 && !IsAppCmd()) ||
+    (MmcCmd == MMC_CMD8 && !IsAppCmd()) ||
+    (MmcCmd == MMC_CMD17 && !IsAppCmd()) ||
+    (MmcCmd == MMC_CMD18 && !IsAppCmd()) ||
+    (MmcCmd == MMC_CMD13 && IsAppCmd()) ||
+    (MmcCmd == MMC_ACMD22 && IsAppCmd()) ||
+    (MmcCmd == MMC_ACMD51 && IsAppCmd());
 }
 
 STATIC VOID
@@ -323,22 +351,27 @@ SdSendCommand(
       SdCmd |= SDHOST_CMD_RESPONSE_CMD_NO_RESP;
     }
 
-    if (IsBusyCmd(MmcCmd))
+    if (IsBusyCmd(MmcCmd)) {
       SdCmd |= SDHOST_CMD_BUSY_CMD;
+    }
 
-    if (IsReadCmd(MmcCmd))
+    if (IsReadCmd(MmcCmd)) {
       SdCmd |= SDHOST_CMD_READ_CMD;
+    }
 
-    if (IsWriteCmd(MmcCmd))
+    if (IsWriteCmd(MmcCmd)) {
       SdCmd |= SDHOST_CMD_WRITE_CMD;
+    }
 
     SdCmd |= MMC_GET_INDX(MmcCmd);
   }
 
   if (IsReadCmd(MmcCmd) || IsWriteCmd(MmcCmd)) {
-    if (IsAppCmd() && MMC_GET_INDX(MmcCmd) == 51) {
+    if (IsAppCmd() && MmcCmd == MMC_ACMD22) {
+      MmioWrite32(SDHOST_HBCT, 0x4);
+    } else if (IsAppCmd() && MmcCmd == MMC_ACMD51) {
       MmioWrite32(SDHOST_HBCT, 0x8);
-    } else if (!IsAppCmd() && MMC_GET_INDX(MmcCmd) == 6) {
+    } else if (!IsAppCmd() && MmcCmd == MMC_CMD6) {
       MmioWrite32(SDHOST_HBCT, 0x40);
     } else {
       MmioWrite32(SDHOST_HBCT, SDHOST_BLOCK_BYTE_LENGTH);
@@ -374,7 +407,7 @@ SdSendCommand(
     // Write command and set it to start execution
     MmioWrite32(SDHOST_CMD, SDHOST_CMD_NEW_FLAG | SdCmd);
 
-    // Poll for the command status untill it finishes execution
+    // Poll for the command status until it finishes execution
     while (PollCount < CMD_MAX_POLL_COUNT) {
       UINT32 CmdReg = MmioRead32(SDHOST_CMD);
 
@@ -420,7 +453,6 @@ SdSendCommand(
     }
 
     MmioWrite32(SDHOST_HSTS, SDHOST_HSTS_CLEAR);
-
   } else if (IsCmdExecuted) {
     ASSERT(!(MmioRead32(SDHOST_HSTS) & SDHOST_HSTS_ERROR));
     mLastExecutedMmcCmd = MmcCmd;
@@ -695,6 +727,14 @@ SdNotifyState(
   return EFI_SUCCESS;
 }
 
+BOOLEAN
+SdIsMultiBlock (
+  IN EFI_MMC_HOST_PROTOCOL *This
+  )
+{
+  return TRUE;
+}
+
 EFI_MMC_HOST_PROTOCOL gMmcHost =
   {
     MMC_HOST_PROTOCOL_REVISION,
@@ -706,7 +746,8 @@ EFI_MMC_HOST_PROTOCOL gMmcHost =
     SdReceiveResponse,
     SdReadBlockData,
     SdWriteBlockData,
-    SdSetIos
+    SdSetIos,
+    SdIsMultiBlock
   };
 
 EFI_STATUS
