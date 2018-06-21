@@ -1,7 +1,7 @@
 From 512678b82f717d42543fb7943e180336a0742ca1 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sat, 16 Jun 2018 02:53:59 -0400
-Subject: [PATCH 07/10] MmcDxe: fix high speed support
+Subject: [PATCH 07/11] MmcDxe: fix high speed support
 
 - Fix invalid bits checked for HS support and switch
 - Refactor logic

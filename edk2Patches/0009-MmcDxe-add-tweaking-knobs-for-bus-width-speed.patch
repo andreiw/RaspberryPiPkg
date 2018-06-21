@@ -1,7 +1,7 @@
 From 326a3f44996acf6afcc7ff4f00694f4852622f0b Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sun, 17 Jun 2018 12:40:01 -0400
-Subject: [PATCH 09/10] MmcDxe: add tweaking knobs for bus width, speed.
+Subject: [PATCH 09/11] MmcDxe: add tweaking knobs for bus width, speed.
 
 - Pcd for forcing 1 bit mode.
 - Pcd for forcing SD DS mode.

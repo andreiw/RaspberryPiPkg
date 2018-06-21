@@ -1,7 +1,7 @@
 From 745a983b0c351838b029af93076700e7cdc6f8df Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Wed, 20 Jun 2018 02:59:36 -0400
-Subject: [PATCH 10/10] MmcDxe: block I/O cleanup
+Subject: [PATCH 10/11] MmcDxe: block I/O cleanup
 
 When building without NDEBUG, validate that
 written blocks are written.
