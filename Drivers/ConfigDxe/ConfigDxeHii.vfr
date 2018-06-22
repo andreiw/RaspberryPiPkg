@@ -234,8 +234,8 @@ formset
             prompt      = STRING_TOKEN(STR_CHIPSET_SD_PROMPT),
             help        = STRING_TOKEN(STR_CHIPSET_SD_HELP),
             flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-            option text = STRING_TOKEN(STR_CHIPSET_SD_ARASAN), value = 1, flags = DEFAULT;
-            option text = STRING_TOKEN(STR_CHIPSET_SD_SDHOST), value = 0, flags = 0;
+            option text = STRING_TOKEN(STR_CHIPSET_SD_ARASAN), value = 1, flags = 0;
+            option text = STRING_TOKEN(STR_CHIPSET_SD_SDHOST), value = 0, flags = DEFAULT;
         endoneof;
     endform;
 
