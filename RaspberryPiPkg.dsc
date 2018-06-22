@@ -46,7 +46,10 @@ DEFINE ATF_BUILD_DIR = RaspberryPiPkg/Binary/atf/debug
 !endif
 
 !ifndef BUILD_DATE
-DEFINE BUILD_DATE = 01/01/2018
+DEFINE BUILD_DATE = 05/09/2018
+!endif
+!ifndef BUILD_EPOCH
+DEFINE BUILD_EPOCH = 1525842369
 !endif
 !ifndef BUILD_COMMIT
 DEFINE BUILD_COMMIT = current
@@ -414,9 +417,10 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   gEmbeddedTokenSpaceGuid.PcdPrePiCpuMemorySize|32
 
   #
-  # May 9th, 2018. This is used if RtcEpochSeconds NVRAM variable is not present.
+  # Build dae/time. This is used if RtcEpochSeconds NVRAM
+  # variable is not present.
   #
-  gRaspberryPiTokenSpaceGuid.PcdBootEpochSeconds|1525842369
+  gRaspberryPiTokenSpaceGuid.PcdBootEpochSeconds|$(BUILD_EPOCH)
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack|TRUE
 
 [PcdsDynamicHii.common.DEFAULT]
