@@ -45,8 +45,9 @@ IgnoreCommand(
 **/
 UINT32
 TranslateCommand(
-                 UINT32 Command
-                 )
+  UINT32 Command,
+  UINT32 Argument
+  )
 {
   UINT32 Translation = 0xffffffff;
 
@@ -94,9 +95,17 @@ TranslateCommand(
     case MMC_CMD7:
       Translation = CMD7;
       break;
-    case MMC_CMD8:
-      Translation = CMD8;
+    case MMC_CMD8: {
+      if (Argument == CMD8_SD_ARG) {
+        Translation = CMD8_SD;
+        DEBUG((DEBUG_MMCHOST_SD, "Sending SD CMD8 variant\n"));
+      } else {
+        ASSERT (Argument == CMD8_MMC_ARG);
+        Translation = CMD8_MMC;
+        DEBUG((DEBUG_MMCHOST_SD, "Sending MMC CMD8 variant\n"));
+      }
       break;
+    }
     case MMC_CMD9:
       Translation = CMD9;
       break;
@@ -296,7 +305,7 @@ MMCSendCommand(
     return EFI_SUCCESS;
   }
 
-  MmcCmd = TranslateCommand(MmcCmd);
+  MmcCmd = TranslateCommand(MmcCmd, Argument);
   if (MmcCmd == 0xffffffff) {
     return EFI_UNSUPPORTED;
   }

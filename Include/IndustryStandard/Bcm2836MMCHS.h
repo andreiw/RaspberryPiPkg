@@ -152,7 +152,6 @@
 #define CMD_R1_ADTC_READ  (CMD_R1_ADTC | DDIR_READ)
 #define CMD_R1_ADTC_WRITE (CMD_R1_ADTC | DDIR_WRITE)
 
-
 #define CMD0              (INDX(0)) // Go idle
 #define CMD1              (INDX(1) | CMD_R3) // MMC: Send Op Cond
 #define CMD2              (INDX(2) | CMD_R2) // Send CID
@@ -161,8 +160,10 @@
 #define CMD5              (INDX(5) | CMD_R1B) // SDIO: Sleep/Awake
 #define CMD6              (INDX(6) | CMD_R1_ADTC_READ) // Switch
 #define CMD7              (INDX(7) | CMD_R1B) // Select/Deselect
-#define CMD8              (INDX(8) | CMD_R7) // Send If Cond
-#define CMD8_ARG          (0x0UL << 12 | BIT8 | 0xCEUL << 0)
+#define CMD8_SD           (INDX(8) | CMD_R7) // Send If Cond
+#define CMD8_SD_ARG       (0x0UL << 12 | BIT8 | 0xCEUL << 0)
+#define CMD8_MMC          (INDX(8) | CMD_R1_ADTC_READ) // Send Ext Csd
+#define CMD8_MMC_ARG      (0)
 #define CMD9              (INDX(9) | CMD_R2) // Send CSD
 #define CMD10             (INDX(10) | CMD_R2) // Send CID
 #define CMD11             (INDX(11) | CMD_R1) // Voltage Switch
