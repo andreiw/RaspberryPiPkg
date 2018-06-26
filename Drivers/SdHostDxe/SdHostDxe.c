@@ -70,14 +70,14 @@ STATIC CONST CHAR8 *mFsmState[] = { "identmode", "datamode", "readdata",
                                     "genpulses", "writewait2", "?",
                                     "startpowdown" };
 #endif /* NDEBUG */
-STATIC UINT32 mLastExecutedMmcCmd = MMC_GET_INDX(MMC_CMD0);
+STATIC UINT32 mLastGoodCmd = MMC_GET_INDX(MMC_CMD0);
 
 STATIC inline BOOLEAN
 IsAppCmd(
   VOID
   )
 {
-  return mLastExecutedMmcCmd == MMC_CMD55;
+  return mLastGoodCmd == MMC_CMD55;
 }
 
 STATIC BOOLEAN
@@ -106,12 +106,23 @@ IsWriteCmd(
 
 STATIC BOOLEAN
 IsReadCmd(
-  IN  UINT32 MmcCmd
+  IN  UINT32 MmcCmd,
+  IN  UINT32 Argument
   )
 {
+  if (MmcCmd == MMC_CMD8 && !IsAppCmd()) {
+    if (Argument == CMD8_MMC_ARG) {
+      DEBUG((DEBUG_MMCHOST_SD, "Sending MMC CMD8 variant\n"));
+      return TRUE;
+    } else {
+      ASSERT (Argument == CMD8_SD_ARG);
+      DEBUG((DEBUG_MMCHOST_SD, "Sending SD CMD8 variant\n"));
+      return FALSE;
+    }
+  }
+
   return
     (MmcCmd == MMC_CMD6 && !IsAppCmd()) ||
-    (MmcCmd == MMC_CMD8 && !IsAppCmd()) ||
     (MmcCmd == MMC_CMD17 && !IsAppCmd()) ||
     (MmcCmd == MMC_CMD18 && !IsAppCmd()) ||
     (MmcCmd == MMC_CMD13 && IsAppCmd()) ||
@@ -197,8 +208,8 @@ SdHostDumpStatus(
     DEBUG((DEBUG_MMCHOST_SD_ERROR,
            "SdHost: Diagnose HSTS: 0x%8.8X\n", Hsts));
 
-    DEBUG((DEBUG_MMCHOST_SD_ERROR, "SdHost: Previous CMD = %u\n",
-           MMC_GET_INDX(mLastExecutedMmcCmd)));
+    DEBUG((DEBUG_MMCHOST_SD_ERROR, "SdHost: Last Good CMD = %u\n",
+           MMC_GET_INDX(mLastGoodCmd)));
     if (Hsts & SDHOST_HSTS_FIFO_ERROR)
       DEBUG((DEBUG_MMCHOST_SD_ERROR, "  - Fifo Error\n"));
     if (Hsts & SDHOST_HSTS_CRC7_ERROR)
@@ -314,6 +325,8 @@ SdSendCommand(
   IN UINT32                   Argument
   )
 {
+  UINT32 Hsts;
+
   //
   // Fail fast, CMD5 (CMD_IO_SEND_OP_COND)
   // is only valid for SDIO cards and thus
@@ -355,7 +368,7 @@ SdSendCommand(
       SdCmd |= SDHOST_CMD_BUSY_CMD;
     }
 
-    if (IsReadCmd(MmcCmd)) {
+    if (IsReadCmd(MmcCmd, Argument)) {
       SdCmd |= SDHOST_CMD_READ_CMD;
     }
 
@@ -366,7 +379,7 @@ SdSendCommand(
     SdCmd |= MMC_GET_INDX(MmcCmd);
   }
 
-  if (IsReadCmd(MmcCmd) || IsWriteCmd(MmcCmd)) {
+  if (IsReadCmd(MmcCmd, Argument) || IsWriteCmd(MmcCmd)) {
     if (IsAppCmd() && MmcCmd == MMC_ACMD22) {
       MmioWrite32(SDHOST_HBCT, 0x4);
     } else if (IsAppCmd() && MmcCmd == MMC_ACMD51) {
@@ -393,15 +406,24 @@ SdSendCommand(
   BOOLEAN IsCmdExecuted = FALSE;
   EFI_STATUS Status = EFI_SUCCESS;
 
-  // Keep retrying the command untill it succeed
+  // Keep retrying the command until it succeeds.
   while ((RetryCount < CMD_MAX_RETRY_COUNT) && !IsCmdExecuted) {
+    Status = EFI_SUCCESS;
+
     // Clear prev cmd status
     MmioWrite32(SDHOST_HSTS, SDHOST_HSTS_CLEAR);
 
-    if (IsReadCmd(MmcCmd) || IsWriteCmd(MmcCmd)) {
+    if (IsReadCmd(MmcCmd, Argument) || IsWriteCmd(MmcCmd)) {
       // Flush Fifo if this cmd will start a new transfer in case
       // there is stale bytes in the Fifo
       MmioOr32(SDHOST_EDM, SDHOST_EDM_FIFO_CLEAR);
+    }
+
+    if (MmioRead32(SDHOST_CMD) & SDHOST_CMD_NEW_FLAG) {
+      DEBUG((
+             DEBUG_MMCHOST_SD_ERROR,
+             "%a(%u): CMD%d is still being executed after %d trial(s)\n",
+             __FUNCTION__, __LINE__, MMC_GET_INDX(MmcCmd), RetryCount));
     }
 
     // Write command and set it to start execution
@@ -414,7 +436,9 @@ SdSendCommand(
       // Read status of command response
       if (CmdReg & SDHOST_CMD_FAIL_FLAG) {
         Status = EFI_DEVICE_ERROR;
-        break;
+        /*
+         * Must fall-through and wait for the command completion!
+         */
       }
 
       // Check if command is completed.
@@ -437,28 +461,40 @@ SdSendCommand(
     Status = EFI_TIMEOUT;
   }
 
+  Hsts = MmioRead32(SDHOST_HSTS);
   if (EFI_ERROR(Status) ||
-      (MmioRead32(SDHOST_HSTS) & SDHOST_HSTS_ERROR)) {
-    // Deselecting the SDCard with CMD7 and RCA=0x0 always timeout on SDHost
-    if (MmcCmd == MMC_CMD7 &&
-        Argument == 0) {
+      (Hsts & SDHOST_HSTS_ERROR) != 0) {
+    if (MmcCmd == MMC_CMD1 &&
+        (Hsts & SDHOST_HSTS_CRC7_ERROR) != 0) {
+      /*
+       * SdHost seems to have no way to specify
+       * R3 as a transfer type.
+       */
+      IsCmdExecuted = TRUE;
+      Status = EFI_SUCCESS;
+      MmioWrite32(SDHOST_HSTS, SDHOST_HSTS_CLEAR);
+    } else if (MmcCmd == MMC_CMD7 && Argument == 0) {
+      /*
+       * Deselecting the SDCard with CMD7 and RCA=0x0
+       * always timeout on SDHost.
+       */
       Status = EFI_SUCCESS;
     } else {
       DEBUG((
              DEBUG_MMCHOST_SD_ERROR,
-             "SdHost: SdSendCommand(): CMD%d execution failed after %d trial(s)\n",
+             "%a(%u): CMD%d execution failed after %d trial(s)\n",
+             __FUNCTION__, __LINE__,
              MMC_GET_INDX(MmcCmd),
              RetryCount));
       SdHostDumpStatus();
     }
 
     MmioWrite32(SDHOST_HSTS, SDHOST_HSTS_CLEAR);
-  } else if (IsCmdExecuted) {
+  }
+
+  if (IsCmdExecuted && !EFI_ERROR(Status)) {
     ASSERT(!(MmioRead32(SDHOST_HSTS) & SDHOST_HSTS_ERROR));
-    mLastExecutedMmcCmd = MmcCmd;
-  } else {
-    ASSERT("SdHost: SdSendCommand(): Unexpected State");
-    SdHostDumpStatus();
+    mLastGoodCmd = MmcCmd;
   }
 
   return Status;
