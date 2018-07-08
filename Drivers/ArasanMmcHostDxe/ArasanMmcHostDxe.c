@@ -334,7 +334,8 @@ MMCSendCommand(
   if (PollRegisterWithMask(MMCHS_PRES_STATE,
                            CmdSendOKMask, 0) == EFI_TIMEOUT) {
     DEBUG((DEBUG_ERROR, "%a(%u): MMC_CMD%u ALREADY_STARTED MmcStatus 0x%x\n",
-           __FUNCTION__, __LINE__, MMC_CMD_NUM(MmcCmd), MmcStatus));
+           __FUNCTION__, __LINE__, MMC_CMD_NUM(MmcCmd),
+           MmioRead32(MMCHS_INT_STAT)));
     Status = EFI_ALREADY_STARTED;
     goto out;
   }
