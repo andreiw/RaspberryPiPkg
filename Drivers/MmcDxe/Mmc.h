@@ -58,6 +58,10 @@
 #define MMC_R0_STATE_STDBY      3
 #define MMC_R0_STATE_TRAN       4
 #define MMC_R0_STATE_DATA       5
+#define MMC_R0_STATE_RECV       6
+#define MMC_R0_STATE_PROG       7
+#define MMC_R0_STATE_DIS        8
+
 
 #define EMMC_CMD6_ARG_ACCESS(x)             (((x) & 0x3) << 24)
 #define EMMC_CMD6_ARG_INDEX(x)              (((x) & 0xFF) << 16)
@@ -111,6 +115,7 @@ typedef struct {
 typedef struct {
   UINT32  NOT_USED;   // 1 [0:0]
   UINT32  CRC;        // CRC7 checksum [7:1]
+
   UINT32  MDT;        // Manufacturing date [19:8]
   UINT32  RESERVED_1; // Reserved [23:20]
   UINT32  PSN;        // Product serial number [55:24]
