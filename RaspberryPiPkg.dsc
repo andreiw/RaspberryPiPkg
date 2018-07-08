@@ -646,4 +646,5 @@ DEFINE HYP_LOG_MASK = 0xffffffff
       gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0xFF
       gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
       gEfiMdePkgTokenSpaceGuid.PcdUefiLibMaxPrintBufferSize|8000
+      gEfiShellPkgTokenSpaceGuid.PcdShellFileOperationSize|0x200000
   }
