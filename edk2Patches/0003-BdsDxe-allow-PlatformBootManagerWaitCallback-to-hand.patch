@@ -1,7 +1,7 @@
-From 3375bea3c89c86f6fbdbaf182f2a676efe777c9a Mon Sep 17 00:00:00 2001
+From f321451039c4f917c4f4b31abd438d8399d2200a Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sat, 21 Apr 2018 22:57:53 -0400
-Subject: [PATCH 04/11] BdsDxe: allow PlatformBootManagerWaitCallback to handle
+Subject: [PATCH 3/5] BdsDxe: allow PlatformBootManagerWaitCallback to handle
  remaining timeout == 0
 
 - Properly finish drawing 100% bar.

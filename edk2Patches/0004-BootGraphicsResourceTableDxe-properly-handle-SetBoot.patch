@@ -1,8 +1,8 @@
-From 84c4b9dac780976c560100a761f341462025d916 Mon Sep 17 00:00:00 2001
+From 38630180c0ba90420f012fb386e5a2ca1dd41f18 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Mon, 14 May 2018 01:10:50 -0400
-Subject: [PATCH 05/11] BootGraphicsResourceTableDxe: properly handle
- SetBootLogo with NULL buffer
+Subject: [PATCH 4/5] BootGraphicsResourceTableDxe: properly handle SetBootLogo
+ with NULL buffer
 
 SetBootLogo would not free the previous logo memory, which in turn
 means that a BGRT would still be installed, even if marked as not valid.
@@ -23,7 +23,7 @@ Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
  1 file changed, 22 insertions(+), 32 deletions(-)
 
 diff --git a/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c b/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
-index cfd4be0..ef6e3de 100644
+index cfd4be0..e672281 100644
 --- a/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
 +++ b/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
 @@ -145,14 +145,12 @@ EDKII_BOOT_LOGO2_PROTOCOL mBootLogo2ProtocolTemplate = {
