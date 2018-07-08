@@ -297,7 +297,6 @@ MMCSendCommand(
   BOOLEAN IsAppCmd = (LastExecutedCommand == CMD55);
   BOOLEAN IsDATCmd = FALSE;
   BOOLEAN IsADTCCmd = FALSE;
-  UINT32 BlockLenCount = 0;
 
   DEBUG((DEBUG_MMCHOST_SD, "ArasanMMCHost: MMCSendCommand(MmcCmd: %08x, Argument: %08x)\n", MmcCmd, Argument));
 
@@ -333,24 +332,23 @@ MMCSendCommand(
 
   if (PollRegisterWithMask(MMCHS_PRES_STATE,
                            CmdSendOKMask, 0) == EFI_TIMEOUT) {
-    DEBUG((DEBUG_ERROR, "%a(%u): MMC_CMD%u ALREADY_STARTED MmcStatus 0x%x\n",
+    DEBUG((DEBUG_ERROR, "%a(%u): not ready for MMC_CMD%u PresState 0x%x MmcStatus 0x%x\n",
            __FUNCTION__, __LINE__, MMC_CMD_NUM(MmcCmd),
+           MmioRead32(MMCHS_PRES_STATE),
            MmioRead32(MMCHS_INT_STAT)));
-    Status = EFI_ALREADY_STARTED;
+    Status = EFI_TIMEOUT;
     goto out;
   }
 
   if (IsAppCmd && MmcCmd == ACMD22) {
-    BlockLenCount = 4;
+    MmioWrite32(MMCHS_BLK, 4);
   } else if (IsAppCmd && MmcCmd == ACMD51) {
-    BlockLenCount = 8;
+    MmioWrite32(MMCHS_BLK, 8);
   } else if (!IsAppCmd && MmcCmd == CMD6) {
-    BlockLenCount = 64;
+    MmioWrite32(MMCHS_BLK, 64);
   } else if (IsADTCCmd) {
-    BlockLenCount = BLEN_512BYTES;
+    MmioWrite32(MMCHS_BLK, BLEN_512BYTES);
   }
-
-  MmioWrite32(MMCHS_BLK, BlockLenCount);
 
   // Set Data timeout counter value to max value.
   MmioAndThenOr32(MMCHS_SYSCTL, (UINT32) ~DTO_MASK, DTO_VAL);
@@ -401,8 +399,10 @@ MMCSendCommand(
   gBS->Stall(STALL_AFTER_SEND_CMD_US);
 
   if (RetryCount == MAX_RETRY_COUNT) {
-    DEBUG((DEBUG_ERROR, "%a(%u): MMC_CMD%u TIMEOUT MmcStatus 0x%x\n",
-           __FUNCTION__, __LINE__, MMC_CMD_NUM(MmcCmd), MmcStatus));
+    DEBUG((DEBUG_ERROR, "%a(%u): MMC_CMD%u completion TIMEOUT PresState 0x%x MmcStatus 0x%x\n",
+           __FUNCTION__, __LINE__, MMC_CMD_NUM(MmcCmd),
+           MmioRead32(MMCHS_PRES_STATE),
+           MmcStatus));
     Status = EFI_TIMEOUT;
     goto out;
   }
@@ -604,6 +604,7 @@ MMCReadBlockData(
     gBS->Stall(STALL_AFTER_READ_US);
   }
 
+  MmioWrite32(MMCHS_INT_STAT, BRR);
   return EFI_SUCCESS;
 }
 
@@ -670,6 +671,7 @@ MMCWriteBlockData(
     gBS->Stall(STALL_AFTER_WRITE_US);
   }
 
+  MmioWrite32(MMCHS_INT_STAT, BWR);
   return EFI_SUCCESS;
 }
 

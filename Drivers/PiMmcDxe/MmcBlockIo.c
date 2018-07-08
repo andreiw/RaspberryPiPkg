@@ -116,18 +116,24 @@ WaitUntilTran(
 
   Timeout = MMCI0_TIMEOUT;
   while(Timeout--) {
+    /*
+     * We expect CMD13 to timeout while card is programming,
+     * because the card holds DAT0 low (busy).
+     */
     Status = MmcHost->SendCommand (MmcHost, MMC_CMD13,
-                                   MmcHostInstance->CardInfo.RCA << 16);
-    if (EFI_ERROR(Status)) {
+       MmcHostInstance->CardInfo.RCA << 16);
+    if (EFI_ERROR(Status) && Status != EFI_TIMEOUT) {
       DEBUG ((EFI_D_ERROR, "%a(%u) CMD13 failed: %r\n",
               __FUNCTION__, __LINE__, Status));
       break;
     }
 
-    MmcHost->ReceiveResponse (MmcHost, MMC_RESPONSE_TYPE_R1, Response);
-    Status = R1TranAndReady(Response);
-    if (!EFI_ERROR(Status)) {
-      break;
+    if (Status == EFI_SUCCESS) {
+      MmcHost->ReceiveResponse (MmcHost, MMC_RESPONSE_TYPE_R1, Response);
+      Status = R1TranAndReady(Response);
+      if (!EFI_ERROR(Status)) {
+        break;
+      }
     }
 
     gBS->Stall(1000);
@@ -291,7 +297,7 @@ MmcTransferBlock (
   //
   Status = WaitUntilTran(MmcHostInstance);
   if (EFI_ERROR (Status)) {
-    DEBUG((EFI_D_ERROR, "WaitUntilTran failed\n"));
+    DEBUG((EFI_D_ERROR, "WaitUntilTran after write failed\n"));
     return Status;
   }
 
@@ -386,9 +392,9 @@ MmcIoBlocks (
 
   BytesRemainingToBeTransfered = BufferSize;
   while (BytesRemainingToBeTransfered > 0) {
-    // Wait for programming to complete, returning to transfer state.
     Status = WaitUntilTran(MmcHostInstance);
     if (EFI_ERROR (Status)) {
+      DEBUG((EFI_D_ERROR, "WaitUntilTran before IO failed"));
       return Status;
     }
 
