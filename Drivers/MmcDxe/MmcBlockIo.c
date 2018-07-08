@@ -346,7 +346,9 @@ MmcIoBlocks (
     return EFI_NO_MEDIA;
   }
 
-  if (MMC_HOST_HAS_ISMULTIBLOCK(MmcHost) && MmcHost->IsMultiBlock(MmcHost)) {
+  if (PcdGet32(PcdMmcDisableMulti) == 0 &&
+      MMC_HOST_HAS_ISMULTIBLOCK(MmcHost) &&
+      MmcHost->IsMultiBlock(MmcHost)) {
     BlockCount = (BufferSize + This->Media->BlockSize - 1) / This->Media->BlockSize;
   }
 

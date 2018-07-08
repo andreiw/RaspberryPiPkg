@@ -53,6 +53,7 @@
   gRaspberryPiTokenSpaceGuid.PcdMmcForceDefaultSpeed
   gRaspberryPiTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz
   gRaspberryPiTokenSpaceGuid.PcdMmcSdHighSpeedMHz
+  gRaspberryPiTokenSpaceGuid.PcdMmcDisableMulti
 
 [Depex]
   TRUE

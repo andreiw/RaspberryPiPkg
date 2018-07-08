@@ -51,3 +51,4 @@
   gRaspberryPiTokenSpaceGuid.PcdMmcForceDefaultSpeed|0|UINT32|0x00000010
   gRaspberryPiTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz|0|UINT32|0x00000011
   gRaspberryPiTokenSpaceGuid.PcdMmcSdHighSpeedMHz|0|UINT32|0x00000012
+  gRaspberryPiTokenSpaceGuid.PcdMmcDisableMulti|0|UINT32|0x00000013
