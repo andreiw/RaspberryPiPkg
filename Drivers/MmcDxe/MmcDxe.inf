@@ -32,6 +32,7 @@
 
 [Packages]
   EmbeddedPkg/EmbeddedPkg.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
   MdePkg/MdePkg.dec
 
 [LibraryClasses]
@@ -46,6 +47,12 @@
   gEfiDevicePathProtocolGuid
   gEfiMmcHostProtocolGuid
   gEfiDriverDiagnostics2ProtocolGuid
+
+[Pcd]
+  gRaspberryPiTokenSpaceGuid.PcdMmcForce1Bit
+  gRaspberryPiTokenSpaceGuid.PcdMmcForceDefaultSpeed
+  gRaspberryPiTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz
+  gRaspberryPiTokenSpaceGuid.PcdMmcSdHighSpeedMHz
 
 [Depex]
   TRUE

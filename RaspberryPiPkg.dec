@@ -47,3 +47,7 @@
   gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask|0|UINT32|0x0000000c
   gRaspberryPiTokenSpaceGuid.PcdCpuClock|0|UINT32|0x0000000d
   gRaspberryPiTokenSpaceGuid.PcdSdIsArasan|0|UINT32|0x0000000e
+  gRaspberryPiTokenSpaceGuid.PcdMmcForce1Bit|0|UINT32|0x0000000f
+  gRaspberryPiTokenSpaceGuid.PcdMmcForceDefaultSpeed|0|UINT32|0x00000010
+  gRaspberryPiTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz|0|UINT32|0x00000011
+  gRaspberryPiTokenSpaceGuid.PcdMmcSdHighSpeedMHz|0|UINT32|0x00000012

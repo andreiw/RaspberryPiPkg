@@ -264,16 +264,30 @@ InitializeEmmcDevice (
   EFI_STATUS Status = EFI_SUCCESS;
   ECSD       *ECSDData;
   UINT32     BusClockFreq, Idx, BusMode;
+  UINT32     BusWidth = 8;
   UINT32     TimingMode[4] = {EMMCHS52DDR1V2, EMMCHS52DDR1V8, EMMCHS52, EMMCHS26};
 
   Host  = MmcHostInstance->MmcHost;
   ECSDData = MmcHostInstance->CardInfo.ECSDData;
-  if (ECSDData->DEVICE_TYPE == EMMCBACKWARD)
-    return EFI_SUCCESS;
-
-  if (!MMC_HOST_HAS_SETIOS(Host)) {
+  if (ECSDData->DEVICE_TYPE == EMMCBACKWARD){
     return EFI_SUCCESS;
   }
+
+  if (PcdGet32(PcdMmcForceDefaultSpeed)) {
+    DEBUG((DEBUG_WARN, "Forcing default speed mode\n"));
+    return EFI_SUCCESS;
+  }
+
+  if (PcdGet32(PcdMmcForce1Bit)) {
+    DEBUG((DEBUG_WARN, "Forcing 1 bit mode\n"));
+    BusWidth = 1;
+  }
+
+  if (!MMC_HOST_HAS_SETIOS(Host)) {
+    DEBUG((DEBUG_ERROR, "Controller doesn't support speed / bus width change\n"));
+    return EFI_SUCCESS;
+  }
+
   Status = EmmcSetEXTCSD (MmcHostInstance, EXTCSD_HS_TIMING, EMMC_TIMING_HS);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "InitializeEmmcDevice(): Failed to switch high speed mode, Status:%r.\n", Status));
@@ -293,7 +307,7 @@ InitializeEmmcDevice (
     default:
       return EFI_UNSUPPORTED;
     }
-    Status = Host->SetIos (Host, BusClockFreq, 8, TimingMode[Idx]);
+    Status = Host->SetIos (Host, BusClockFreq, BusWidth, TimingMode[Idx]);
     if (!EFI_ERROR (Status)) {
       switch (TimingMode[Idx]) {
       case EMMCHS52DDR1V2:
@@ -419,8 +433,13 @@ SdSet4Bit(
   EFI_STATUS Status;
   EFI_MMC_HOST_PROTOCOL *MmcHost = MmcHostInstance->MmcHost;
 
+  if (PcdGet32(PcdMmcForce1Bit)) {
+    DEBUG((DEBUG_WARN, "Forcing 1 bit mode\n"));
+    return EFI_SUCCESS;
+  }
+
   if (!MMC_HOST_HAS_SETIOS(MmcHost)) {
-    DEBUG((DEBUG_ERROR, "Controller doesn't support bus width change\n"));
+    DEBUG((DEBUG_WARN, "Controller doesn't support bus width change\n"));
     return EFI_SUCCESS;
   }
 
@@ -457,16 +476,24 @@ SdSetSpeed(
   IN  BOOLEAN CccSwitch
   )
 {
+  UINT32 Speed;
   UINT32 CmdArg;
   EFI_STATUS Status;
   UINT32 Buffer[16];
   UINT32 Response[4];
-  UINT32 Speed = SD_DEFAULT_SPEED;
   EFI_MMC_HOST_PROTOCOL *MmcHost = MmcHostInstance->MmcHost;
 
   if (!MMC_HOST_HAS_SETIOS(MmcHost)) {
-    DEBUG((DEBUG_ERROR, "Controller doesn't support speed change\n"));
+    DEBUG((DEBUG_WARN, "Controller doesn't support speed change\n"));
     return EFI_SUCCESS;
+  }
+
+  Speed = PcdGet32(PcdMmcSdDefaultSpeedMHz) * 1000000;
+  if (Speed == 0) {
+    Speed = SD_DEFAULT_SPEED;
+  } else {
+    DEBUG((DEBUG_INFO, "Using default speed override %u Hz\n",
+           Speed));
   }
 
   /*
@@ -477,6 +504,11 @@ SdSetSpeed(
     DEBUG((DEBUG_ERROR, "%a: error setting speed %u: %r\n",
            __FUNCTION__, Speed, Status));
     return Status;
+  }
+
+  if (PcdGet32(PcdMmcForceDefaultSpeed)) {
+    DEBUG((DEBUG_WARN, "Forcing default speed mode\n"));
+    return EFI_SUCCESS;
   }
 
   if (!CccSwitch) {
@@ -536,7 +568,14 @@ SdSetSpeed(
   SdGetCsd(MmcHostInstance, Response, TRUE);
   SdSelect(MmcHostInstance);
 
-  Speed = SD_HIGH_SPEED;
+  Speed = PcdGet32(PcdMmcSdHighSpeedMHz) * 1000000;
+  if (Speed == 0) {
+    Speed = SD_HIGH_SPEED;
+  } else {
+    DEBUG((DEBUG_INFO, "Using high speed override %u Hz\n",
+           Speed));
+  }
+
   Status = MmcHost->SetIos (MmcHost, Speed, 0, EMMCBACKWARD);
   if (EFI_ERROR (Status)) {
     DEBUG((DEBUG_ERROR, "%a: error setting speed %u: %r\n",
