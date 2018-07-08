@@ -31,12 +31,12 @@ R1TranAndReady(UINT32 *Response)
   return EFI_NOT_READY;
 }
 
-#ifndef NDEBUG
 STATIC
 EFI_STATUS
 ValidateWrittenBlockCount(
-  IN MMC_HOST_INSTANCE *MmcHostInstance,
-  IN UINTN Count
+  IN  MMC_HOST_INSTANCE *MmcHostInstance,
+  IN  UINTN Count,
+  OUT UINTN *TransferredBlocks
   )
 {
   UINT32 R1;
@@ -94,12 +94,14 @@ ValidateWrittenBlockCount(
   if (BlocksWritten != Count) {
     DEBUG ((DEBUG_ERROR, "%a(%u): expected %u != gotten %u\n",
             __FUNCTION__, __LINE__, Count, BlocksWritten));
-    return EFI_DEVICE_ERROR;
+    if (BlocksWritten == 0) {
+      return EFI_DEVICE_ERROR;
+    }
   }
 
+  *TransferredBlocks = BlocksWritten;
   return EFI_SUCCESS;
 }
-#endif /* NDEBUG */
 
 STATIC
 EFI_STATUS
@@ -220,7 +222,8 @@ MmcTransferBlock (
   IN UINT32                   MediaId,
   IN EFI_LBA                  Lba,
   IN UINTN                    BufferSize,
-  OUT VOID                    *Buffer
+  OUT VOID                    *Buffer,
+  OUT UINTN                   *TransferredSize
   )
 {
   EFI_STATUS              Status;
@@ -298,13 +301,18 @@ MmcTransferBlock (
     return Status;
   }
 
-#ifndef NDEBUG
   if (Transfer != MMC_IOBLOCKS_READ) {
+    UINTN BlocksWritten = 0;
+
     Status = ValidateWrittenBlockCount (MmcHostInstance,
                                         BufferSize /
-                                        This->Media->BlockSize);
+                                        This->Media->BlockSize,
+                                        &BlocksWritten);
+    *TransferredSize = BlocksWritten *
+      This->Media->BlockSize;
+  } else {
+    *TransferredSize = BufferSize;
   }
-#endif /* NDEBUG */
 
   return Status;
 }
@@ -407,7 +415,7 @@ MmcIoBlocks (
       ConsumeSize = BytesRemainingToBeTransfered;
     }
 
-    Status = MmcTransferBlock (This, Cmd, Transfer, MediaId, Lba, ConsumeSize, Buffer);
+    Status = MmcTransferBlock (This, Cmd, Transfer, MediaId, Lba, ConsumeSize, Buffer, &ConsumeSize);
     if (EFI_ERROR (Status)) {
       DEBUG ((EFI_D_ERROR, "%a(): Failed to transfer block and Status:%r\n", __func__, Status));
       return Status;
