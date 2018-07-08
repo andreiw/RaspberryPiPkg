@@ -445,11 +445,11 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   #
 
   gRaspberryPiTokenSpaceGuid.PcdSdIsArasan|L"SdIsArasan"|gConfigDxeFormSetGuid|0x0|0
-  gEmbeddedTokenSpaceGuid.PcdMmcForce1Bit|L"MmcForce1Bit"|gConfigDxeFormSetGuid|0x0|0
-  gEmbeddedTokenSpaceGuid.PcdMmcForceDefaultSpeed|L"MmcForceDefaultSpeed"|gConfigDxeFormSetGuid|0x0|0
-  gEmbeddedTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz|L"MmcSdDefaultSpeedMHz"|gConfigDxeFormSetGuid|0x0|25
-  gEmbeddedTokenSpaceGuid.PcdMmcSdHighSpeedMHz|L"MmcSdHighSpeedMHz"|gConfigDxeFormSetGuid|0x0|50
-  gEmbeddedTokenSpaceGuid.PcdMmcDisableMulti|L"MmcDisableMulti"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdMmcForce1Bit|L"MmcForce1Bit"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdMmcForceDefaultSpeed|L"MmcForceDefaultSpeed"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz|L"MmcSdDefaultSpeedMHz"|gConfigDxeFormSetGuid|0x0|25
+  gRaspberryPiTokenSpaceGuid.PcdMmcSdHighSpeedMHz|L"MmcSdHighSpeedMHz"|gConfigDxeFormSetGuid|0x0|50
+  gRaspberryPiTokenSpaceGuid.PcdMmcDisableMulti|L"MmcDisableMulti"|gConfigDxeFormSetGuid|0x0|0
 
   #
   # Common UEFI ones.
@@ -608,7 +608,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   #
   RaspberryPiPkg/Drivers/SdHostDxe/SdHostDxe.inf
   RaspberryPiPkg/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
-  EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
+  RaspberryPiPkg/Drivers/PiMmcDxe/MmcDxe.inf
 
   #
   # Networking stack

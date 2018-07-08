@@ -296,7 +296,7 @@ READ_LOCK_STATUS   = TRUE
   #
   INF RaspberryPiPkg/Drivers/SdHostDxe/SdHostDxe.inf
   INF RaspberryPiPkg/Drivers/ArasanMmcHostDxe/ArasanMmcHostDxe.inf
-  INF EmbeddedPkg/Universal/MmcDxe/MmcDxe.inf
+  INF RaspberryPiPkg/Drivers/PiMmcDxe/MmcDxe.inf
 
   #
   # Pi logo (splash screen)

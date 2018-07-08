@@ -21,7 +21,7 @@
 #include <Protocol/DiskIo.h>
 #include <Protocol/BlockIo.h>
 #include <Protocol/DevicePath.h>
-#include <Protocol/MmcHost.h>
+#include <Protocol/PiMmcHost.h>
 
 #include <Library/UefiLib.h>
 #include <Library/DebugLib.h>

@@ -1,26 +1,26 @@
 /** @file
-  Definition of the MMC Host Protocol
+ *
+ *  Copyright (c), 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+ *  Copyright (c) 2011-2014, ARM Limited. All rights reserved.
+ *
+ *  This program and the accompanying materials
+ *  are licensed and made available under the terms and conditions of the BSD License
+ *  which accompanies this distribution.  The full text of the license may be found at
+ *  http://opensource.org/licenses/bsd-license.php
+ *
+ *  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+ *
+ **/
 
-  Copyright (c) 2011-2014, ARM Limited. All rights reserved.
-
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-**/
-
-#ifndef __MMC_HOST_H__
-#define __MMC_HOST_H__
+#ifndef __PI_MMC_HOST_H__
+#define __PI_MMC_HOST_H__
 
 ///
 /// Global ID for the MMC Host Protocol
 ///
-#define EFI_MMC_HOST_PROTOCOL_GUID \
-  { 0x3e591c00, 0x9e4a, 0x11df, {0x92, 0x44, 0x00, 0x02, 0xA5, 0xD5, 0xC5, 0x1B } }
+#define RASPBERRY_PI_MMC_HOST_PROTOCOL_GUID \
+  { 0x3e591c00, 0x9e4a, 0x11df, {0x92, 0x44, 0x00, 0x02, 0xA5, 0xF5, 0xF5, 0x1B } }
 
 #define MMC_RESPONSE_TYPE_R1        0
 #define MMC_RESPONSE_TYPE_R1b       0
@@ -184,8 +184,6 @@ struct _EFI_MMC_HOST_PROTOCOL {
                                        Host->SetIos != NULL)
 #define MMC_HOST_HAS_ISMULTIBLOCK(Host) (Host->Revision >= MMC_HOST_PROTOCOL_REVISION && \
                                          Host->IsMultiBlock != NULL)
-
-extern EFI_GUID gEfiMmcHostProtocolGuid;
 
 #endif
 

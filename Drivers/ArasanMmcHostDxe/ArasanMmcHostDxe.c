@@ -720,10 +720,10 @@ MMCInitialize(
   }
 
   Status = gBS->InstallMultipleProtocolInterfaces(
-                                                  &Handle,
-                                                  &gEfiMmcHostProtocolGuid, &gMMCHost,
-                                                  NULL
-                                                  );
+     &Handle,
+     &gRaspberryPiMmcHostProtocolGuid, &gMMCHost,
+     NULL
+     );
   ASSERT_EFI_ERROR(Status);
 
   return Status;
