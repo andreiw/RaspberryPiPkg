@@ -16,6 +16,46 @@
 
 #include "Mmc.h"
 
+#define MMCI0_BLOCKLEN 512
+#define MMCI0_TIMEOUT  1000
+
+STATIC
+EFI_STATUS
+WaitUntilTran(
+  IN MMC_HOST_INSTANCE *MmcHostInstance
+  )
+{
+  INTN Timeout;
+  UINT32 Response[1];
+  EFI_STATUS Status = EFI_SUCCESS;
+  EFI_MMC_HOST_PROTOCOL *MmcHost = MmcHostInstance->MmcHost;
+
+  Response[0] = 0;
+  Timeout = MMCI0_TIMEOUT;
+  while(!EFI_ERROR (Status)
+        && !(Response[0] & MMC_R0_READY_FOR_DATA)
+        && (MMC_R0_CURRENTSTATE(Response) != MMC_R0_STATE_TRAN)
+        && Timeout--) {
+    Status = MmcHost->SendCommand (MmcHost, MMC_CMD13,
+                                   MmcHostInstance->CardInfo.RCA << 16);
+    if (!EFI_ERROR (Status)) {
+      MmcHost->ReceiveResponse (MmcHost, MMC_RESPONSE_TYPE_R1, Response);
+      if (Response[0] & MMC_R0_READY_FOR_DATA) {
+        break;
+      }
+    }
+
+    gBS->Stall(1000);
+  }
+
+  if (0 == Timeout) {
+    DEBUG ((EFI_D_ERROR, "Card is busy\n"));
+    return EFI_NOT_READY;
+  }
+
+  return Status;
+}
+
 EFI_STATUS
 MmcNotifyState (
   IN MMC_HOST_INSTANCE *MmcHostInstance,
@@ -24,41 +64,6 @@ MmcNotifyState (
 {
   MmcHostInstance->State = State;
   return MmcHostInstance->MmcHost->NotifyState (MmcHostInstance->MmcHost, State);
-}
-
-EFI_STATUS
-EFIAPI
-MmcGetCardStatus (
-  IN MMC_HOST_INSTANCE     *MmcHostInstance
-  )
-{
-  EFI_STATUS              Status;
-  UINT32                  Response[4];
-  UINTN                   CmdArg;
-  EFI_MMC_HOST_PROTOCOL   *MmcHost;
-
-  Status = EFI_SUCCESS;
-  MmcHost = MmcHostInstance->MmcHost;
-  CmdArg = 0;
-
-  if (MmcHost == NULL) {
-    return EFI_INVALID_PARAMETER;
-  }
-  if (MmcHostInstance->State != MmcHwInitializationState) {
-    //Get the Status of the card.
-    CmdArg = MmcHostInstance->CardInfo.RCA << 16;
-    Status = MmcHost->SendCommand (MmcHost, MMC_CMD13, CmdArg);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((EFI_D_ERROR, "MmcGetCardStatus(MMC_CMD13): Error and Status = %r\n", Status));
-      return Status;
-    }
-
-    //Read Response
-    MmcHost->ReceiveResponse (MmcHost, MMC_RESPONSE_TYPE_R1, Response);
-    PrintResponseR1 (Response[0]);
-  }
-
-  return Status;
 }
 
 EFI_STATUS
@@ -123,9 +128,6 @@ MmcStopTransmission (
   return Status;
 }
 
-#define MMCI0_BLOCKLEN 512
-#define MMCI0_TIMEOUT  10000
-
 STATIC
 EFI_STATUS
 MmcTransferBlock (
@@ -139,11 +141,10 @@ MmcTransferBlock (
   )
 {
   EFI_STATUS              Status;
-  UINTN                   CmdArg;
-  INTN                    Timeout;
   UINT32                  Response[4];
   MMC_HOST_INSTANCE       *MmcHostInstance;
   EFI_MMC_HOST_PROTOCOL   *MmcHost;
+  UINTN                   CmdArg;
 
   MmcHostInstance = MMC_HOST_INSTANCE_FROM_BLOCK_IO_THIS (This);
   MmcHost = MmcHostInstance->MmcHost;
@@ -158,7 +159,8 @@ MmcTransferBlock (
 
   Status = MmcHost->SendCommand (MmcHost, Cmd, CmdArg);
   if (EFI_ERROR (Status)) {
-    DEBUG ((EFI_D_ERROR, "%a(MMC_CMD%d): Error %r\n", __func__, Cmd, Status));
+    DEBUG ((EFI_D_ERROR, "%a(MMC_CMD%d): Error %r\n", __func__,
+            MMC_INDX(Cmd), Status));
     return Status;
   }
 
@@ -185,20 +187,10 @@ MmcTransferBlock (
     }
   }
 
-  // Command 13 - Read status and wait for programming to complete (return to tran)
-  Timeout = MMCI0_TIMEOUT;
-  CmdArg = MmcHostInstance->CardInfo.RCA << 16;
-  Response[0] = 0;
-  while(!(Response[0] & MMC_R0_READY_FOR_DATA)
-        && (MMC_R0_CURRENTSTATE (Response) != MMC_R0_STATE_TRAN)
-        && Timeout--) {
-    Status = MmcHost->SendCommand (MmcHost, MMC_CMD13, CmdArg);
-    if (!EFI_ERROR (Status)) {
-      MmcHost->ReceiveResponse (MmcHost, MMC_RESPONSE_TYPE_R1, Response);
-      if (Response[0] & MMC_R0_READY_FOR_DATA) {
-        break;  // Prevents delay once finished
-      }
-    }
+  // Wait for programming to complete, returning to transfer state.
+  Status = WaitUntilTran(MmcHostInstance);
+  if (EFI_ERROR (Status)) {
+    return Status;
   }
 
   if (BufferSize > This->Media->BlockSize) {
@@ -227,10 +219,7 @@ MmcIoBlocks (
   OUT VOID                    *Buffer
   )
 {
-  UINT32                  Response[4];
   EFI_STATUS              Status;
-  UINTN                   CmdArg;
-  INTN                    Timeout;
   UINTN                   Cmd;
   MMC_HOST_INSTANCE       *MmcHostInstance;
   EFI_MMC_HOST_PROTOCOL   *MmcHost;
@@ -287,23 +276,10 @@ MmcIoBlocks (
 
   BytesRemainingToBeTransfered = BufferSize;
   while (BytesRemainingToBeTransfered > 0) {
-
-    // Check if the Card is in Ready status
-    CmdArg = MmcHostInstance->CardInfo.RCA << 16;
-    Response[0] = 0;
-    Timeout = 20;
-    while(   (!(Response[0] & MMC_R0_READY_FOR_DATA))
-          && (MMC_R0_CURRENTSTATE (Response) != MMC_R0_STATE_TRAN)
-          && Timeout--) {
-      Status = MmcHost->SendCommand (MmcHost, MMC_CMD13, CmdArg);
-      if (!EFI_ERROR (Status)) {
-        MmcHost->ReceiveResponse (MmcHost, MMC_RESPONSE_TYPE_R1, Response);
-      }
-    }
-
-    if (0 == Timeout) {
-      DEBUG ((EFI_D_ERROR, "The Card is busy\n"));
-      return EFI_NOT_READY;
+    // Wait for programming to complete, returning to transfer state.
+    Status = WaitUntilTran(MmcHostInstance);
+    if (EFI_ERROR (Status)) {
+      return Status;
     }
 
     if (Transfer == MMC_IOBLOCKS_READ) {
@@ -311,16 +287,16 @@ MmcIoBlocks (
         // Read a single block
         Cmd = MMC_CMD17;
       } else {
-	// Read multiple blocks
-	Cmd = MMC_CMD18;
+        // Read multiple blocks
+        Cmd = MMC_CMD18;
       }
     } else {
       if (BlockCount == 1) {
         // Write a single block
         Cmd = MMC_CMD24;
       } else {
-	// Write multiple blocks
-	Cmd = MMC_CMD25;
+        // Write multiple blocks
+        Cmd = MMC_CMD25;
       }
     }
 
