@@ -113,7 +113,7 @@ SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
           //  Boot1394IsSupported               :1;
           //  SmartBatteryIsSupported           :1;
           //  BIOSCharacteristicsExtensionBytes[1]
-    0x08, //  BiosBootSpecIsSupported              :1;
+    0x0e, //  BiosBootSpecIsSupported              :1;
           //  FunctionKeyNetworkBootIsSupported    :1;
           //  TargetContentDistributionEnabled     :1;
           //  UefiSpecificationSupported           :1;
