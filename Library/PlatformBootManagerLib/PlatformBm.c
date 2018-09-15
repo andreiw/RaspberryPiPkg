@@ -676,8 +676,6 @@ PlatformBootManagerAfterConsole (
                               L"uSD on SD Host",
                               LOAD_OPTION_ACTIVE);
 
-  EfiBootManagerRefreshAllBootOption ();
-
   PlatformRegisterOptionsAndKeys ();
 }
 
