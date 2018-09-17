@@ -159,7 +159,6 @@ typedef BOOLEAN (EFIAPI *MMC_ISMULTIBLOCK) (
   );
 
 struct _EFI_MMC_HOST_PROTOCOL {
-
   UINT32                  Revision;
   MMC_ISCARDPRESENT       IsCardPresent;
   MMC_ISREADONLY          IsReadOnly;
@@ -175,7 +174,6 @@ struct _EFI_MMC_HOST_PROTOCOL {
 
   MMC_SETIOS              SetIos;
   MMC_ISMULTIBLOCK        IsMultiBlock;
-
 };
 
 #define MMC_HOST_PROTOCOL_REVISION    0x00010002    // 1.2
