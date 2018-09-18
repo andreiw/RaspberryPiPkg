@@ -35,6 +35,8 @@
 
 #include "PlatformBm.h"
 
+#define BOOT_PROMPT L"ESC (setup), F1 (shell), ENTER (boot)"
+
 #define DP_NODE_LEN(Type) { (UINT8)sizeof (Type), (UINT8)(sizeof (Type) >> 8) }
 
 #pragma pack (1)
@@ -224,6 +226,7 @@ STATIC PLATFORM_USB_KEYBOARD mUsbKeyboard = {
   }
 };
 
+STATIC EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *mSerialConProtocol;
 
 /**
   Check if the handle satisfies a particular condition.
@@ -495,6 +498,16 @@ PlatformRegisterOptionsAndKeys (
   ASSERT (Status == EFI_SUCCESS || Status == EFI_ALREADY_STARTED);
 }
 
+STATIC VOID
+SerialConPrint (
+  IN CHAR16 *Text
+  )
+{
+  if (mSerialConProtocol != NULL) {
+    mSerialConProtocol->OutputString (mSerialConProtocol, Text);
+  }
+}
+
 STATIC VOID EFIAPI
 ExitBootServicesHandler (
                          EFI_EVENT     Event,
@@ -509,20 +522,23 @@ ExitBootServicesHandler (
   // Long enough to occlude the string printed
   // in PlatformBootManagerWaitCallback.
   //
-  STATIC CHAR16 *OsBootStr = L"----> Exiting UEFI and booting OS kernel! <----\n";
+  STATIC CHAR16 *OsBootStr = L"Exiting UEFI and booting OS kernel!\r\n";
 
   Green.Raw = 0x00007F00;
   Black.Raw = 0x00000000;
   Yellow.Raw = 0x00FFFF00;
 
-  DEBUG((DEBUG_INFO, "Exiting UEFI Boot Services!\n"));
   Status = BootLogoUpdateProgress (Yellow.Pixel,
                                    Black.Pixel,
                                    OsBootStr,
                                    Green.Pixel,
                                    100, 0);
-  if (EFI_ERROR (Status)) {
-    Print (OsBootStr);
+  if (Status == EFI_SUCCESS) {
+    SerialConPrint(OsBootStr);
+  } else {
+    Print(L"\n");
+    Print(OsBootStr);
+    Print(L"\n");
   }
 }
 
@@ -631,14 +647,24 @@ PlatformBootManagerAfterConsole (
   UINTN Index;
   ESRT_MANAGEMENT_PROTOCOL      *EsrtManagement;
   EFI_STATUS                    Status;
+  EFI_HANDLE SerialHandle;
+
+  Status = EfiBootManagerConnectDevicePath((EFI_DEVICE_PATH_PROTOCOL *)&mSerialConsole, &SerialHandle);
+  if (Status == EFI_SUCCESS) {
+    gBS->HandleProtocol(SerialHandle, &gEfiSimpleTextOutProtocolGuid,
+                        (VOID **) &mSerialConProtocol);
+  }
 
   //
   // Show the splash screen.
   //
   Status = BootLogoEnableLogo ();
-  if (EFI_ERROR (Status)) {
-    Print (L"Press ESCAPE for boot options ");
+  if (Status == EFI_SUCCESS) {
+    SerialConPrint(BOOT_PROMPT);
+  } else {
+    Print(BOOT_PROMPT);
   }
+
   //
   // Connect the rest of the devices.
   //
@@ -697,7 +723,27 @@ PlatformBootManagerWaitCallback (
   EFI_STATUS                          Status;
   EFI_BOOT_LOGO_PROTOCOL *BootLogo;
 
+  Timeout = PcdGet16 (PcdPlatformBootTimeOut);
+
+  Black.Raw = 0x00000000;
+  White.Raw = 0x00FFFFFF;
+
+  Status = BootLogoUpdateProgress (
+    White.Pixel,
+    Black.Pixel,
+    BOOT_PROMPT,
+    White.Pixel,
+    (Timeout - TimeoutRemain) * 100 / Timeout,
+    0
+    );
+  if (Status == EFI_SUCCESS) {
+    SerialConPrint(L".");
+  } else {
+    Print(L".");
+  }
+
   if (TimeoutRemain == 0) {
+    SerialConPrint(L"\r\n");
     BootLogo = NULL;
 
     //
@@ -709,22 +755,5 @@ PlatformBootManagerWaitCallback (
       Status = BootLogo->SetBootLogo (BootLogo, NULL, 0, 0, 0, 0);
       ASSERT_EFI_ERROR (Status);
     };
-  }
-
-  Timeout = PcdGet16 (PcdPlatformBootTimeOut);
-
-  Black.Raw = 0x00000000;
-  White.Raw = 0x00FFFFFF;
-
-  Status = BootLogoUpdateProgress (
-             White.Pixel,
-             Black.Pixel,
-             L"ESC (setup), F1 (shell), ENTER (boot)",
-             White.Pixel,
-             (Timeout - TimeoutRemain) * 100 / Timeout,
-             0
-             );
-  if (EFI_ERROR (Status)) {
-    Print (L".");
   }
 }
