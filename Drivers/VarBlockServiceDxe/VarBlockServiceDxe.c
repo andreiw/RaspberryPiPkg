@@ -185,6 +185,38 @@ DumpVars(
 
 
 VOID
+ReadyToBootHandler (
+  IN EFI_EVENT Event,
+  IN VOID *Context
+  )
+{
+  EFI_STATUS Status;
+  EFI_EVENT ImageInstallEvent;
+  VOID *ImageRegistration;
+
+  Status = gBS->CreateEvent (
+                  EVT_NOTIFY_SIGNAL,
+                  TPL_CALLBACK,
+                  DumpVars,
+                  NULL,
+                  &ImageInstallEvent
+                  );
+  ASSERT_EFI_ERROR (Status);
+
+  Status = gBS->RegisterProtocolNotify (
+                  &gEfiLoadedImageProtocolGuid,
+                  ImageInstallEvent,
+                  &ImageRegistration
+                  );
+  ASSERT_EFI_ERROR (Status);
+
+  DumpVars(NULL, NULL);
+  Status = gBS->CloseEvent(Event);
+  ASSERT_EFI_ERROR (Status);
+}
+
+
+VOID
 InstallDumpVarEventHandlers (
   VOID
   )
@@ -206,13 +238,12 @@ InstallDumpVarEventHandlers (
   Status = gBS->CreateEventEx (
                   EVT_NOTIFY_SIGNAL,
                   TPL_CALLBACK,
-                  DumpVars,
+                  ReadyToBootHandler,
                   NULL,
                   &gEfiEventReadyToBootGuid,
                   &ReadyToBootEvent
                   );
   ASSERT_EFI_ERROR (Status);
-
 }
 
 

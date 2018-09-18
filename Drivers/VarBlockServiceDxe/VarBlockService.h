@@ -26,6 +26,7 @@
 #include <Protocol/FirmwareVolumeBlock.h>
 #include <Protocol/SimpleFileSystem.h>
 #include <Protocol/BlockIo.h>
+#include <Protocol/LoadedImage.h>
 
 typedef struct {
   union {
