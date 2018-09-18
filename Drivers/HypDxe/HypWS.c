@@ -14,6 +14,7 @@
 
 #include "HypDxe.h"
 #include "ArmDefs.h"
+#include <Library/CacheMaintenanceLib.h>
 
 #define BRK_BREAKPOINT   0xf000
 #define BRK_ASSERT       0xf001
@@ -570,6 +571,7 @@ HypWSPatchHalpInterruptRegisterController(
    * Patch the `bls` (54000069) to `b` (14000003).
    */
   *Insn = 0x14000003;
+  InvalidateInstructionCacheRange(Insn, 4);
   Status = TRUE;
 done:
   if (!Status) {
