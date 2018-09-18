@@ -743,7 +743,6 @@ PlatformBootManagerWaitCallback (
   }
 
   if (TimeoutRemain == 0) {
-    SerialConPrint(L"\r\n");
     BootLogo = NULL;
 
     //
@@ -755,5 +754,7 @@ PlatformBootManagerWaitCallback (
       Status = BootLogo->SetBootLogo (BootLogo, NULL, 0, 0, 0, 0);
       ASSERT_EFI_ERROR (Status);
     };
+
+    gST->ConOut->ClearScreen (gST->ConOut);
   }
 }
