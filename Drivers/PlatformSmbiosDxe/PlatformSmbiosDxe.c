@@ -127,7 +127,7 @@ SMBIOS_TABLE_TYPE0 mBIOSInfoType0 = {
 };
 
 CHAR8 *mBIOSInfoType0Strings[] = {
-  "https://github.org/andreiw/RaspberryPiPkg",      // Vendor String
+  "https://github.com/andreiw/RaspberryPiPkg",      // Vendor String
   "Raspberry Pi 64-bit UEFI (" S(BUILD_COMMIT)" on " S(BUILD_DATE) ")", // BiosVersion String
   S(BUILD_DATE),
   NULL
@@ -227,7 +227,7 @@ CHAR8  *mBoardInfoType2Strings[] = {
 SMBIOS_TABLE_TYPE3  mEnclosureInfoType3 = {
   { EFI_SMBIOS_TYPE_SYSTEM_ENCLOSURE, sizeof (SMBIOS_TABLE_TYPE3), 0 },
   1,                        // Manufacturer String
-  MiscChassisTypeLapTop,    // Type;
+  MiscChassisEmbeddedPc,    // Type;
   2,                        // Version String
   3,                        // SerialNumber String
   4,                        // AssetTag String
