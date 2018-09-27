@@ -32,7 +32,7 @@
 [02Bh 0043   1]         Encoded Access Width : 02 [DWord Access:32]
 [02Ch 0044   8]                      Address : 000000003f215000
 
-[034h 0052   1]               Interrupt Type : 00
+[034h 0052   1]               Interrupt Type : 0E
 [035h 0053   1]          PCAT-compatible IRQ : 00
 [036h 0054   4]                    Interrupt : 3D
 [03Ah 0058   1]                    Baud Rate : 07
