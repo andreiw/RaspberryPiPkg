@@ -97,7 +97,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
             }
             Method (_CRS, 0x0, Serialized) {
                 Name (RBUF, ResourceTemplate () {
-                    MEMORY32FIXED(ReadWrite, 0x3F980000, 0x1000, )
+                    MEMORY32FIXED(ReadWrite, 0x3F980000, 0x10000, )
                     Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 0x29 }
                 })
                 Return(RBUF)
