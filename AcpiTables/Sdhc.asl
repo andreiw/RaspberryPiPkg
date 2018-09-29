@@ -32,7 +32,7 @@ Device (SDC1)
     {
         Return(0xf)
     }
-    Method (_CRS, 0x0, NotSerialized) {
+    Method (_CRS, 0x0, Serialized) {
         Name (RBUF, ResourceTemplate () {
             MEMORY32FIXED(ReadWrite, 0x3F300000, 0x100, )
             Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 0x5E }
@@ -75,7 +75,7 @@ Device (SDC2)
     {
         Return(0xf)
     }
-    Method (_CRS, 0x0, NotSerialized) {
+    Method (_CRS, 0x0, Serialized) {
         Name (RBUF, ResourceTemplate () {
             MEMORY32FIXED(ReadWrite, 0x3F202000, 0x100, )
             Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 0x58 }

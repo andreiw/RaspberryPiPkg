@@ -157,7 +157,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
 
             // GPU Power Management Component Data
             // Reference : https://github.com/Microsoft/graphics-driver-samples/wiki/Install-Driver-in-a-Windows-VM
-            Method(PMCD) {
+            Method(PMCD, 0, Serialized) {
 
               Name(RBUF, Package()  {
                 1,                  // Version

@@ -11,13 +11,20 @@ Device (URT0)
     {
         Return(0xf)
     }
-    Method (_CRS, 0x0, NotSerialized) {
+    Method (_CRS, 0x0, Serialized) {
         Name (RBUF, ResourceTemplate () {
             MEMORY32FIXED(ReadWrite, 0x3F201000, 0x1000, )
             Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 0x59 }
         })
         Return(RBUF)
     }
+
+    Name (_DSD, Package () {
+        ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+            Package () {
+                Package (2) { "clock-frequency", 3000000 },
+            }
+        })
 }
 
 //
@@ -37,7 +44,7 @@ Device (URTM)
     {
         Return(0xf)
     }
-    Method (_CRS, 0x0, NotSerialized) {
+    Method (_CRS, 0x0, Serialized) {
         Name (RBUF, ResourceTemplate () {
             MEMORY32FIXED(ReadWrite, 0x3F215000, 0x70, )
             Interrupt(ResourceConsumer, Level, ActiveHigh, Shared) {0x3D}
@@ -65,7 +72,7 @@ Device(BTH0)
     {
         Return(0xf)
     }
-    Method (_CRS, 0x0, NotSerialized) {
+    Method (_CRS, 0x0, Serialized) {
         Name (RBUF, ResourceTemplate () {
             //
             // BT UART: UART0 (PL011)
