@@ -1,26 +1,33 @@
 64-bit Tiano Core UEFI for the Raspberry Pi 3
 =============================================
 
-Last updated Sep 28th, 2018.
+Last updated Sep 29th, 2018.
 
-This is a port of 64-bit Tiano Core UEFI firmware for the RPi3/RPi3B+ platforms,
+This is a port of 64-bit Tiano Core UEFI firmware for the Pi 3/3B+ platforms,
 based on [Ard Bisheuvel's 64-bit](http://www.workofard.com/2017/02/uefi-on-the-pi/)
 and [Microsoft's 32-bit](https://github.com/ms-iot/RPi-UEFI/tree/ms-iot/Pi3BoardPkg) implementations.
 
 Initially, this was supposed to be an easy walk in the park, where
-the Microsoft drivers just sorta slide into Ard's UEFI implementation,
-and I call it a day. It turned out to be a bit more frustrating of an
-experience than that :-).
+the Microsoft drivers just sorta slid into Ard's UEFI implementation,
+and I would call it a day. Instead, it turned out to be a severely more
+frustrating experience :-).
 
 # Purpose
 
-This is meant as a generally useful 64-bit UEFI implementation for the Pi3, good
-enough for most kinds of UEFI development and good enough for running real operating
-systems. It has been validated to install and boot Linux (SUSE, Ubuntu) and FreeBSD,
-and there is experimental Windows on Arm support as well.
+This is meant as a generally useful 64-bit ATF + UEFI implementation for the Pi 3/3B+,
+good enough for most kinds of UEFI development and good enough for running real operating
+systems. It has been validated to install and boot Linux (SUSE, Ubuntu), NetBSD and
+FreeBSD, and there is experimental (64-bit) Windows on Arm support as well.
+It wound up being the early development platform for NetBSD's 64-bit Arm UEFI
+bootloader.
+
+It's mostly EBBR compliant, favoring user experience over pedantic compliance
+where those two are in conflict. With enough HypDxe grease it may even, some day,
+pass for an SBSA + SBBR system ;-).
 
 # Latest Status
 
+* 2018 Sep 29th: MsftFunctionConfig ACPI descriptors.
 * 2018 Sep 28th: SMBIOS nits, clear screen before boot, SPCR InterruptType, DWC_OTG range and extra _CID.
 * 2018 Sep 18th: PXE boot order fix, serial prompting, improved variable dumping
 * 2018 Sep 14th: fix FADT minor version (PSCI detection) and SMBIOS regression (seen in Windows).
@@ -113,7 +120,7 @@ To avoid issues, apply using `--ignore-whitespace`. E.g.:
 $ git am --ignore-whitespace ../RaspberryPiPkg/edk2Patches/*.patch
 ```
 
-4. Use one of the [provided](build49) [templates](build5) for your build script. If you use a different GCC version, change accordingly,
+4. Use one of the [provided](Scripts/build49) [templates](Scripts/build5) for your build script. If you use a different GCC version, change accordingly,
 and adjust the compiler prefix to match your system - i.e. set `GCC49_AARCH64_PREFIX` if you're passing `-t GCC49` to `build`.
 
 If you want to build your own ATF, instead of using the checked-in binaries, follow
