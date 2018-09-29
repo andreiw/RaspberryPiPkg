@@ -29,6 +29,7 @@
   BUILD_TARGETS                  = DEBUG|RELEASE
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = RaspberryPiPkg/RaspberryPiPkg.fdf
+  PREBUILD                       = python BaseTools/Scripts/RunMakefile.py --makefile RaspberryPiPkg/Scripts/Prebuild.mak
 
   #
   # Defines for default states.  These can be changed on the command line.
