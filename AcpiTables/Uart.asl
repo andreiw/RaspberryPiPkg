@@ -19,10 +19,12 @@ Device (URT0)
         Return(RBUF)
     }
 
+    Name (CLCK, 3000000)
+
     Name (_DSD, Package () {
         ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
             Package () {
-                Package (2) { "clock-frequency", 3000000 },
+                Package (2) { "clock-frequency", CLCK },
             }
         })
 }
