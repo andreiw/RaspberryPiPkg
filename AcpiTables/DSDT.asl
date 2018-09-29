@@ -89,7 +89,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
         Device (USB0)
         {
             Name (_HID, "BCM2848")
-            Name (_CID, "DWC_OTG")
+            Name (_CID, Package() { "DWC_OTG", "DWC2_OTG"})
             Name (_UID, 0x0)
             Method (_STA)
             {
