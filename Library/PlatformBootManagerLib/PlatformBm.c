@@ -1,21 +1,20 @@
 /** @file
-  Implementation for PlatformBootManagerLib library class interfaces.
-
-  Copyright (C) 2015-2016, Red Hat, Inc.
-  Copyright (c) 2014, ARM Ltd. All rights reserved.
-  Copyright (c) 2004 - 2016, Intel Corporation. All rights reserved.
-  Copyright (c) 2016, Linaro Ltd. All rights reserved.
-  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
-
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution. The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT
-  WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-**/
+ *
+ *  Copyright (C) 2015-2016, Red Hat, Inc.
+ *  Copyright (c) 2014, ARM Ltd. All rights reserved.
+ *  Copyright (c) 2004 - 2016, Intel Corporation. All rights reserved.
+ *  Copyright (c) 2016, Linaro Ltd. All rights reserved.
+ *  Copyright (c) 2017 - 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+ *
+ *  This program and the accompanying materials
+ *  are licensed and made available under the terms and conditions of the BSD License
+ *  which accompanies this distribution.  The full text of the license may be found at
+ *  http://opensource.org/licenses/bsd-license.php
+ *
+ *  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+ *
+ **/
 
 #include <Library/BootLogoLib.h>
 #include <Library/CapsuleLib.h>
@@ -515,6 +514,7 @@ ExitBootServicesHandler (
                          )
 {
   EFI_STATUS Status;
+  CHAR16 *OsBootStr;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Green;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Black;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Yellow;
@@ -522,7 +522,18 @@ ExitBootServicesHandler (
   // Long enough to occlude the string printed
   // in PlatformBootManagerWaitCallback.
   //
-  STATIC CHAR16 *OsBootStr = L"Exiting UEFI and booting OS kernel!\r\n";
+  STATIC CHAR16 *OsBootStrEL1 = L"Exiting UEFI and booting EL1 OS kernel!\r\n";
+  STATIC CHAR16 *OsBootStrEL2 = L"Exiting UEFI and booting EL2 OS kernel!\r\n";
+
+  if (!PcdGet32 (PcdDebugShowUEFIExit)) {
+    return;
+  }
+
+  if (PcdGet32 (PcdHypEnable)) {
+    OsBootStr = OsBootStrEL1;
+  } else {
+    OsBootStr = OsBootStrEL2;
+  }
 
   Green.Raw = 0x00007F00;
   Black.Raw = 0x00000000;
@@ -695,11 +706,11 @@ PlatformBootManagerAfterConsole (
                                 Desc, LOAD_OPTION_ACTIVE);
   }
 
-  PlatformRegisterBootOption ((VOID *) &mArasan,
-                              L"uSD on Arasan MMC Host",
-                              LOAD_OPTION_ACTIVE);
   PlatformRegisterBootOption ((VOID *) &mSDHost,
                               L"uSD on SD Host",
+                              LOAD_OPTION_ACTIVE);
+  PlatformRegisterBootOption ((VOID *) &mArasan,
+                              L"uSD on Arasan MMC Host",
                               LOAD_OPTION_ACTIVE);
 
   PlatformRegisterOptionsAndKeys ();

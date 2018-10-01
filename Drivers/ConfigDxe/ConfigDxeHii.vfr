@@ -1,6 +1,6 @@
 /** @file
  *
- *  Copyright (c), 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+ *  Copyright (c) 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
  *
  *  This program and the accompanying materials
  *  are licensed and made available under the terms and conditions of the BSD License
@@ -14,6 +14,22 @@
 
 #include <Guid/HiiPlatformSetupFormset.h>
 #include "ConfigDxeFormSetGuid.h"
+
+typedef struct {
+  /*
+   * 0 - No JTAG.
+   * 1 - JTAG mode.
+   */
+   UINT32 Enable;
+} DEBUG_ENABLE_JTAG_VARSTORE_DATA;
+
+typedef struct {
+  /*
+   * 0 - Don't show UEFI exit message.
+   * 1 - Show UEFI exit message.
+   */
+   UINT32 Show;
+} DEBUG_SHOW_UEFI_EXIT_VARSTORE_DATA;
 
 typedef struct {
   /*
@@ -159,24 +175,38 @@ formset
       name  = MmcSdHighSpeedMHz,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
+    efivarstore DEBUG_ENABLE_JTAG_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = DebugEnableJTAG,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore DEBUG_SHOW_UEFI_EXIT_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = DebugShowUEFIExit,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
     form formid = 1,
         title  = STRING_TOKEN(STR_FORM_SET_TITLE);
         subtitle text = STRING_TOKEN(STR_NULL_STRING);
 
-        goto 0x1000,
+        goto 0x1001,
             prompt = STRING_TOKEN(STR_HYP_FORM_TITLE),
             help = STRING_TOKEN(STR_NULL_STRING);
 
-        goto 0x1001,
+        goto 0x1002,
            prompt = STRING_TOKEN(STR_CHIPSET_FORM_TITLE),
            help = STRING_TOKEN(STR_NULL_STRING);
 
-        goto 0x1002,
+        goto 0x1003,
            prompt = STRING_TOKEN(STR_MMC_FORM_TITLE),
            help = STRING_TOKEN(STR_NULL_STRING);
+
+        goto 0x1004,
+            prompt = STRING_TOKEN(STR_DEBUG_FORM_TITLE),
+            help = STRING_TOKEN(STR_NULL_STRING);
     endform;
 
-    form formid = 0x1000,
+    form formid = 0x1001,
         title  = STRING_TOKEN(STR_HYP_FORM_TITLE);
         subtitle text = STRING_TOKEN(STR_HYP_FORM_SUBTITLE);
 
@@ -217,7 +247,7 @@ formset
         endif; 
     endform;
 
-    form formid = 0x1001,
+    form formid = 0x1002,
         title  = STRING_TOKEN(STR_CHIPSET_FORM_TITLE);
         subtitle text = STRING_TOKEN(STR_CHIPSET_FORM_SUBTITLE);
 
@@ -239,7 +269,7 @@ formset
         endoneof;
     endform;
 
-    form formid = 0x1002,
+    form formid = 0x1003,
         title  = STRING_TOKEN(STR_MMC_FORM_TITLE);
         subtitle text = STRING_TOKEN(STR_MMC_FORM_SUBTITLE);
 
@@ -284,6 +314,26 @@ formset
              maximum = 100,
              default = 50,
         endnumeric;
-endform;
+    endform;
 
+    form formid = 0x1004,
+        title  = STRING_TOKEN(STR_DEBUG_FORM_TITLE);
+        subtitle text = STRING_TOKEN(STR_DEBUG_FORM_SUBTITLE);
+
+        oneof varid = DebugEnableJTAG.Enable,
+            prompt      = STRING_TOKEN(STR_DEBUG_JTAG_PROMPT),
+            help        = STRING_TOKEN(STR_DEBUG_JTAG_HELP),
+            flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+            option text = STRING_TOKEN(STR_DEBUG_JTAG_ENABLE), value = 1, flags = 0;
+            option text = STRING_TOKEN(STR_DEBUG_JTAG_DISABLE), value = 0, flags = DEFAULT;
+        endoneof;
+
+        oneof varid = DebugShowUEFIExit.Show,
+            prompt      = STRING_TOKEN(STR_DEBUG_EXIT_SHOW_PROMPT),
+            help        = STRING_TOKEN(STR_DEBUG_EXIT_SHOW_HELP),
+            flags       = NUMERIC_SIZE_4 | INTERACTIVE,
+            option text = STRING_TOKEN(STR_DEBUG_EXIT_SHOW_NO), value = 0, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_DEBUG_EXIT_SHOW_YES), value = 1, flags = 0;
+        endoneof;
+    endform;
 endformset;

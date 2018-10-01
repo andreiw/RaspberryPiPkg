@@ -1,6 +1,6 @@
 /** @file
  *
- *  Copyright (c), 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+ *  Copyright (c) 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
  *
  *  This program and the accompanying materials
  *  are licensed and made available under the terms and conditions of the BSD License
@@ -194,6 +194,22 @@ SetupVariables (
     PcdSet32 (PcdMmcSdHighSpeedMHz, PcdGet32 (PcdMmcSdHighSpeedMHz));
   }
 
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"DebugEnableJTAG",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdDebugEnableJTAG, PcdGet32 (PcdDebugEnableJTAG));
+  }
+
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"DebugShowUEFIExit",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdDebugShowUEFIExit, PcdGet32 (PcdDebugShowUEFIExit));
+  }
+
   return EFI_SUCCESS;
 }
   
@@ -242,6 +258,24 @@ ApplyVariables (
     DEBUG((EFI_D_INFO, "Current CPU speed is %uHz\n", Rate));
   }
 
+  /*
+   * Switching two groups around, so disable both first.
+   *
+   * No, I've not seen a problem, but having a group be
+   * routed to two sets of pins seems like asking for trouble.
+   */
+  GpioPinFuncSet(34, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(35, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(36, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(37, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(38, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(39, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(48, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(49, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(50, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(51, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(52, GPIO_FSEL_INPUT);
+  GpioPinFuncSet(53, GPIO_FSEL_INPUT);
   if (PcdGet32 (PcdSdIsArasan)) {
     DEBUG((EFI_D_INFO, "Routing SD to Arasan\n"));
     Gpio48Group = GPIO_FSEL_ALT3;
@@ -269,6 +303,33 @@ ApplyVariables (
   GpioPinFuncSet(51, Gpio48Group);
   GpioPinFuncSet(52, Gpio48Group);
   GpioPinFuncSet(53, Gpio48Group);
+
+  /*
+   * JTAG pin    JTAG sig    GPIO      Mode    Header pin
+   * 1           VREF        N/A               1
+   * 3           nTRST       GPIO22    ALT4    15
+   * 4           GND         N/A               9
+   * 5           TDI         GPIO4     ALT5    7
+   * 7           TMS         GPIO27    ALT4    13
+   * 9           TCK         GPIO25    ALT4    22
+   * 11          RTCK        GPIO23    ALT4    16
+   * 13          TDO         GPIO24    ALT4    18
+   */
+  if (PcdGet32 (PcdDebugEnableJTAG)) {
+    GpioPinFuncSet(22, GPIO_FSEL_ALT4);
+    GpioPinFuncSet(4,  GPIO_FSEL_ALT5);
+    GpioPinFuncSet(27, GPIO_FSEL_ALT4);
+    GpioPinFuncSet(25, GPIO_FSEL_ALT4);
+    GpioPinFuncSet(23, GPIO_FSEL_ALT4);
+    GpioPinFuncSet(24, GPIO_FSEL_ALT4);
+  } else {
+    GpioPinFuncSet(22, GPIO_FSEL_INPUT);
+    GpioPinFuncSet(4,  GPIO_FSEL_INPUT);
+    GpioPinFuncSet(27, GPIO_FSEL_INPUT);
+    GpioPinFuncSet(25, GPIO_FSEL_INPUT);
+    GpioPinFuncSet(23, GPIO_FSEL_INPUT);
+    GpioPinFuncSet(24, GPIO_FSEL_INPUT);
+  }
 }
 
 

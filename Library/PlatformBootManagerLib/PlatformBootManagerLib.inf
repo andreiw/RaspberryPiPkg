@@ -1,11 +1,10 @@
 ## @file
-#  Implementation for PlatformBootManagerLib library class interfaces.
 #
 #  Copyright (C) 2015-2016, Red Hat, Inc.
 #  Copyright (c) 2014, ARM Ltd. All rights reserved.
 #  Copyright (c) 2007 - 2014, Intel Corporation. All rights reserved.
 #  Copyright (c) 2016, Linaro Ltd. All rights reserved.
-#  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
+#  Copyright (c) 2017 - 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
 #
 #  This program and the accompanying materials are licensed and made available
 #  under the terms and conditions of the BSD License which accompanies this
@@ -39,6 +38,7 @@
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
   ShellPkg/ShellPkg.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   BaseLib
@@ -68,6 +68,8 @@
 
 [Pcd]
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut
+  gRaspberryPiTokenSpaceGuid.PcdHypEnable
+  gRaspberryPiTokenSpaceGuid.PcdDebugShowUEFIExit
 
 [Guids]
   gEfiFileInfoGuid

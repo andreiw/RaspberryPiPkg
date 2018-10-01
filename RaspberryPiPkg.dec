@@ -1,15 +1,18 @@
+## @file
 #
-#  Copyright (c) 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
 #  Copyright (c) 2016, Linaro, Ltd. All rights reserved.
+#  Copyright (c) 2017 - 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
+#  This program and the accompanying materials are licensed and made available
+#  under the terms and conditions of the BSD License which accompanies this
+#  distribution. The full text of the license may be found at
 #  http://opensource.org/licenses/bsd-license.php
 #
 #  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR
+#  IMPLIED.
 #
+##
 
 [Defines]
   DEC_SPECIFICATION              = 0x0001001A
@@ -53,3 +56,5 @@
   gRaspberryPiTokenSpaceGuid.PcdMmcSdDefaultSpeedMHz|0|UINT32|0x00000011
   gRaspberryPiTokenSpaceGuid.PcdMmcSdHighSpeedMHz|0|UINT32|0x00000012
   gRaspberryPiTokenSpaceGuid.PcdMmcDisableMulti|0|UINT32|0x00000013
+  gRaspberryPiTokenSpaceGuid.PcdDebugEnableJTAG|0|UINT32|0x00000014
+  gRaspberryPiTokenSpaceGuid.PcdDebugShowUEFIExit|0|UINT32|0x00000015
