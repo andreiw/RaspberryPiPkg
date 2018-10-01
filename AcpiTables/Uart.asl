@@ -1,5 +1,20 @@
+/*
+ * [DSDT] UARTs.
+ *
+ * Copyright (c), 2018, Andrey Warkentin <andrey.warkentin@gmail.com>
+ * Copyright (c), Microsoft Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials
+ * are licensed and made available under the terms and conditions of the BSD License
+ * which accompanies this distribution.  The full text of the license may be found at
+ * http://opensource.org/licenses/bsd-license.php
+ *
+ * THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+ */
+
 //
-// Description: This is the PL011 based UART
+// Description: This is the PL011 based UART.
 //
 
 Device (URT0)
@@ -30,7 +45,7 @@ Device (URT0)
 }
 
 //
-// Description: UART Mini
+// Description: UART Mini.
 //
 // This device is referenced in the DBG2 table, which will cause the system to
 // not start the driver when the debugger is enabled and to mark the device
@@ -79,7 +94,7 @@ Device (URTM)
 }
 
 //
-// Multifunction serial bus device to support Bluetooth function
+// Multifunction serial bus device to support Bluetooth function.
 //
 
 Device(BTH0)

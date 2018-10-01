@@ -25,6 +25,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
     Scope (\_SB_)
     {
         include("Sdhc.asl")
+        include("PEP.asl")
 
         //
         // Description: This is a Processor Device
@@ -515,5 +516,6 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
         }
 
         include("Uart.asl")
+        include("Rhpx.asl")
     }
 }
