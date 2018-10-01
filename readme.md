@@ -1,7 +1,7 @@
 64-bit Tiano Core UEFI for the Raspberry Pi 3
 =============================================
 
-Last updated Sep 29th, 2018.
+Last updated Oct 1st, 2018.
 
 This is a port of 64-bit Tiano Core UEFI firmware for the Pi 3/3B+ platforms,
 based on [Ard Bisheuvel's 64-bit](http://www.workofard.com/2017/02/uefi-on-the-pi/)
@@ -27,6 +27,7 @@ pass for an SBSA + SBBR system ;-).
 
 # Latest Status
 
+* 2018 Oct 1st: Rhxp and PEP devices in ACPI, (untested) JTAG support via debug configuration menu.
 * 2018 Sep 29th: MsftFunctionConfig ACPI descriptors.
 * 2018 Sep 28th: SMBIOS nits, clear screen before boot, SPCR InterruptType, DWC_OTG range and extra _CID.
 * 2018 Sep 18th: PXE boot order fix, serial prompting, improved variable dumping
