@@ -50,8 +50,10 @@ LibGetTime (
             )
 {
   UINTN DataSize;
+  UINT64 Counter;
   EFI_STATUS Status;
   UINTN ElapsedSeconds;
+  UINT32 Remainder;
   UINT32 Freq = ArmGenericTimerGetTimerFreq();
 
   if (Time == NULL) {
@@ -85,10 +87,17 @@ LibGetTime (
   if (EFI_ERROR (Status)) {
     ElapsedSeconds = PcdGet64(PcdBootEpochSeconds);
   }
-  ElapsedSeconds += GetPerformanceCounter () / Freq;
+  Counter = GetPerformanceCounter ();
+  ElapsedSeconds += DivU64x32Remainder (Counter, Freq, &Remainder);
+  EpochToEfiTime (ElapsedSeconds, Time);
 
-  EpochToEfiTime(ElapsedSeconds, Time);
-    
+  //
+  // Frequency < 0x100000000, so Remainder < 0x100000000, then (Remainder * 1,000,000,000)
+  // will not overflow 64-bit.
+  //
+  Time->Nanosecond = DivU64x32 (MultU64x64 ((UINT64) Remainder,
+                                            1000000000U), Freq);
+
   return EFI_SUCCESS;
 }
 
