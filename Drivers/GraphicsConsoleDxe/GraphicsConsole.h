@@ -1,16 +1,17 @@
 /** @file
-  Header file for GraphicsConsole driver.
-
-Copyright (c) 2006 - 2011, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-**/
+ *
+ *  Copyright (c) 2006 - 2016, Intel Corporation. All rights reserved.
+ *  Copyright (c) 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+ *
+ *  This program and the accompanying materials
+ *  are licensed and made available under the terms and conditions of the BSD License
+ *  which accompanies this distribution.  The full text of the license may be found at
+ *  http://opensource.org/licenses/bsd-license.php
+ *
+ *  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+ *
+ **/
 
 #ifndef _GRAPHICS_CONSOLE_H_
 #define _GRAPHICS_CONSOLE_H_
@@ -18,7 +19,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Uefi.h>
 #include <Protocol/SimpleTextOut.h>
 #include <Protocol/GraphicsOutput.h>
-#include <Protocol/UgaDraw.h>
 #include <Protocol/DevicePath.h>
 #include <Library/DebugLib.h>
 #include <Library/UefiDriverEntryPoint.h>
@@ -66,7 +66,6 @@ typedef struct {
 typedef struct {
   UINTN                            Signature;
   EFI_GRAPHICS_OUTPUT_PROTOCOL     *GraphicsOutput;
-  EFI_UGA_DRAW_PROTOCOL            *UgaDraw;
   EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL  SimpleTextOutput;
   EFI_SIMPLE_TEXT_OUTPUT_MODE      SimpleTextOutputMode;
   GRAPHICS_CONSOLE_MODE_DATA       *ModeData;
@@ -428,9 +427,8 @@ GraphicsConsoleConOutEnableCursor (
 /**
   Test to see if Graphics Console could be supported on the Controller.
 
-  Graphics Console could be supported if Graphics Output Protocol or UGA Draw
-  Protocol exists on the Controller. (UGA Draw Protocol could be skipped
-  if PcdUgaConsumeSupport is set to FALSE.)
+  Graphics Console could be supported if Graphics Output Protocol exists
+  on the Controller.
 
   @param  This                Protocol instance pointer.
   @param  Controller          Handle of device to test.
@@ -451,9 +449,8 @@ GraphicsConsoleControllerDriverSupported (
 
 
 /**
-  Start this driver on Controller by opening Graphics Output protocol or 
-  UGA Draw protocol, and installing Simple Text Out protocol on Controller.
-  (UGA Draw protocol could be skipped if PcdUgaConsumeSupport is set to FALSE.)
+  Start this driver on Controller by opening the Graphics Output Protocol,
+  and installing Simple Text Out protocol on Controller.
   
   @param  This                 Protocol instance pointer.
   @param  Controller           Handle of device to bind driver to
@@ -474,9 +471,7 @@ GraphicsConsoleControllerDriverStart (
 
 /**
   Stop this driver on Controller by removing Simple Text Out protocol 
-  and closing the Graphics Output Protocol or UGA Draw protocol on Controller.
-  (UGA Draw protocol could be skipped if PcdUgaConsumeSupport is set to FALSE.)
-  
+  and closing the Graphics Output Protocol on Controller.
 
   @param  This              Protocol instance pointer.
   @param  Controller        Handle of device to stop driver on
@@ -540,8 +535,7 @@ GetTextColors (
   @param  Count                 The count of Unicode string.
 
   @retval EFI_OUT_OF_RESOURCES  If no memory resource to use.
-  @retval EFI_UNSUPPORTED       If no Graphics Output protocol and UGA Draw
-                                protocol exist.
+  @retval EFI_UNSUPPORTED       If no Graphics Output Protocol exists.
   @retval EFI_SUCCESS           Drawing Unicode string implemented successfully.
 
 **/

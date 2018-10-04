@@ -1,16 +1,17 @@
 /** @file
-  This is the main routine for initializing the Graphics Console support routines.
-
-Copyright (c) 2006 - 2016, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-**/
+ *
+ *  Copyright (c) 2006 - 2016, Intel Corporation. All rights reserved.
+ *  Copyright (c) 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+ *
+ *  This program and the accompanying materials
+ *  are licensed and made available under the terms and conditions of the BSD License
+ *  which accompanies this distribution.  The full text of the license may be found at
+ *  http://opensource.org/licenses/bsd-license.php
+ *
+ *  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+ *
+ **/
 
 #include "GraphicsConsole.h"
 
@@ -20,7 +21,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 GRAPHICS_CONSOLE_DEV    mGraphicsConsoleDevTemplate = {
   GRAPHICS_CONSOLE_DEV_SIGNATURE,
   (EFI_GRAPHICS_OUTPUT_PROTOCOL *) NULL,
-  (EFI_UGA_DRAW_PROTOCOL *) NULL,
   {
     GraphicsConsoleConOutReset,
     GraphicsConsoleConOutOutputString,
@@ -105,9 +105,8 @@ EFI_DRIVER_BINDING_PROTOCOL gGraphicsConsoleDriverBinding = {
 /**
   Test to see if Graphics Console could be supported on the Controller.
 
-  Graphics Console could be supported if Graphics Output Protocol or UGA Draw
-  Protocol exists on the Controller. (UGA Draw Protocol could be skipped
-  if PcdUgaConsumeSupport is set to FALSE.)
+  Graphics Console could be supported if Graphics Output Protocol
+  exists on the Controller.
 
   @param  This                Protocol instance pointer.
   @param  Controller          Handle of device to test.
@@ -128,11 +127,9 @@ GraphicsConsoleControllerDriverSupported (
 {
   EFI_STATUS                   Status;
   EFI_GRAPHICS_OUTPUT_PROTOCOL *GraphicsOutput;
-  EFI_UGA_DRAW_PROTOCOL        *UgaDraw;
   EFI_DEVICE_PATH_PROTOCOL     *DevicePath;
 
   GraphicsOutput = NULL;
-  UgaDraw        = NULL;
   //
   // Open the IO Abstraction(s) needed to perform the supported test
   //
@@ -144,23 +141,11 @@ GraphicsConsoleControllerDriverSupported (
                   Controller,
                   EFI_OPEN_PROTOCOL_BY_DRIVER
                   );
-
-  if (EFI_ERROR (Status) && FeaturePcdGet (PcdUgaConsumeSupport)) {
-    //
-    // Open Graphics Output Protocol failed, try to open UGA Draw Protocol
-    //
-    Status = gBS->OpenProtocol (
-                    Controller,
-                    &gEfiUgaDrawProtocolGuid,
-                    (VOID **) &UgaDraw,
-                    This->DriverBindingHandle,
-                    Controller,
-                    EFI_OPEN_PROTOCOL_BY_DRIVER
-                    );
-  }
   if (EFI_ERROR (Status)) {
     return Status;
   }
+
+  ASSERT (GraphicsOutput != NULL);
 
   //
   // We need to ensure that we do not layer on top of a virtual handle.
@@ -195,21 +180,12 @@ GraphicsConsoleControllerDriverSupported (
   // Close the I/O Abstraction(s) used to perform the supported test
   //
 Error:
-  if (GraphicsOutput != NULL) {
-    gBS->CloseProtocol (
-          Controller,
-          &gEfiGraphicsOutputProtocolGuid,
-          This->DriverBindingHandle,
-          Controller
-          );
-  } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
-    gBS->CloseProtocol (
-          Controller,
-          &gEfiUgaDrawProtocolGuid,
-          This->DriverBindingHandle,
-          Controller
-          );
-  }
+  gBS->CloseProtocol (
+                      Controller,
+                      &gEfiGraphicsOutputProtocolGuid,
+                      This->DriverBindingHandle,
+                      Controller
+                      );
   return Status;
 }
 
@@ -357,9 +333,8 @@ InitializeGraphicsConsoleTextMode (
 }
 
 /**
-  Start this driver on Controller by opening Graphics Output protocol or
-  UGA Draw protocol, and installing Simple Text Out protocol on Controller.
-  (UGA Draw protocol could be skipped if PcdUgaConsumeSupport is set to FALSE.)
+  Start this driver on Controller by opening Graphics Output Protocol,
+  and installing Simple Text Out protocol on Controller.
 
   @param  This                 Protocol instance pointer.
   @param  Controller           Handle of device to bind driver to
@@ -382,8 +357,6 @@ GraphicsConsoleControllerDriverStart (
   GRAPHICS_CONSOLE_DEV                 *Private;
   UINT32                               HorizontalResolution;
   UINT32                               VerticalResolution;
-  UINT32                               ColorDepth;
-  UINT32                               RefreshRate;
   UINT32                               ModeIndex;
   UINTN                                MaxMode;
   UINT32                               ModeNumber;
@@ -414,18 +387,6 @@ GraphicsConsoleControllerDriverStart (
                   Controller,
                   EFI_OPEN_PROTOCOL_BY_DRIVER
                   );
-
-  if (EFI_ERROR(Status) && FeaturePcdGet (PcdUgaConsumeSupport)) {
-    Status = gBS->OpenProtocol (
-                    Controller,
-                    &gEfiUgaDrawProtocolGuid,
-                    (VOID **) &Private->UgaDraw,
-                    This->DriverBindingHandle,
-                    Controller,
-                    EFI_OPEN_PROTOCOL_BY_DRIVER
-                    );
-  }
-
   if (EFI_ERROR (Status)) {
     goto Error;
   }
@@ -433,121 +394,83 @@ GraphicsConsoleControllerDriverStart (
   HorizontalResolution  = PcdGet32 (PcdVideoHorizontalResolution);
   VerticalResolution    = PcdGet32 (PcdVideoVerticalResolution);
 
-  if (Private->GraphicsOutput != NULL) {
+  ASSERT (Private->GraphicsOutput != NULL);
+  //
+  // The console is build on top of Graphics Output Protocol, find the mode number
+  // for the user-defined mode; if there are multiple video devices,
+  // graphic console driver will set all the video devices to the same mode.
+  //
+  if ((HorizontalResolution == 0x0) || (VerticalResolution == 0x0)) {
     //
-    // The console is build on top of Graphics Output Protocol, find the mode number
-    // for the user-defined mode; if there are multiple video devices,
-    // graphic console driver will set all the video devices to the same mode.
-    //
-    if ((HorizontalResolution == 0x0) || (VerticalResolution == 0x0)) {
-      //
-      // Find the highest resolution which GOP supports.
-      //    
-      MaxMode = Private->GraphicsOutput->Mode->MaxMode;
+    // Find the highest resolution which GOP supports.
+    //    
+    MaxMode = Private->GraphicsOutput->Mode->MaxMode;
       
-      for (ModeIndex = 0; ModeIndex < MaxMode; ModeIndex++) {
-        Status = Private->GraphicsOutput->QueryMode (
-                           Private->GraphicsOutput,
-                           ModeIndex,
-                           &SizeOfInfo,
-                           &Info
-                           );
-        if (!EFI_ERROR (Status)) {
-          if ((Info->HorizontalResolution > HorizontalResolution) ||
-              ((Info->HorizontalResolution == HorizontalResolution) && (Info->VerticalResolution > VerticalResolution))) {
-            HorizontalResolution = Info->HorizontalResolution;
-            VerticalResolution   = Info->VerticalResolution;
-            ModeNumber           = ModeIndex;
-          }
-          FreePool (Info);
+    for (ModeIndex = 0; ModeIndex < MaxMode; ModeIndex++) {
+      Status = Private->GraphicsOutput->QueryMode (
+                                                   Private->GraphicsOutput,
+                                                   ModeIndex,
+                                                   &SizeOfInfo,
+                                                   &Info
+                                                   );
+      if (!EFI_ERROR (Status)) {
+        if ((Info->HorizontalResolution > HorizontalResolution) ||
+            ((Info->HorizontalResolution == HorizontalResolution) && (Info->VerticalResolution > VerticalResolution))) {
+          HorizontalResolution = Info->HorizontalResolution;
+          VerticalResolution   = Info->VerticalResolution;
+          ModeNumber           = ModeIndex;
         }
-      }
-      if ((HorizontalResolution == 0x0) || (VerticalResolution == 0x0)) {
-        Status = EFI_UNSUPPORTED;
-        goto Error;
-      }
-    } else {
-      //
-      // Use user-defined resolution
-      //
-      Status = CheckModeSupported (
-                   Private->GraphicsOutput,
-                   HorizontalResolution,
-                   VerticalResolution,
-                   &ModeNumber
-                   );
-      if (EFI_ERROR (Status)) {
-        //
-        // if not supporting current mode, try 800x600 which is required by UEFI/EFI spec
-        //
-        HorizontalResolution = 800;
-        VerticalResolution   = 600;
-        Status = CheckModeSupported (
-                     Private->GraphicsOutput,
-                     HorizontalResolution,
-                     VerticalResolution,
-                     &ModeNumber
-                     );
-        Mode = Private->GraphicsOutput->Mode;
-        if (EFI_ERROR (Status) && Mode->MaxMode != 0) {
-          //
-          // Set default mode failed or device don't support default mode, then get the current mode information
-          //
-          HorizontalResolution = Mode->Info->HorizontalResolution;
-          VerticalResolution = Mode->Info->VerticalResolution;
-          ModeNumber = Mode->Mode;
-        }
+        FreePool (Info);
       }
     }
-    if (ModeNumber != Private->GraphicsOutput->Mode->Mode) {
-      //
-      // Current graphics mode is not set or is not set to the mode which we has found,
-      // set the new graphic mode.
-      //
-      Status = Private->GraphicsOutput->SetMode (Private->GraphicsOutput, ModeNumber);
-      if (EFI_ERROR (Status)) {
-        //
-        // The mode set operation failed
-        //
-        goto Error;
-      }
+    if ((HorizontalResolution == 0x0) || (VerticalResolution == 0x0)) {
+      Status = EFI_UNSUPPORTED;
+      goto Error;
     }
-  } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
+  } else {
     //
-    // At first try to set user-defined resolution
+    // Use user-defined resolution
     //
-    ColorDepth            = 32;
-    RefreshRate           = 60;
-    Status = Private->UgaDraw->SetMode (
-                                Private->UgaDraw,
-                                HorizontalResolution,
-                                VerticalResolution,
-                                ColorDepth,
-                                RefreshRate
-                                );
+    Status = CheckModeSupported (
+                                 Private->GraphicsOutput,
+                                 HorizontalResolution,
+                                 VerticalResolution,
+                                 &ModeNumber
+                                 );
     if (EFI_ERROR (Status)) {
       //
-      // Try to set 800*600 which is required by UEFI/EFI spec
+      // if not supporting current mode, try 800x600 which is required by UEFI/EFI spec.
       //
-      Status = Private->UgaDraw->SetMode (
-                                  Private->UgaDraw,
-                                  800,
-                                  600,
-                                  ColorDepth,
-                                  RefreshRate
-                                  );
-      if (EFI_ERROR (Status)) {
-        Status = Private->UgaDraw->GetMode (
-                                    Private->UgaDraw,
-                                    &HorizontalResolution,
-                                    &VerticalResolution,
-                                    &ColorDepth,
-                                    &RefreshRate
-                                    );
-        if (EFI_ERROR (Status)) {
-          goto Error;
+      HorizontalResolution = 800;
+      VerticalResolution   = 600;
+      Status = CheckModeSupported (
+                                   Private->GraphicsOutput,
+                                   HorizontalResolution,
+                                   VerticalResolution,
+                                   &ModeNumber
+                                   );
+      Mode = Private->GraphicsOutput->Mode;
+      if (EFI_ERROR (Status) && Mode->MaxMode != 0) {
+        //
+        // Set default mode failed or device don't support default mode, then get the current mode information.
+        //
+        HorizontalResolution = Mode->Info->HorizontalResolution;
+        VerticalResolution = Mode->Info->VerticalResolution;
+        ModeNumber = Mode->Mode;
         }
-      }
+    }
+  }
+  if (ModeNumber != Private->GraphicsOutput->Mode->Mode) {
+    //
+    // Current graphics mode is not set or is not set to the mode which we has found,
+    // set the new graphic mode.
+    //
+    Status = Private->GraphicsOutput->SetMode (Private->GraphicsOutput, ModeNumber);
+    if (EFI_ERROR (Status)) {
+      //
+      // The mode set operation failed
+      //
+      goto Error;
     }
   }
 
@@ -597,23 +520,14 @@ GraphicsConsoleControllerDriverStart (
 Error:
   if (EFI_ERROR (Status)) {
     //
-    // Close the GOP and UGA Draw Protocol
+    // Close GOP.
     //
-    if (Private->GraphicsOutput != NULL) {
-      gBS->CloseProtocol (
-             Controller,
-             &gEfiGraphicsOutputProtocolGuid,
-             This->DriverBindingHandle,
-             Controller
-             );
-    } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
-      gBS->CloseProtocol (
-             Controller,
-             &gEfiUgaDrawProtocolGuid,
-             This->DriverBindingHandle,
-             Controller
-             );
-    }
+    gBS->CloseProtocol (
+                        Controller,
+                        &gEfiGraphicsOutputProtocolGuid,
+                        This->DriverBindingHandle,
+                        Controller
+                        );
 
     if (Private->LineBuffer != NULL) {
       FreePool (Private->LineBuffer);
@@ -634,8 +548,7 @@ Error:
 
 /**
   Stop this driver on Controller by removing Simple Text Out protocol
-  and closing the Graphics Output Protocol or UGA Draw protocol on Controller.
-  (UGA Draw protocol could be skipped if PcdUgaConsumeSupport is set to FALSE.)
+  and closing the Graphics Output Protocol on Controller.
 
 
   @param  This              Protocol instance pointer.
@@ -685,23 +598,14 @@ GraphicsConsoleControllerDriverStop (
 
   if (!EFI_ERROR (Status)) {
     //
-    // Close the GOP or UGA IO Protocol
+    // Close GOP.
     //
-    if (Private->GraphicsOutput != NULL) {
-      gBS->CloseProtocol (
-            Controller,
-            &gEfiGraphicsOutputProtocolGuid,
-            This->DriverBindingHandle,
-            Controller
-            );
-    } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
-      gBS->CloseProtocol (
-            Controller,
-            &gEfiUgaDrawProtocolGuid,
-            This->DriverBindingHandle,
-            Controller
-            );
-    }
+    gBS->CloseProtocol (
+                        Controller,
+                        &gEfiGraphicsOutputProtocolGuid,
+                        This->DriverBindingHandle,
+                        Controller
+                        );
 
     if (Private->LineBuffer != NULL) {
       FreePool (Private->LineBuffer);
@@ -889,7 +793,6 @@ GraphicsConsoleConOutOutputString (
 {
   GRAPHICS_CONSOLE_DEV  *Private;
   EFI_GRAPHICS_OUTPUT_PROTOCOL   *GraphicsOutput;
-  EFI_UGA_DRAW_PROTOCOL *UgaDraw;
   INTN                  Mode;
   UINTN                 MaxColumn;
   UINTN                 MaxRow;
@@ -923,7 +826,6 @@ GraphicsConsoleConOutOutputString (
   Mode      = This->Mode->Mode;
   Private   = GRAPHICS_CONSOLE_CON_OUT_DEV_FROM_THIS (This);
   GraphicsOutput = Private->GraphicsOutput;
-  UgaDraw   = Private->UgaDraw;
 
   MaxColumn = Private->ModeData[Mode].Columns;
   MaxRow    = Private->ModeData[Mode].Rows;
@@ -981,71 +883,37 @@ GraphicsConsoleConOutOutputString (
       // down one row.
       //
       if (This->Mode->CursorRow == (INT32) (MaxRow - 1)) {
-        if (GraphicsOutput != NULL) {
-          //
-          // Scroll Screen Up One Row
-          //
-          GraphicsOutput->Blt (
-                    GraphicsOutput,
-                    NULL,
-                    EfiBltVideoToVideo,
-                    DeltaX,
-                    DeltaY + EFI_GLYPH_HEIGHT,
-                    DeltaX,
-                    DeltaY,
-                    Width,
-                    Height,
-                    Delta
-                    );
+        //
+        // Scroll Screen Up One Row
+        //
+        GraphicsOutput->Blt (
+                             GraphicsOutput,
+                             NULL,
+                             EfiBltVideoToVideo,
+                             DeltaX,
+                             DeltaY + EFI_GLYPH_HEIGHT,
+                             DeltaX,
+                             DeltaY,
+                             Width,
+                             Height,
+                             Delta
+                             );
 
-          //
-          // Print Blank Line at last line
-          //
-          GraphicsOutput->Blt (
-                    GraphicsOutput,
-                    &Background,
-                    EfiBltVideoFill,
-                    0,
-                    0,
-                    DeltaX,
-                    DeltaY + Height,
-                    Width,
-                    EFI_GLYPH_HEIGHT,
-                    Delta
-                    );
-        } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
-          //
-          // Scroll Screen Up One Row
-          //
-          UgaDraw->Blt (
-                    UgaDraw,
-                    NULL,
-                    EfiUgaVideoToVideo,
-                    DeltaX,
-                    DeltaY + EFI_GLYPH_HEIGHT,
-                    DeltaX,
-                    DeltaY,
-                    Width,
-                    Height,
-                    Delta
-                    );
-
-          //
-          // Print Blank Line at last line
-          //
-          UgaDraw->Blt (
-                    UgaDraw,
-                    (EFI_UGA_PIXEL *) (UINTN) &Background,
-                    EfiUgaVideoFill,
-                    0,
-                    0,
-                    DeltaX,
-                    DeltaY + Height,
-                    Width,
-                    EFI_GLYPH_HEIGHT,
-                    Delta
-                    );
-        }
+        //
+        // Print Blank Line at last line
+        //
+        GraphicsOutput->Blt (
+                             GraphicsOutput,
+                             &Background,
+                             EfiBltVideoFill,
+                             0,
+                             0,
+                             DeltaX,
+                             DeltaY + Height,
+                             Width,
+                             EFI_GLYPH_HEIGHT,
+                             Delta
+                             );
       } else {
         This->Mode->CursorRow++;
       }
@@ -1284,19 +1152,13 @@ GraphicsConsoleConOutSetMode (
   GRAPHICS_CONSOLE_DEV            *Private;
   GRAPHICS_CONSOLE_MODE_DATA      *ModeData;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL   *NewLineBuffer;
-  UINT32                          HorizontalResolution;
-  UINT32                          VerticalResolution;
   EFI_GRAPHICS_OUTPUT_PROTOCOL    *GraphicsOutput;
-  EFI_UGA_DRAW_PROTOCOL           *UgaDraw;
-  UINT32                          ColorDepth;
-  UINT32                          RefreshRate;
   EFI_TPL                         OldTpl;
 
   OldTpl = gBS->RaiseTPL (TPL_NOTIFY);
 
   Private   = GRAPHICS_CONSOLE_CON_OUT_DEV_FROM_THIS (This);
   GraphicsOutput = Private->GraphicsOutput;
-  UgaDraw   = Private->UgaDraw;
 
   //
   // Make sure the requested mode number is supported
@@ -1329,8 +1191,9 @@ GraphicsConsoleConOutSetMode (
       goto Done;
     }
     //
-    // Otherwise, the size of the text console and/or the GOP/UGA mode will be changed,
-    // so erase the cursor, and free the LineBuffer for the current mode
+    // Otherwise, the size of the text console and/or the GOP mode will
+    // be changed, so erase the cursor, and free the LineBuffer for the
+    // current mode
     //
     FlushCursor (This);
 
@@ -1356,80 +1219,34 @@ GraphicsConsoleConOutSetMode (
   //
   Private->LineBuffer = NewLineBuffer;
 
-  if (GraphicsOutput != NULL) {
-    if (ModeData->GopModeNumber != GraphicsOutput->Mode->Mode) {
-      //
-      // Either no graphics mode is currently set, or it is set to the wrong resolution, so set the new graphics mode
-      //
-      Status = GraphicsOutput->SetMode (GraphicsOutput, ModeData->GopModeNumber);
-      if (EFI_ERROR (Status)) {
-        //
-        // The mode set operation failed
-        //
-        goto Done;
-      }
-    } else {
-      //
-      // The current graphics mode is correct, so simply clear the entire display
-      //
-      Status = GraphicsOutput->Blt (
-                          GraphicsOutput,
-                          &mGraphicsEfiColors[0],
-                          EfiBltVideoFill,
-                          0,
-                          0,
-                          0,
-                          0,
-                          ModeData->GopWidth,
-                          ModeData->GopHeight,
-                          0
-                          );
-    }
-  } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
+  if (ModeData->GopModeNumber != GraphicsOutput->Mode->Mode) {
     //
-    // Get the current UGA Draw mode information
+    // Either no graphics mode is currently set, or it is set
+    // to the wrong resolution, so set the new graphics mode
     //
-    Status = UgaDraw->GetMode (
-                        UgaDraw,
-                        &HorizontalResolution,
-                        &VerticalResolution,
-                        &ColorDepth,
-                        &RefreshRate
-                        );
-    if (EFI_ERROR (Status) || HorizontalResolution != ModeData->GopWidth || VerticalResolution != ModeData->GopHeight) {
+    Status = GraphicsOutput->SetMode (GraphicsOutput, ModeData->GopModeNumber);
+    if (EFI_ERROR (Status)) {
       //
-      // Either no graphics mode is currently set, or it is set to the wrong resolution, so set the new graphics mode
+      // The mode set operation failed
       //
-      Status = UgaDraw->SetMode (
-                          UgaDraw,
-                          ModeData->GopWidth,
-                          ModeData->GopHeight,
-                          32,
-                          60
-                          );
-      if (EFI_ERROR (Status)) {
-        //
-        // The mode set operation failed
-        //
-        goto Done;
-      }
-    } else {
-      //
-      // The current graphics mode is correct, so simply clear the entire display
-      //
-      Status = UgaDraw->Blt (
-                          UgaDraw,
-                          (EFI_UGA_PIXEL *) (UINTN) &mGraphicsEfiColors[0],
-                          EfiUgaVideoFill,
-                          0,
-                          0,
-                          0,
-                          0,
-                          ModeData->GopWidth,
-                          ModeData->GopHeight,
-                          0
-                          );
+      goto Done;
     }
+  } else {
+    //
+    // The current graphics mode is correct, so simply clear the entire display
+    //
+    Status = GraphicsOutput->Blt (
+                                  GraphicsOutput,
+                                  &mGraphicsEfiColors[0],
+                                  EfiBltVideoFill,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  ModeData->GopWidth,
+                                  ModeData->GopHeight,
+                                  0
+                                  );
   }
 
   //
@@ -1523,7 +1340,6 @@ GraphicsConsoleConOutClearScreen (
   GRAPHICS_CONSOLE_DEV          *Private;
   GRAPHICS_CONSOLE_MODE_DATA    *ModeData;
   EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
-  EFI_UGA_DRAW_PROTOCOL         *UgaDraw;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL Foreground;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL Background;
   EFI_TPL                       OldTpl;
@@ -1539,39 +1355,21 @@ GraphicsConsoleConOutClearScreen (
 
   Private   = GRAPHICS_CONSOLE_CON_OUT_DEV_FROM_THIS (This);
   GraphicsOutput = Private->GraphicsOutput;
-  UgaDraw   = Private->UgaDraw;
   ModeData  = &(Private->ModeData[This->Mode->Mode]);
 
   GetTextColors (This, &Foreground, &Background);
-  if (GraphicsOutput != NULL) {
-    Status = GraphicsOutput->Blt (
-                        GraphicsOutput,
-                        &Background,
-                        EfiBltVideoFill,
-                        0,
-                        0,
-                        0,
-                        0,
-                        ModeData->GopWidth,
-                        ModeData->GopHeight,
-                        0
-                        );
-  } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
-    Status = UgaDraw->Blt (
-                        UgaDraw,
-                        (EFI_UGA_PIXEL *) (UINTN) &Background,
-                        EfiUgaVideoFill,
-                        0,
-                        0,
-                        0,
-                        0,
-                        ModeData->GopWidth,
-                        ModeData->GopHeight,
-                        0
-                        );
-  } else {
-    Status = EFI_UNSUPPORTED;
-  }
+  Status = GraphicsOutput->Blt (
+                                GraphicsOutput,
+                                &Background,
+                                EfiBltVideoFill,
+                                0,
+                                0,
+                                0,
+                                0,
+                                ModeData->GopWidth,
+                                ModeData->GopHeight,
+                                0
+                                );
 
   This->Mode->CursorColumn  = 0;
   This->Mode->CursorRow     = 0;
@@ -1731,8 +1529,7 @@ GetTextColors (
   @param  Count                 The count of Unicode string.
 
   @retval EFI_OUT_OF_RESOURCES  If no memory resource to use.
-  @retval EFI_UNSUPPORTED       If no Graphics Output protocol and UGA Draw
-                                protocol exist.
+  @retval EFI_UNSUPPORTED       If no Graphics Output Protocol exists.
   @retval EFI_SUCCESS           Drawing Unicode string implemented successfully.
 
 **/
@@ -1748,9 +1545,6 @@ DrawUnicodeWeightAtCursorN (
   EFI_IMAGE_OUTPUT                  *Blt;
   EFI_STRING                        String;
   EFI_FONT_DISPLAY_INFO             *FontInfo;
-  EFI_UGA_DRAW_PROTOCOL             *UgaDraw;
-  EFI_HII_ROW_INFO                  *RowInfoArray;
-  UINTN                             RowInfoArraySize;
 
   Private = GRAPHICS_CONSOLE_CON_OUT_DEV_FROM_THIS (This);
   Blt = (EFI_IMAGE_OUTPUT *) AllocateZeroPool (sizeof (EFI_IMAGE_OUTPUT));
@@ -1782,85 +1576,23 @@ DrawUnicodeWeightAtCursorN (
   //
   GetTextColors (This, &FontInfo->ForegroundColor, &FontInfo->BackgroundColor);
 
-  if (Private->GraphicsOutput != NULL) {
-    //
-    // If Graphics Output protocol exists, using HII Font protocol to draw.
-    //
-    Blt->Image.Screen = Private->GraphicsOutput;
+  //
+  // If Graphics Output protocol exists, using HII Font protocol to draw.
+  //
+  Blt->Image.Screen = Private->GraphicsOutput;
 
-    Status = mHiiFont->StringToImage (
-                         mHiiFont,
-                         EFI_HII_IGNORE_IF_NO_GLYPH | EFI_HII_DIRECT_TO_SCREEN | EFI_HII_IGNORE_LINE_BREAK,
-                         String,
-                         FontInfo,
-                         &Blt,
-                         This->Mode->CursorColumn * EFI_GLYPH_WIDTH + Private->ModeData[This->Mode->Mode].DeltaX,
-                         This->Mode->CursorRow * EFI_GLYPH_HEIGHT + Private->ModeData[This->Mode->Mode].DeltaY,
-                         NULL,
-                         NULL,
-                         NULL
-                         );
-
-  } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
-    //
-    // If Graphics Output protocol cannot be found and PcdUgaConsumeSupport enabled,
-    // using UGA Draw protocol to draw.
-    //
-    ASSERT (Private->UgaDraw!= NULL);
-
-    UgaDraw = Private->UgaDraw;
-
-    Blt->Image.Bitmap = AllocateZeroPool (Blt->Width * Blt->Height * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
-    if (Blt->Image.Bitmap == NULL) {
-      FreePool (Blt);
-      FreePool (String);
-      return EFI_OUT_OF_RESOURCES;
-    }
-
-    RowInfoArray = NULL;
-    //
-    //  StringToImage only support blt'ing image to device using GOP protocol. If GOP is not supported in this platform,
-    //  we ask StringToImage to print the string to blt buffer, then blt to device using UgaDraw.
-    //
-    Status = mHiiFont->StringToImage (
-                          mHiiFont,
-                          EFI_HII_IGNORE_IF_NO_GLYPH | EFI_HII_IGNORE_LINE_BREAK,
-                          String,
-                          FontInfo,
-                          &Blt,
-                          This->Mode->CursorColumn * EFI_GLYPH_WIDTH + Private->ModeData[This->Mode->Mode].DeltaX,
-                          This->Mode->CursorRow * EFI_GLYPH_HEIGHT + Private->ModeData[This->Mode->Mode].DeltaY,
-                          &RowInfoArray,
-                          &RowInfoArraySize,
-                          NULL
-                          );
-
-    if (!EFI_ERROR (Status)) {
-      //
-      // Line breaks are handled by caller of DrawUnicodeWeightAtCursorN, so the updated parameter RowInfoArraySize by StringToImage will
-      // always be 1 or 0 (if there is no valid Unicode Char can be printed). ASSERT here to make sure.
-      //
-      ASSERT (RowInfoArraySize <= 1);
-
-      Status = UgaDraw->Blt (
-                          UgaDraw,
-                          (EFI_UGA_PIXEL *) Blt->Image.Bitmap,
-                          EfiUgaBltBufferToVideo,
-                          This->Mode->CursorColumn * EFI_GLYPH_WIDTH  + Private->ModeData[This->Mode->Mode].DeltaX,
-                          (This->Mode->CursorRow) * EFI_GLYPH_HEIGHT + Private->ModeData[This->Mode->Mode].DeltaY,
-                          This->Mode->CursorColumn * EFI_GLYPH_WIDTH  + Private->ModeData[This->Mode->Mode].DeltaX,
-                          (This->Mode->CursorRow) * EFI_GLYPH_HEIGHT + Private->ModeData[This->Mode->Mode].DeltaY,
-                          RowInfoArray[0].LineWidth,
-                          RowInfoArray[0].LineHeight,
-                          Blt->Width * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)
-                          );
-    }
-
-    FreePool (RowInfoArray);
-    FreePool (Blt->Image.Bitmap);
-  } else {
-    Status = EFI_UNSUPPORTED;
-  }
+  Status = mHiiFont->StringToImage (
+                                    mHiiFont,
+                                    EFI_HII_IGNORE_IF_NO_GLYPH | EFI_HII_DIRECT_TO_SCREEN | EFI_HII_IGNORE_LINE_BREAK,
+                                    String,
+                                    FontInfo,
+                                    &Blt,
+                                    This->Mode->CursorColumn * EFI_GLYPH_WIDTH + Private->ModeData[This->Mode->Mode].DeltaX,
+                                    This->Mode->CursorRow * EFI_GLYPH_HEIGHT + Private->ModeData[This->Mode->Mode].DeltaY,
+                                    NULL,
+                                    NULL,
+                                    NULL
+                                    );
 
   if (Blt != NULL) {
     FreePool (Blt);
@@ -1897,7 +1629,6 @@ FlushCursor (
   INTN                                GlyphX;
   INTN                                GlyphY;
   EFI_GRAPHICS_OUTPUT_PROTOCOL        *GraphicsOutput;
-  EFI_UGA_DRAW_PROTOCOL               *UgaDraw;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Foreground;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Background;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION BltChar[EFI_GLYPH_HEIGHT][EFI_GLYPH_WIDTH];
@@ -1912,7 +1643,6 @@ FlushCursor (
 
   Private = GRAPHICS_CONSOLE_CON_OUT_DEV_FROM_THIS (This);
   GraphicsOutput = Private->GraphicsOutput;
-  UgaDraw = Private->UgaDraw;
 
   //
   // In this driver, only narrow character was supported.
@@ -1922,33 +1652,19 @@ FlushCursor (
   //
   GlyphX  = (CurrentMode->CursorColumn * EFI_GLYPH_WIDTH) + Private->ModeData[CurrentMode->Mode].DeltaX;
   GlyphY  = (CurrentMode->CursorRow * EFI_GLYPH_HEIGHT) + Private->ModeData[CurrentMode->Mode].DeltaY;
-  if (GraphicsOutput != NULL) {
-    GraphicsOutput->Blt (
-              GraphicsOutput,
-              (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *) BltChar,
-              EfiBltVideoToBltBuffer,
-              GlyphX,
-              GlyphY,
-              0,
-              0,
-              EFI_GLYPH_WIDTH,
-              EFI_GLYPH_HEIGHT,
-              EFI_GLYPH_WIDTH * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)
-              );
-  } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
-    UgaDraw->Blt (
-              UgaDraw,
-              (EFI_UGA_PIXEL *) (UINTN) BltChar,
-              EfiUgaVideoToBltBuffer,
-              GlyphX,
-              GlyphY,
-              0,
-              0,
-              EFI_GLYPH_WIDTH,
-              EFI_GLYPH_HEIGHT,
-              EFI_GLYPH_WIDTH * sizeof (EFI_UGA_PIXEL)
-              );
-  }
+
+  GraphicsOutput->Blt (
+                       GraphicsOutput,
+                       (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *) BltChar,
+                       EfiBltVideoToBltBuffer,
+                       GlyphX,
+                       GlyphY,
+                       0,
+                       0,
+                       EFI_GLYPH_WIDTH,
+                       EFI_GLYPH_HEIGHT,
+                       EFI_GLYPH_WIDTH * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)
+                       );
 
   GetTextColors (This, &Foreground.Pixel, &Background.Pixel);
 
@@ -1963,33 +1679,18 @@ FlushCursor (
     }
   }
 
-  if (GraphicsOutput != NULL) {
-    GraphicsOutput->Blt (
-              GraphicsOutput,
-              (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *) BltChar,
-              EfiBltBufferToVideo,
-              0,
-              0,
-              GlyphX,
-              GlyphY,
-              EFI_GLYPH_WIDTH,
-              EFI_GLYPH_HEIGHT,
-              EFI_GLYPH_WIDTH * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)
-              );
-  } else if (FeaturePcdGet (PcdUgaConsumeSupport)) {
-    UgaDraw->Blt (
-              UgaDraw,
-              (EFI_UGA_PIXEL *) (UINTN) BltChar,
-              EfiUgaBltBufferToVideo,
-              0,
-              0,
-              GlyphX,
-              GlyphY,
-              EFI_GLYPH_WIDTH,
-              EFI_GLYPH_HEIGHT,
-              EFI_GLYPH_WIDTH * sizeof (EFI_UGA_PIXEL)
-              );
-  }
+  GraphicsOutput->Blt (
+                       GraphicsOutput,
+                       (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *) BltChar,
+                       EfiBltBufferToVideo,
+                       0,
+                       0,
+                       GlyphX,
+                       GlyphY,
+                       EFI_GLYPH_WIDTH,
+                       EFI_GLYPH_HEIGHT,
+                       EFI_GLYPH_WIDTH * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)
+                       );
 
   return EFI_SUCCESS;
 }
