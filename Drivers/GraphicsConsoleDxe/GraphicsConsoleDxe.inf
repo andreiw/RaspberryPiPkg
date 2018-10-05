@@ -42,6 +42,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   UefiBootServicesTableLib
@@ -67,6 +68,7 @@
 [Pcd]
   gEfiMdeModulePkgTokenSpaceGuid.PcdVideoHorizontalResolution ## SOMETIMES_CONSUMES
   gEfiMdeModulePkgTokenSpaceGuid.PcdVideoVerticalResolution   ## SOMETIMES_CONSUMES
+  gRaspberryPiTokenSpaceGuid.PcdGraphicsAutoWrap
 
 [UserExtensions.TianoCore."ExtraFiles"]
   GraphicsConsoleDxeExtra.uni

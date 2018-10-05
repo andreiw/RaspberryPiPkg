@@ -996,7 +996,11 @@ GraphicsConsoleConOutOutputString (
 
       if (This->Mode->CursorColumn >= (INT32) MaxColumn) {
         FlushCursor (This);
-        This->OutputString (This, mCrLfString);
+        if (!PcdGetBool (PcdGraphicsAutoWrap)) {
+          This->Mode->CursorColumn = MaxColumn - 1;
+        } else {
+          This->OutputString (This, mCrLfString);
+        }
         FlushCursor (This);
       }
     }
