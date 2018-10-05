@@ -47,4 +47,20 @@
 
 #define C_ASSERT(e) { typedef char __C_ASSERT__[(e)?0:-1]; __C_ASSERT__ c; (void)c; }
 
+//
+// Iterate through the double linked list. NOT delete safe.
+//
+#define EFI_LIST_FOR_EACH(Entry, ListHead)    \
+  for(Entry = (ListHead)->ForwardLink; Entry != (ListHead); Entry = Entry->ForwardLink)
+
+//
+// Iterate through the double linked list. This is delete-safe.
+// Do not touch NextEntry.
+//
+#define EFI_LIST_FOR_EACH_SAFE(Entry, NextEntry, ListHead)            \
+  for(Entry = (ListHead)->ForwardLink, NextEntry = Entry->ForwardLink;\
+      Entry != (ListHead); Entry = NextEntry, NextEntry = Entry->ForwardLink)
+
+#define EFI_LIST_CONTAINER(Entry, Type, Field) BASE_CR(Entry, Type, Field)
+
 #endif /* UTILS_H */
