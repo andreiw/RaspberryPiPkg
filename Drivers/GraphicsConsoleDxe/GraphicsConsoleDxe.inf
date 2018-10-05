@@ -38,6 +38,7 @@
   LaffStd.c
   GraphicsConsole.c
   GraphicsConsole.h
+  Screenshot.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -46,22 +47,28 @@
 
 [LibraryClasses]
   UefiBootServicesTableLib
+  UefiRuntimeServicesTableLib
   MemoryAllocationLib
+  BmpSupportLib
   BaseMemoryLib
   UefiLib
   UefiDriverEntryPoint
   DebugLib
+  PrintLib
   HiiLib
   PcdLib
 
 [Protocols]
-  gEfiDevicePathProtocolGuid                    ## TO_START
-  gEfiSimpleTextOutProtocolGuid                 ## BY_START
-  gEfiGraphicsOutputProtocolGuid                ## TO_START
-  gEfiHiiFontProtocolGuid                       ## TO_START
-  ## TO_START
-  ## NOTIFY
+  gEfiDevicePathProtocolGuid
+  gEfiSimpleTextOutProtocolGuid
+  gEfiSimpleTextInputExProtocolGuid
+  gEfiGraphicsOutputProtocolGuid
+  gEfiHiiFontProtocolGuid
   gEfiHiiDatabaseProtocolGuid
+  gEfiSimpleFileSystemProtocolGuid
+
+[Guids]
+  gRaspberryPiEventScreenshotGuid
 
 [FeaturePcd]
 

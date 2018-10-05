@@ -20,6 +20,9 @@
 #include <Protocol/SimpleTextOut.h>
 #include <Protocol/GraphicsOutput.h>
 #include <Protocol/DevicePath.h>
+#include <Protocol/SimpleTextInEx.h>
+#include <Protocol/HiiFont.h>
+#include <Protocol/HiiDatabase.h>
 #include <Library/DebugLib.h>
 #include <Library/UefiDriverEntryPoint.h>
 #include <Library/UefiLib.h>
@@ -29,12 +32,8 @@
 #include <Library/HiiLib.h>
 #include <Library/BaseLib.h>
 #include <Library/PcdLib.h>
-
 #include <Guid/MdeModuleHii.h>
-
-#include <Protocol/HiiFont.h>
-#include <Protocol/HiiDatabase.h>
-
+#include <Utils.h>
 
 extern EFI_COMPONENT_NAME_PROTOCOL   gGraphicsConsoleComponentName;
 extern EFI_COMPONENT_NAME2_PROTOCOL  gGraphicsConsoleComponentName2;
@@ -70,6 +69,7 @@ typedef struct {
   EFI_SIMPLE_TEXT_OUTPUT_MODE      SimpleTextOutputMode;
   GRAPHICS_CONSOLE_MODE_DATA       *ModeData;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL    *LineBuffer;
+  EFI_EVENT                        ScreenshotEvent;
 } GRAPHICS_CONSOLE_DEV;
 
 #define GRAPHICS_CONSOLE_CON_OUT_DEV_FROM_THIS(a) \
@@ -589,6 +589,18 @@ CheckModeSupported (
   IN  UINT32  HorizontalResolution,
   IN  UINT32  VerticalResolution,
   OUT UINT32  *CurrentModeNumber
+  );
+
+VOID
+RegisterScreenshotHandlers(
+  VOID
+  );
+
+EFIAPI
+VOID
+ScreenshotEventHandler(
+  IN EFI_EVENT Event,
+  IN VOID *Context
   );
 
 #endif
