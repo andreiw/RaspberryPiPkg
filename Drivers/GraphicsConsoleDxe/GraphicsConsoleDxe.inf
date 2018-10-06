@@ -66,6 +66,7 @@
   gEfiHiiFontProtocolGuid
   gEfiHiiDatabaseProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
+  gExtendedTextOutputProtocolGuid
 
 [Guids]
   gRaspberryPiEventScreenshotGuid
@@ -75,7 +76,6 @@
 [Pcd]
   gEfiMdeModulePkgTokenSpaceGuid.PcdVideoHorizontalResolution ## SOMETIMES_CONSUMES
   gEfiMdeModulePkgTokenSpaceGuid.PcdVideoVerticalResolution   ## SOMETIMES_CONSUMES
-  gRaspberryPiTokenSpaceGuid.PcdGraphicsAutoWrap
 
 [UserExtensions.TianoCore."ExtraFiles"]
   GraphicsConsoleDxeExtra.uni

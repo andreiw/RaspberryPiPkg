@@ -17,8 +17,7 @@
 #define _GRAPHICS_CONSOLE_H_
 
 #include <Uefi.h>
-#include <Protocol/SimpleTextOut.h>
-#include <Protocol/GraphicsOutput.h>
+#include <Protocol/ExtendedTextOut.h>
 #include <Protocol/DevicePath.h>
 #include <Protocol/SimpleTextInEx.h>
 #include <Protocol/HiiFont.h>
@@ -70,6 +69,7 @@ typedef struct {
   GRAPHICS_CONSOLE_MODE_DATA       *ModeData;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL    *LineBuffer;
   EFI_EVENT                        ScreenshotEvent;
+  EXTENDED_TEXT_OUTPUT_PROTOCOL    ExtendedTextOutput;
 } GRAPHICS_CONSOLE_DEV;
 
 #define GRAPHICS_CONSOLE_CON_OUT_DEV_FROM_THIS(a) \

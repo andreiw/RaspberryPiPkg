@@ -488,7 +488,6 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase64|0
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0
-  gRaspberryPiTokenSpaceGuid.PcdGraphicsAutoWrap|TRUE
 
 ################################################################################
 #

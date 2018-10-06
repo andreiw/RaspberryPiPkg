@@ -43,7 +43,12 @@ GRAPHICS_CONSOLE_DEV    mGraphicsConsoleDevTemplate = {
   },
   (GRAPHICS_CONSOLE_MODE_DATA *) NULL,
   (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *) NULL,
-  NULL
+  (EFI_EVENT) NULL,
+  {
+    (EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *) NULL,
+    (EFI_GRAPHICS_OUTPUT_PROTOCOL *) NULL,
+    TRUE,
+  }
 };
 
 GRAPHICS_CONSOLE_MODE_DATA mGraphicsConsoleModeData[] = {
@@ -392,6 +397,9 @@ GraphicsConsoleControllerDriverStart (
     goto Error;
   }
 
+  Private->ExtendedTextOutput.TextOut = &(Private->SimpleTextOutput);
+  Private->ExtendedTextOutput.GraphicsOutput = Private->GraphicsOutput;
+
   HorizontalResolution  = PcdGet32 (PcdVideoHorizontalResolution);
   VerticalResolution    = PcdGet32 (PcdVideoVerticalResolution);
 
@@ -527,6 +535,8 @@ GraphicsConsoleControllerDriverStart (
                   &Controller,
                   &gEfiSimpleTextOutProtocolGuid,
                   &Private->SimpleTextOutput,
+                  &gExtendedTextOutputProtocolGuid,
+                  &Private->ExtendedTextOutput,
                   NULL
                   );
 
@@ -606,10 +616,13 @@ GraphicsConsoleControllerDriverStop (
 
   Private = GRAPHICS_CONSOLE_CON_OUT_DEV_FROM_THIS (SimpleTextOutput);
 
-  Status = gBS->UninstallProtocolInterface (
+  Status = gBS->UninstallMultipleProtocolInterfaces (
                   Controller,
                   &gEfiSimpleTextOutProtocolGuid,
-                  &Private->SimpleTextOutput
+                  &Private->SimpleTextOutput,
+                  &gExtendedTextOutputProtocolGuid,
+                  &Private->ExtendedTextOutput,
+                  NULL
                   );
 
   if (!EFI_ERROR (Status)) {
@@ -1015,7 +1028,7 @@ GraphicsConsoleConOutOutputString (
 
       if (This->Mode->CursorColumn >= (INT32) MaxColumn) {
         FlushCursor (This);
-        if (!PcdGetBool (PcdGraphicsAutoWrap)) {
+        if (!Private->ExtendedTextOutput.AutoWrap) {
           This->Mode->CursorColumn = MaxColumn - 1;
         } else {
           This->OutputString (This, mCrLfString);
@@ -1842,5 +1855,3 @@ InitializeGraphicsConsole (
 
   return Status;
 }
-
-
