@@ -20,7 +20,7 @@
   MODULE_UNI_FILE                = GraphicsConsoleDxe.uni
   FILE_GUID                      = CCCB0C28-4B24-11d5-9A5A-0090273FC14D
   MODULE_TYPE                    = UEFI_DRIVER
-  VERSION_STRING                 = 1.0
+  VERSION_STRING                 = 1.1
   ENTRY_POINT                    = InitializeGraphicsConsole
 
 #
@@ -35,7 +35,7 @@
 
 [Sources]
   ComponentName.c
-  LaffStd.c
+  NewFont.c
   GraphicsConsole.c
   GraphicsConsole.h
   Screenshot.c
