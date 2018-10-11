@@ -13,18 +13,7 @@
 *
 **/
 
-#include <Library/BaseLib.h>
-#include <Library/DebugLib.h>
-#include <Library/BaseMemoryLib.h>
-#include <Library/UefiBootServicesTableLib.h>
-#include <Library/UefiLib.h>
-#include <Library/PcdLib.h>
-#include <Library/IoLib.h>
-#include <Library/TimerLib.h>
-#include <Protocol/GraphicsOutput.h>
-#include <Protocol/DevicePath.h>
-#include <Protocol/RaspberryPiFirmware.h>
-#include <Protocol/Cpu.h>
+#include "DisplayDxe.h"
 
 #define POS_TO_FB(posX, posY) ((UINT8 *)                                \
                                ((UINTN)This->Mode->FrameBufferBase +    \
@@ -36,7 +25,7 @@ typedef struct {
   EFI_DEVICE_PATH EndDevicePath;
 } DISPLAY_DEVICE_PATH;
 
-DISPLAY_DEVICE_PATH mDisplayDevicePath =
+DISPLAY_DEVICE_PATH DisplayProtoDevicePath =
   {
     {
       {
@@ -96,7 +85,7 @@ DisplayBlt(
            IN  UINTN                                   Delta         OPTIONAL
            );
 
-STATIC EFI_GRAPHICS_OUTPUT_PROTOCOL mDisplay = {
+EFI_GRAPHICS_OUTPUT_PROTOCOL DisplayProto = {
   DisplayQueryMode,
   DisplaySetMode,
   DisplayBlt,
@@ -244,7 +233,7 @@ DisplayDxeInitialize (
   UINTN FbPitch;
   EFI_STATUS Status;
   EFI_PHYSICAL_ADDRESS FbBase;
-  EFI_HANDLE gUEFIDisplayHandle = NULL;
+  EFI_HANDLE UEFIDisplayHandle = NULL;
   EFI_GUID GraphicsOutputProtocolGuid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
   EFI_GUID DevicePathProtocolGuid = EFI_DEVICE_PATH_PROTOCOL_GUID;
   STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL *FwProtocol;
@@ -263,11 +252,11 @@ DisplayDxeInitialize (
     return Status;
   }
 
-  if (mDisplay.Mode == NULL){
+  if (DisplayProto.Mode == NULL){
     Status = gBS->AllocatePool(
                                EfiBootServicesData,
                                sizeof(EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE),
-                               (VOID **)&mDisplay.Mode
+                               (VOID **)&DisplayProto.Mode
                                );
     ASSERT_EFI_ERROR(Status);
 
@@ -275,14 +264,14 @@ DisplayDxeInitialize (
       return Status;
     }
 
-    ZeroMem(mDisplay.Mode,sizeof(EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE));
+    ZeroMem(DisplayProto.Mode,sizeof(EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE));
   }
 
-  if(mDisplay.Mode->Info == NULL){
+  if(DisplayProto.Mode->Info == NULL){
     Status = gBS->AllocatePool(
                                EfiBootServicesData,
                                sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION),
-                               (VOID **)&mDisplay.Mode->Info
+                               (VOID **)&DisplayProto.Mode->Info
                                );
     ASSERT_EFI_ERROR(Status);
 
@@ -290,7 +279,7 @@ DisplayDxeInitialize (
       return Status;
     }
 
-    ZeroMem(mDisplay.Mode->Info,sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION));
+    ZeroMem(DisplayProto.Mode->Info,sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION));
   }
 
   // Query the current display resolution from mailbox
@@ -332,34 +321,37 @@ DisplayDxeInitialize (
   }
 
   // Fill out mode information
-  mDisplay.Mode->MaxMode = 1;
-  mDisplay.Mode->Mode = 0;
-  mDisplay.Mode->Info->Version = 0;
+  DisplayProto.Mode->MaxMode = 1;
+  DisplayProto.Mode->Mode = 0;
+  DisplayProto.Mode->Info->Version = 0;
 
+  //
   // There is no way to communicate pitch back to OS. OS and even UEFI
-
-  // expects a fully linear frame buffer. So the width should
+  // expect a fully linear frame buffer. So the width should
   // be based on the frame buffer's pitch value. In some cases VC
   // firmware would allocate a frame buffer with some padding
   // presumeably to be 8 byte align.
-  mDisplay.Mode->Info->HorizontalResolution = FbPitch / PI2_BYTES_PER_PIXEL;
-  mDisplay.Mode->Info->VerticalResolution = Height;
+  //
+  DisplayProto.Mode->Info->HorizontalResolution = FbPitch / PI2_BYTES_PER_PIXEL;
+  DisplayProto.Mode->Info->VerticalResolution = Height;
 
   // NOTE: Windows REQUIRES BGR in 32 or 24 bit format.
-  mDisplay.Mode->Info->PixelFormat = PixelBlueGreenRedReserved8BitPerColor;
-  mDisplay.Mode->Info->PixelsPerScanLine = FbPitch / PI2_BYTES_PER_PIXEL;;
-  mDisplay.Mode->SizeOfInfo = sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION);
-  mDisplay.Mode->FrameBufferBase = FbBase;
-  mDisplay.Mode->FrameBufferSize = FbSize;
+  DisplayProto.Mode->Info->PixelFormat = PixelBlueGreenRedReserved8BitPerColor;
+  DisplayProto.Mode->Info->PixelsPerScanLine = FbPitch / PI2_BYTES_PER_PIXEL;;
+  DisplayProto.Mode->SizeOfInfo = sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION);
+  DisplayProto.Mode->FrameBufferBase = FbBase;
+  DisplayProto.Mode->FrameBufferSize = FbSize;
 
   Status = gBS->InstallMultipleProtocolInterfaces (
-                                                   &gUEFIDisplayHandle,
+                                                   &UEFIDisplayHandle,
                                                    &DevicePathProtocolGuid,
-                                                   &mDisplayDevicePath,
+                                                   &DisplayProtoDevicePath,
                                                    &GraphicsOutputProtocolGuid,
-                                                   &mDisplay,
+                                                   &DisplayProto,
                                                    NULL);
   ASSERT_EFI_ERROR (Status);
+
+  RegisterScreenshotHandlers();
 
   return Status;
 }

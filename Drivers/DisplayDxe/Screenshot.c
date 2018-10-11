@@ -39,7 +39,7 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "GraphicsConsole.h"
+#include "DisplayDxe.h"
 #include <Protocol/SimpleFileSystem.h>
 #include <Library/PrintLib.h>
 #include <Library/BmpSupportLib.h>
@@ -56,7 +56,7 @@
 
 EFI_STATUS
 ShowStatus (
-  IN GRAPHICS_CONSOLE_DEV *Dev,
+  IN EFI_GRAPHICS_OUTPUT_PROTOCOL *GraphicsOutput,
   IN UINT8 Red,
   IN UINT8 Green,
   IN UINT8 Blue
@@ -74,20 +74,20 @@ ShowStatus (
   }
 
   // Backup current image.
-  Dev->GraphicsOutput->Blt(Dev->GraphicsOutput, Backup,
-                           EfiBltVideoToBltBuffer, 0, 0, 0, 0,
-                           STATUS_SQUARE_SIDE, STATUS_SQUARE_SIDE, 0);
+  GraphicsOutput->Blt(GraphicsOutput, Backup,
+                      EfiBltVideoToBltBuffer, 0, 0, 0, 0,
+                      STATUS_SQUARE_SIDE, STATUS_SQUARE_SIDE, 0);
 
   // Draw the status square.
-  Dev->GraphicsOutput->Blt(Dev->GraphicsOutput, Square,
-                           EfiBltBufferToVideo, 0, 0, 0, 0,
-                           STATUS_SQUARE_SIDE, STATUS_SQUARE_SIDE, 0);
+  GraphicsOutput->Blt(GraphicsOutput, Square,
+                      EfiBltBufferToVideo, 0, 0, 0, 0,
+                      STATUS_SQUARE_SIDE, STATUS_SQUARE_SIDE, 0);
 
   // Wait 500ms.
   gBS->Stall(500*1000);
 
   // Restore the backup.
-  Dev->GraphicsOutput->Blt(Dev->GraphicsOutput, Backup,
+  GraphicsOutput->Blt(GraphicsOutput, Backup,
                       EfiBltBufferToVideo, 0, 0, 0, 0,
                       STATUS_SQUARE_SIDE, STATUS_SQUARE_SIDE, 0);
   return EFI_SUCCESS;
@@ -158,17 +158,16 @@ FindWritableFs (
   return Status;
 }
 
-EFIAPI
+STATIC
 VOID
-ScreenshotEventHandler(
-  IN EFI_EVENT Event,
-  IN VOID *Context
+TakeScreenshot(
+  VOID
   )
 {
   VOID *BmpImage = NULL;
   EFI_FILE_PROTOCOL *Fs = NULL;
   EFI_FILE_PROTOCOL *File = NULL;
-  GRAPHICS_CONSOLE_DEV *Dev = Context;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL *GraphicsOutput = &DisplayProto;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Image = NULL;
   EFI_STATUS Status;
   CHAR16 FileName[8+1+3+1];
@@ -181,11 +180,11 @@ ScreenshotEventHandler(
 
   Status = FindWritableFs(&Fs);
   if (EFI_ERROR (Status)) {
-    ShowStatus(Dev, STATUS_YELLOW);
+    ShowStatus(GraphicsOutput, STATUS_YELLOW);
   }
 
-  ScreenWidth  = Dev->GraphicsOutput->Mode->Info->HorizontalResolution;
-  ScreenHeight = Dev->GraphicsOutput->Mode->Info->VerticalResolution;
+  ScreenWidth  = GraphicsOutput->Mode->Info->HorizontalResolution;
+  ScreenHeight = GraphicsOutput->Mode->Info->VerticalResolution;
   ImageSize = ScreenWidth * ScreenHeight;
 
   Status = gRT->GetTime(&Time, NULL);
@@ -196,17 +195,19 @@ ScreenshotEventHandler(
     UnicodeSPrint(FileName, sizeof(FileName), L"scrnshot.bmp");
   }
 
-  Image = AllocatePool(ImageSize * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
-  if (Image == NULL) {
-    ShowStatus(Dev, STATUS_RED);
+  Status = gBS->AllocatePool(EfiBootServicesData,
+                             ImageSize * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL),
+                             (VOID **) &Image);
+  if (EFI_ERROR (Status)) {
+    ShowStatus(GraphicsOutput, STATUS_RED);
     goto done;
   }
 
-  Status = Dev->GraphicsOutput->Blt(Dev->GraphicsOutput, Image,
-                                    EfiBltVideoToBltBuffer, 0, 0, 0, 0,
-                                    ScreenWidth, ScreenHeight, 0);
+  Status = GraphicsOutput->Blt(GraphicsOutput, Image,
+                               EfiBltVideoToBltBuffer, 0, 0, 0, 0,
+                               ScreenWidth, ScreenHeight, 0);
   if (EFI_ERROR(Status)) {
-    ShowStatus(Dev, STATUS_RED);
+    ShowStatus(GraphicsOutput, STATUS_RED);
     goto done;
   }
 
@@ -219,39 +220,39 @@ ScreenshotEventHandler(
   }
 
   if (Index == ImageSize) {
-    ShowStatus(Dev, STATUS_BLUE);
+    ShowStatus(GraphicsOutput, STATUS_BLUE);
     goto done;
   }
 
   Status = TranslateGopBltToBmp(Image, ScreenHeight, ScreenWidth,
                                 &BmpImage, (UINT32 *) &BmpSize);
   if (EFI_ERROR(Status)) {
-    ShowStatus(Dev, STATUS_RED);
+    ShowStatus(GraphicsOutput, STATUS_RED);
     goto done;
   }
 
   Status = Fs->Open(Fs, &File, FileName, EFI_FILE_MODE_CREATE |
                     EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
   if (EFI_ERROR (Status)) {
-    ShowStatus(Dev, STATUS_RED);
+    ShowStatus(GraphicsOutput, STATUS_RED);
     goto done;
   }
 
   Status = File->Write(File, &BmpSize, BmpImage);
   File->Close(File);
   if (EFI_ERROR (Status)) {
-    ShowStatus(Dev, STATUS_RED);
+    ShowStatus(GraphicsOutput, STATUS_RED);
     goto done;
   }
 
-  ShowStatus(Dev, STATUS_GREEN);
+  ShowStatus(GraphicsOutput, STATUS_GREEN);
 done:
   if (BmpImage != NULL) {
-    FreePool (BmpImage);
+    gBS->FreePool (BmpImage);
   }
 
   if (Image != NULL) {
-    FreePool (Image);
+    gBS->FreePool (Image);
   }
 }
 
@@ -262,7 +263,7 @@ ScreenshotKeyHandler (
   IN EFI_KEY_DATA *KeyData
   )
 {
-  EfiEventGroupSignal(&gRaspberryPiEventScreenshotGuid);
+  TakeScreenshot();
   return EFI_SUCCESS;
 }
 

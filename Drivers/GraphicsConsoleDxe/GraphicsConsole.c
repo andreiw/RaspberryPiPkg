@@ -43,7 +43,6 @@ GRAPHICS_CONSOLE_DEV    mGraphicsConsoleDevTemplate = {
   },
   (GRAPHICS_CONSOLE_MODE_DATA *) NULL,
   (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *) NULL,
-  (EFI_EVENT) NULL,
   {
     (EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *) NULL,
     (EFI_GRAPHICS_OUTPUT_PROTOCOL *) NULL,
@@ -516,18 +515,6 @@ GraphicsConsoleControllerDriverStart (
     }  
   DEBUG_CODE_END ();
 
-  Status = gBS->CreateEventEx (
-                               EVT_NOTIFY_SIGNAL,
-                               TPL_CALLBACK,
-                               ScreenshotEventHandler,
-                               Private,
-                               &gRaspberryPiEventScreenshotGuid,
-                               &Private->ScreenshotEvent
-                               );
-  if (EFI_ERROR (Status)) {
-    goto Error;
-  }
-
   //
   // Install protocol interfaces for the Graphics Console device.
   //
@@ -542,9 +529,6 @@ GraphicsConsoleControllerDriverStart (
 
 Error:
   if (EFI_ERROR (Status)) {
-    if (Private->ScreenshotEvent != NULL) {
-      gBS->CloseEvent (Private->ScreenshotEvent);
-    }
     //
     // Close GOP.
     //
@@ -626,9 +610,6 @@ GraphicsConsoleControllerDriverStop (
                   );
 
   if (!EFI_ERROR (Status)) {
-    if (Private->ScreenshotEvent != NULL) {
-      gBS->CloseEvent (Private->ScreenshotEvent);
-    }
     //
     // Close GOP.
     //
@@ -1837,8 +1818,6 @@ InitializeGraphicsConsole (
     NULL,
     &mHiiRegistration
     );
-
-  RegisterScreenshotHandlers();
 
   //
   // Install driver model protocol(s).

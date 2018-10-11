@@ -38,7 +38,6 @@
   NewFont.c
   GraphicsConsole.c
   GraphicsConsole.h
-  Screenshot.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -54,22 +53,16 @@
   UefiLib
   UefiDriverEntryPoint
   DebugLib
-  PrintLib
   HiiLib
   PcdLib
 
 [Protocols]
   gEfiDevicePathProtocolGuid
   gEfiSimpleTextOutProtocolGuid
-  gEfiSimpleTextInputExProtocolGuid
   gEfiGraphicsOutputProtocolGuid
   gEfiHiiFontProtocolGuid
   gEfiHiiDatabaseProtocolGuid
-  gEfiSimpleFileSystemProtocolGuid
   gExtendedTextOutputProtocolGuid
-
-[Guids]
-  gRaspberryPiEventScreenshotGuid
 
 [FeaturePcd]
 

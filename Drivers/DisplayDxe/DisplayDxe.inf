@@ -33,6 +33,7 @@
 
 [Sources]
   DisplayDxe.c
+  Screenshot.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -47,11 +48,15 @@
   UefiDriverEntryPoint
   IoLib
   TimerLib
+  BmpSupportLib
+  UefiRuntimeServicesTableLib
 
 [Protocols]
   gEfiGraphicsOutputProtocolGuid ## PRODUCES
   gRaspberryPiFirmwareProtocolGuid ## CONSUMES
   gEfiCpuArchProtocolGuid
+  gEfiSimpleFileSystemProtocolGuid
+  gEfiSimpleTextInputExProtocolGuid
 
 [Guids]
 
