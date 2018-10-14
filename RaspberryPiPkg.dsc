@@ -465,6 +465,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   # Display-related.
   #
   gRaspberryPiTokenSpaceGuid.PcdDisplayEnableVModes|L"DisplayEnableVModes"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdDisplayEnableSShot|L"DisplayEnableSShot"|gConfigDxeFormSetGuid|0x0|1
 
   #
   # Common UEFI ones.

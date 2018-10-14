@@ -218,6 +218,14 @@ SetupVariables (
     PcdSet32 (PcdDisplayEnableVModes, PcdGet32 (PcdDisplayEnableVModes));
   }
 
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"DisplayEnableSShot",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdDisplayEnableSShot, PcdGet32 (PcdDisplayEnableSShot));
+  }
+
   return EFI_SUCCESS;
 }
   

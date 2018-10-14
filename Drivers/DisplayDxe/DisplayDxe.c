@@ -530,7 +530,11 @@ DriverStart (
     goto done;
   }
 
-  RegisterScreenshotHandlers();
+  if (PcdGet32(PcdDisplayEnableSShot)) {
+    RegisterScreenshotHandlers();
+  } else {
+    DEBUG((EFI_D_INFO, "Screenshot capture disabled\n"));
+  }
 
 done:
   if (EFI_ERROR (Status)) {

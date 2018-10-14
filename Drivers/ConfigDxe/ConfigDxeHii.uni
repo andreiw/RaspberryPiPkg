@@ -101,6 +101,11 @@
 #string STR_DISPLAY_VMODES_ENABLE   #language en-US "Also support 640x480, 800x600, 1024x768, 720p and 1080p"
 #string STR_DISPLAY_VMODES_DISABLE  #language en-US "Only native resolution"
 
+#string STR_DISPLAY_SSHOT_PROMPT    #language en-US "Screenshot Support"
+#string STR_DISPLAY_SSHOT_HELP      #language en-US "Save screen capture as a BMP on the first writable file system found"
+#string STR_DISPLAY_SSHOT_ENABLE    #language en-US "Control-Alt-F12"
+#string STR_DISPLAY_SSHOT_DISABLE   #language en-US "Not Enabled"
+
 /*
  * Debugging settings go here.
  */

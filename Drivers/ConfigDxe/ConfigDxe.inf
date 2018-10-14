@@ -73,6 +73,7 @@
   gRaspberryPiTokenSpaceGuid.PcdDebugEnableJTAG
   gRaspberryPiTokenSpaceGuid.PcdDebugShowUEFIExit
   gRaspberryPiTokenSpaceGuid.PcdDisplayEnableVModes
+  gRaspberryPiTokenSpaceGuid.PcdDisplayEnableSShot
 
 [FeaturePcd]
 
