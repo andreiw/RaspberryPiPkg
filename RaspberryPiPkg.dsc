@@ -462,6 +462,11 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   gRaspberryPiTokenSpaceGuid.PcdDebugShowUEFIExit|L"DebugShowUEFIExit"|gConfigDxeFormSetGuid|0x0|0
 
   #
+  # Display-related.
+  #
+  gRaspberryPiTokenSpaceGuid.PcdDisplayEnableVModes|L"DisplayEnableVModes"|gConfigDxeFormSetGuid|0x0|0
+
+  #
   # Common UEFI ones.
   #
 
@@ -479,10 +484,9 @@ DEFINE HYP_LOG_MASK = 0xffffffff
 [PcdsDynamicDefault.common]
   #
   # Set video resolution for boot options and for text setup.
-  # PlatformDxe can set the former at runtime.
   #
-  gEfiMdeModulePkgTokenSpaceGuid.PcdVideoHorizontalResolution|800
-  gEfiMdeModulePkgTokenSpaceGuid.PcdVideoVerticalResolution|600
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVideoHorizontalResolution|0
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVideoVerticalResolution|0
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetupVideoHorizontalResolution|640
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetupVideoVerticalResolution|480
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase64|0

@@ -210,6 +210,14 @@ SetupVariables (
     PcdSet32 (PcdDebugShowUEFIExit, PcdGet32 (PcdDebugShowUEFIExit));
   }
 
+  Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"DisplayEnableVModes",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdDisplayEnableVModes, PcdGet32 (PcdDisplayEnableVModes));
+  }
+
   return EFI_SUCCESS;
 }
   

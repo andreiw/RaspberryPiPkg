@@ -152,7 +152,7 @@ FindWritableFs (
   }
 
   if (HandleBuffer) {
-    gBS->FreePool(HandleBuffer);
+    FreePool(HandleBuffer);
   }
 
   return Status;
@@ -167,7 +167,7 @@ TakeScreenshot(
   VOID *BmpImage = NULL;
   EFI_FILE_PROTOCOL *Fs = NULL;
   EFI_FILE_PROTOCOL *File = NULL;
-  EFI_GRAPHICS_OUTPUT_PROTOCOL *GraphicsOutput = &DisplayProto;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL *GraphicsOutput = &gDisplayProto;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Image = NULL;
   EFI_STATUS Status;
   CHAR16 FileName[8+1+3+1];
@@ -195,10 +195,9 @@ TakeScreenshot(
     UnicodeSPrint(FileName, sizeof(FileName), L"scrnshot.bmp");
   }
 
-  Status = gBS->AllocatePool(EfiBootServicesData,
-                             ImageSize * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL),
-                             (VOID **) &Image);
-  if (EFI_ERROR (Status)) {
+  Image = AllocatePool(ImageSize * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
+  if (Image == NULL) {
+    Status = EFI_OUT_OF_RESOURCES;
     ShowStatus(GraphicsOutput, STATUS_RED);
     goto done;
   }
@@ -248,11 +247,11 @@ TakeScreenshot(
   ShowStatus(GraphicsOutput, STATUS_GREEN);
 done:
   if (BmpImage != NULL) {
-    gBS->FreePool (BmpImage);
+    FreePool (BmpImage);
   }
 
   if (Image != NULL) {
-    gBS->FreePool (Image);
+    FreePool (Image);
   }
 }
 

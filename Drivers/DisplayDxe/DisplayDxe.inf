@@ -34,6 +34,7 @@
 [Sources]
   DisplayDxe.c
   Screenshot.c
+  ComponentName.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -52,11 +53,16 @@
   UefiRuntimeServicesTableLib
 
 [Protocols]
-  gEfiGraphicsOutputProtocolGuid ## PRODUCES
-  gRaspberryPiFirmwareProtocolGuid ## CONSUMES
+  gEfiLoadedImageProtocolGuid
+  gEfiDevicePathProtocolGuid
+  gEfiGraphicsOutputProtocolGuid
+  gRaspberryPiFirmwareProtocolGuid
   gEfiCpuArchProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
   gEfiSimpleTextInputExProtocolGuid
+
+[Pcd]
+  gRaspberryPiTokenSpaceGuid.PcdDisplayEnableVModes
 
 [Guids]
 
