@@ -1,11 +1,11 @@
-#/** @file
+## @file
 #
-#  Copyright (c), 2017, Andrei Warkentin <andrey.warkentin@gmail.com>
-#  Copyright (c) 2015-2016, Linaro Limited. All rights reserved.
+#  Copyright (c) 2017 - 2018, Andrei Warkentin <andrey.warkentin@gmail.com>
+#  Copyright (c) 2015 - 2016, Linaro Limited. All rights reserved.
 #
 #  SPDX-License-Identifier:     GPL-2.0+
 #
-#**/
+##
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -14,10 +14,11 @@
   MODULE_TYPE                    = UEFI_DRIVER
   VERSION_STRING                 = 1.0
   ENTRY_POINT                    = DwUsbHostEntryPoint
-  UNLOAD_IMAGE			 = DwUsbHostExitPoint
 
 [Sources.common]
   DwUsbHostDxe.c
+  DriverBinding.c
+  ComponentName.c
 
 [Packages]
   ArmPkg/ArmPkg.dec

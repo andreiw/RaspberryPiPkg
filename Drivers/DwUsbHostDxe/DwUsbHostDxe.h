@@ -1,14 +1,13 @@
 /** @file
-
-    Copyright (c), 2017, Andrey Warkentin <andrey.warkentin@gmail.com>
-    Copyright (c) 2015-2016, Linaro Limited. All rights reserved.
-
-    Copyright (C) 2012 Oleksandr Tymoshenko <gonzo@freebsd.org>
-    Copyright (C) 2014 Marek Vasut <marex@denx.de>
-
-    SPDX-License-Identifier:     GPL-2.0+
-
-**/
+ *
+ *  Copyright (c) 2017 - 2018, Andrey Warkentin <andrey.warkentin@gmail.com>
+ *  Copyright (c) 2015 - 2016, Linaro Limited. All rights reserved.
+ *  Copyright (C) 2012 Oleksandr Tymoshenko <gonzo@freebsd.org>
+ *  Copyright (C) 2014 Marek Vasut <marex@denx.de>
+ *
+ *  SPDX-License-Identifier: GPL-2.0+
+ *
+ **/
 
 #ifndef _DWUSBHOSTDXE_H_
 #define _DWUSBHOSTDXE_H_
@@ -99,13 +98,10 @@ typedef struct _DWUSB_DEFERRED_REQ {
 
 typedef struct _DWUSB_OTGHC_DEV {
   UINTN                           Signature;
-  EFI_HANDLE                      DeviceHandle;
 
   EFI_USB2_HC_PROTOCOL            DwUsbOtgHc;
 
   EFI_USB_HC_STATE                DwHcState;
-
-  EFI_DW_DEVICE_PATH              DevicePath;
 
   EFI_EVENT                       ExitBootServiceEvent;
 
@@ -127,5 +123,37 @@ typedef struct _DWUSB_OTGHC_DEV {
    */
   UINT16                          LastMicroFrame;
 } DWUSB_OTGHC_DEV;
+
+extern EFI_COMPONENT_NAME_PROTOCOL gComponentName;
+extern EFI_COMPONENT_NAME2_PROTOCOL gComponentName2;
+
+EFI_STATUS
+CreateDwUsbHc (
+  OUT DWUSB_OTGHC_DEV **OutDwHc
+  );
+
+VOID
+DestroyDwUsbHc (
+  IN  DWUSB_OTGHC_DEV *Dev
+  );
+
+EFI_STATUS
+EFIAPI
+DwHcReset (
+  IN  EFI_USB2_HC_PROTOCOL *This,
+  IN  UINT16               Attributes
+  );
+
+EFI_STATUS
+EFIAPI
+DwHcSetState (
+  IN  EFI_USB2_HC_PROTOCOL *This,
+  IN  EFI_USB_HC_STATE     State
+  );
+
+VOID
+DwHcQuiesce (
+  IN  DWUSB_OTGHC_DEV *DwHc
+  );
 
 #endif //_DWUSBHOSTDXE_H_

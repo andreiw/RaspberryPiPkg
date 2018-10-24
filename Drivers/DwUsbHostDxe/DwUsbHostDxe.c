@@ -1,13 +1,13 @@
 /** @file
-
-    Copyright (c), 2017, Andrey Warkentin <andrey.warkentin@gmail.com>
-    Copyright (c) 2015-2016, Linaro Limited. All rights reserved.
-    Copyright (C) 2012 Oleksandr Tymoshenko <gonzo@freebsd.org>
-    Copyright (C) 2014 Marek Vasut <marex@denx.de>
-
-    SPDX-License-Identifier:     GPL-2.0+
-
-**/
+ *
+ *  Copyright (c) 2017 - 2018, Andrey Warkentin <andrey.warkentin@gmail.com>
+ *  Copyright (c) 2015 - 2016, Linaro Limited. All rights reserved.
+ *  Copyright (C) 2012 Oleksandr Tymoshenko <gonzo@freebsd.org>
+ *  Copyright (C) 2014 Marek Vasut <marex@denx.de>
+ *
+ *  SPDX-License-Identifier: GPL-2.0+
+ *
+ **/
 
 #include "DwUsbHostDxe.h"
 #include "DwcHw.h"
@@ -28,22 +28,6 @@
  *
  * https://www.quicklogic.com/assets/pdf/data-sheets/QL-Hi-Speed-USB-2.0-OTG-Controller-Data-Sheet.pdf
  */
-
-EFI_DW_DEVICE_PATH DwHcDevicePath =
-  {
-    {
-      {
-        HARDWARE_DEVICE_PATH,
-        HW_VENDOR_DP,
-        {
-          (UINT8)(sizeof(VENDOR_DEVICE_PATH)),
-          (UINT8)((sizeof(VENDOR_DEVICE_PATH)) >> 8),
-        }
-      },
-      EFI_CALLER_ID_GUID
-    },
-    { END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE, { sizeof (EFI_DEVICE_PATH_PROTOCOL), 0} }
-  };
 
 typedef enum {
   XFER_NOT_HALTED,
@@ -68,11 +52,11 @@ EFI_STATUS DwCoreInit (IN DWUSB_OTGHC_DEV *DwHc,
 
 UINT32
 Wait4Bit (
-          IN EFI_EVENT Timeout,
-          IN UINT32    Reg,
-          IN UINT32    Mask,
-          IN BOOLEAN   Set
-          )
+  IN  EFI_EVENT Timeout,
+  IN  UINT32    Reg,
+  IN  UINT32    Mask,
+  IN  BOOLEAN   Set
+  )
 {
   UINT32 Value;
 
@@ -95,14 +79,14 @@ Wait4Bit (
 
 CHANNEL_HALT_REASON
 Wait4Chhltd (
-             IN DWUSB_OTGHC_DEV *DwHc,
-             IN EFI_EVENT       Timeout,
-             IN UINT32          Channel,
-             IN UINT32          *Sub,
-             IN UINT32          *Toggle,
-             IN BOOLEAN         IgnoreAck,
-             IN SPLIT_CONTROL   *Split
-             )
+  IN  DWUSB_OTGHC_DEV *DwHc,
+  IN  EFI_EVENT       Timeout,
+  IN  UINT32          Channel,
+  IN  UINT32          *Sub,
+  IN  UINT32          *Toggle,
+  IN  BOOLEAN         IgnoreAck,
+  IN  SPLIT_CONTROL   *Split
+  )
 {
   INT32   Ret;
   UINT32  Hcint, Hctsiz;
@@ -174,17 +158,17 @@ Wait4Chhltd (
 
 VOID
 DwOtgHcInit (
-             IN DWUSB_OTGHC_DEV    *DwHc,
-             IN UINT8              HcNum,
-             IN EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
-             IN UINT8              DeviceSpeed,
-             IN UINT8              DevAddr,
-             IN UINT8              Endpoint,
-             IN UINT8              EpDir,
-             IN UINT8              EpType,
-             IN UINT16             MaxPacket,
-             IN SPLIT_CONTROL *SplitControl
-             )
+  IN  DWUSB_OTGHC_DEV    *DwHc,
+  IN  UINT8              HcNum,
+  IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
+  IN  UINT8              DeviceSpeed,
+  IN  UINT8              DevAddr,
+  IN  UINT8              Endpoint,
+  IN  UINT8              EpDir,
+  IN  UINT8              EpType,
+  IN  UINT16             MaxPacket,
+  IN  SPLIT_CONTROL *SplitControl
+  )
 {
   UINT32 Split = 0;
   UINT32 Hcchar = (DevAddr << DWC2_HCCHAR_DEVADDR_OFFSET) |
@@ -213,9 +197,9 @@ DwOtgHcInit (
 
 EFI_STATUS
 DwCoreReset (
-             IN DWUSB_OTGHC_DEV *DwHc,
-             IN EFI_EVENT Timeout
-             )
+  IN  DWUSB_OTGHC_DEV *DwHc,
+  IN  EFI_EVENT Timeout
+  )
 {
   UINT32  Status;
 
@@ -240,22 +224,22 @@ DwCoreReset (
 STATIC
 EFI_STATUS
 DwHcTransfer (
-              IN     DWUSB_OTGHC_DEV        *DwHc,
-              IN     EFI_EVENT              Timeout,
-              IN     UINT32                 Channel,
-              IN     EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
-              IN     UINT8                  DeviceSpeed,
-              IN     UINT8                  DeviceAddress,
-              IN     UINTN                  MaximumPacketLength,
-              IN OUT UINT32                 *Pid,
-              IN     UINT32                 TransferDirection,
-              IN OUT VOID                   *Data,
-              IN OUT UINTN                  *DataLength,
-              IN     UINT32                 EpAddress,
-              IN     UINT32                 EpType,
-              OUT    UINT32                 *TransferResult,
-              IN     BOOLEAN                IgnoreAck
-              )
+  IN      DWUSB_OTGHC_DEV        *DwHc,
+  IN      EFI_EVENT              Timeout,
+  IN      UINT32                 Channel,
+  IN      EFI_USB2_HC_TRANSACTION_TRANSLATOR *Translator,
+  IN      UINT8                  DeviceSpeed,
+  IN      UINT8                  DeviceAddress,
+  IN      UINTN                  MaximumPacketLength,
+  IN  OUT UINT32                *Pid,
+  IN      UINT32                 TransferDirection,
+  IN  OUT VOID                  *Data,
+  IN  OUT UINTN                 *DataLength,
+  IN      UINT32                 EpAddress,
+  IN      UINT32                 EpType,
+  OUT     UINT32                 *TransferResult,
+  IN      BOOLEAN                IgnoreAck
+  )
 {
   UINT32                          TxferLen;
   UINT32                          Done = 0;
@@ -399,10 +383,10 @@ restart_channel:
 STATIC
 DWUSB_DEFERRED_REQ *
 DwHcFindDeferredTransfer (
-                          IN DWUSB_OTGHC_DEV *DwHc,
-                          IN UINT8 DeviceAddress,
-                          IN UINT8 EndPointAddress
-                          )
+  IN  DWUSB_OTGHC_DEV *DwHc,
+  IN  UINT8 DeviceAddress,
+  IN  UINT8 EndPointAddress
+  )
 {
   LIST_ENTRY *Entry;
 
@@ -423,8 +407,8 @@ DwHcFindDeferredTransfer (
 STATIC
 VOID
 DwHcDeferredTransfer (
-                      IN DWUSB_DEFERRED_REQ *Req
-                      )
+  IN  DWUSB_DEFERRED_REQ *Req
+  )
 {
   EFI_STATUS Status;
   EFI_EVENT TimeoutEvt = NULL;
@@ -479,11 +463,11 @@ DwHcDeferredTransfer (
 EFI_STATUS
 EFIAPI
 DwHcGetCapability (
-                   IN  EFI_USB2_HC_PROTOCOL  *This,
-                   OUT UINT8                 *MaxSpeed,
-                   OUT UINT8                 *PortNumber,
-                   OUT UINT8                 *Is64BitCapable
-                   )
+  IN  EFI_USB2_HC_PROTOCOL *This,
+  OUT UINT8                *MaxSpeed,
+  OUT UINT8                *PortNumber,
+  OUT UINT8                *Is64BitCapable
+  )
 {
   if ((MaxSpeed == NULL) || (PortNumber == NULL) || (Is64BitCapable == NULL)) {
     return EFI_INVALID_PARAMETER;
@@ -559,9 +543,9 @@ DwHcReset (
 EFI_STATUS
 EFIAPI
 DwHcGetState (
-              IN   EFI_USB2_HC_PROTOCOL  *This,
-              OUT  EFI_USB_HC_STATE      *State
-              )
+  IN  EFI_USB2_HC_PROTOCOL *This,
+  OUT EFI_USB_HC_STATE     *State
+  )
 {
   DWUSB_OTGHC_DEV *DwHc;
 
@@ -575,9 +559,9 @@ DwHcGetState (
 EFI_STATUS
 EFIAPI
 DwHcSetState (
-              IN EFI_USB2_HC_PROTOCOL *This,
-              IN EFI_USB_HC_STATE     State
-              )
+  IN  EFI_USB2_HC_PROTOCOL *This,
+  IN  EFI_USB_HC_STATE     State
+  )
 {
   DWUSB_OTGHC_DEV *DwHc;
 
@@ -591,10 +575,10 @@ DwHcSetState (
 EFI_STATUS
 EFIAPI
 DwHcGetRootHubPortStatus (
-                          IN   EFI_USB2_HC_PROTOCOL  *This,
-                          IN   UINT8                 PortNumber,
-                          OUT  EFI_USB_PORT_STATUS   *PortStatus
-                          )
+  IN  EFI_USB2_HC_PROTOCOL *This,
+  IN  UINT8                PortNumber,
+  OUT EFI_USB_PORT_STATUS  *PortStatus
+  )
 {
   DWUSB_OTGHC_DEV *DwHc;
   UINT32          Hprt0;
@@ -657,10 +641,10 @@ DwHcGetRootHubPortStatus (
 EFI_STATUS
 EFIAPI
 DwHcSetRootHubPortFeature (
-                           IN  EFI_USB2_HC_PROTOCOL  *This,
-                           IN  UINT8                 PortNumber,
-                           IN  EFI_USB_PORT_FEATURE  PortFeature
-                           )
+  IN  EFI_USB2_HC_PROTOCOL *This,
+  IN  UINT8                PortNumber,
+  IN  EFI_USB_PORT_FEATURE PortFeature
+  )
 {
   DWUSB_OTGHC_DEV         *DwHc;
   UINT32                  Hprt0;
@@ -712,10 +696,10 @@ DwHcSetRootHubPortFeature (
 EFI_STATUS
 EFIAPI
 DwHcClearRootHubPortFeature (
-                             IN  EFI_USB2_HC_PROTOCOL  *This,
-                             IN  UINT8                 PortNumber,
-                             IN  EFI_USB_PORT_FEATURE  PortFeature
-                             )
+  IN  EFI_USB2_HC_PROTOCOL *This,
+  IN  UINT8                PortNumber,
+  IN  EFI_USB_PORT_FEATURE PortFeature
+  )
 {
   DWUSB_OTGHC_DEV         *DwHc;
   UINT32                  Hprt0;
@@ -797,18 +781,18 @@ DwHcClearRootHubPortFeature (
 EFI_STATUS
 EFIAPI
 DwHcControlTransfer (
-                     IN  EFI_USB2_HC_PROTOCOL                *This,
-                     IN  UINT8                               DeviceAddress,
-                     IN  UINT8                               DeviceSpeed,
-                     IN  UINTN                               MaximumPacketLength,
-                     IN  EFI_USB_DEVICE_REQUEST              *Request,
-                     IN  EFI_USB_DATA_DIRECTION              TransferDirection,
-                     IN  OUT VOID                            *Data,
-                     IN  OUT UINTN                           *DataLength,
-                     IN  UINTN                               TimeOut,
-                     IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
-                     OUT UINT32                              *TransferResult
-                     )
+  IN  EFI_USB2_HC_PROTOCOL               *This,
+  IN  UINT8                              DeviceAddress,
+  IN  UINT8                              DeviceSpeed,
+  IN  UINTN                              MaximumPacketLength,
+  IN  EFI_USB_DEVICE_REQUEST             *Request,
+  IN  EFI_USB_DATA_DIRECTION             TransferDirection,
+  IN  OUT VOID                           *Data,
+  IN  OUT UINTN                          *DataLength,
+  IN  UINTN                              TimeOut,
+  IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR *Translator,
+  OUT UINT32                             *TransferResult
+  )
 {
   DWUSB_OTGHC_DEV         *DwHc;
   EFI_STATUS              Status;
@@ -941,19 +925,19 @@ out:
 EFI_STATUS
 EFIAPI
 DwHcBulkTransfer (
-                  IN  EFI_USB2_HC_PROTOCOL                *This,
-                  IN  UINT8                               DeviceAddress,
-                  IN  UINT8                               EndPointAddress,
-                  IN  UINT8                               DeviceSpeed,
-                  IN  UINTN                               MaximumPacketLength,
-                  IN  UINT8                               DataBuffersNumber,
-                  IN  OUT VOID                            *Data[EFI_USB_MAX_BULK_BUFFER_NUM],
-                  IN  OUT UINTN                           *DataLength,
-                  IN  OUT UINT8                           *DataToggle,
-                  IN  UINTN                               TimeOut,
-                  IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
-                  OUT UINT32                              *TransferResult
-                  )
+  IN  EFI_USB2_HC_PROTOCOL               *This,
+  IN  UINT8                              DeviceAddress,
+  IN  UINT8                              EndPointAddress,
+  IN  UINT8                              DeviceSpeed,
+  IN  UINTN                              MaximumPacketLength,
+  IN  UINT8                              DataBuffersNumber,
+  IN  OUT VOID                           *Data[EFI_USB_MAX_BULK_BUFFER_NUM],
+  IN  OUT UINTN                          *DataLength,
+  IN  OUT UINT8                          *DataToggle,
+  IN  UINTN                              TimeOut,
+  IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR *Translator,
+  OUT UINT32                             *TransferResult
+  )
 {
   DWUSB_OTGHC_DEV         *DwHc;
   EFI_STATUS              Status;
@@ -1023,19 +1007,19 @@ DwHcBulkTransfer (
 EFI_STATUS
 EFIAPI
 DwHcAsyncInterruptTransfer (
-                            IN  EFI_USB2_HC_PROTOCOL                  *This,
-                            IN  UINT8                                 DeviceAddress,
-                            IN  UINT8                                 EndPointAddress,
-                            IN  UINT8                                 DeviceSpeed,
-                            IN  UINTN                                 MaximumPacketLength,
-                            IN  BOOLEAN                               IsNewTransfer,
-                            IN  OUT UINT8                             *DataToggle,
-                            IN  UINTN                                 PollingInterval,
-                            IN  UINTN                                 DataLength,
-                            IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR    *Translator,
-                            IN  EFI_ASYNC_USB_TRANSFER_CALLBACK       CallbackFunction,
-                            IN  VOID                                  *Context OPTIONAL
-                            )
+  IN  EFI_USB2_HC_PROTOCOL               *This,
+  IN  UINT8                              DeviceAddress,
+  IN  UINT8                              EndPointAddress,
+  IN  UINT8                              DeviceSpeed,
+  IN  UINTN                              MaximumPacketLength,
+  IN  BOOLEAN                            IsNewTransfer,
+  IN  OUT UINT8                          *DataToggle,
+  IN  UINTN                              PollingInterval,
+  IN  UINTN                              DataLength,
+  IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR *Translator,
+  IN  EFI_ASYNC_USB_TRANSFER_CALLBACK    CallbackFunction,
+  IN  VOID                               *Context OPTIONAL
+  )
 {
   DWUSB_OTGHC_DEV                 *DwHc;
   EFI_STATUS                      Status;
@@ -1159,18 +1143,18 @@ DwHcAsyncInterruptTransfer (
 EFI_STATUS
 EFIAPI
 DwHcSyncInterruptTransfer (
-                           IN  EFI_USB2_HC_PROTOCOL                *This,
-                           IN  UINT8                               DeviceAddress,
-                           IN  UINT8                               EndPointAddress,
-                           IN  UINT8                               DeviceSpeed,
-                           IN  UINTN                               MaximumPacketLength,
-                           IN  OUT VOID                            *Data,
-                           IN  OUT UINTN                           *DataLength,
-                           IN  OUT UINT8                           *DataToggle,
-                           IN  UINTN                               TimeOut,
-                           IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
-                           OUT UINT32                              *TransferResult
-                           )
+  IN  EFI_USB2_HC_PROTOCOL               *This,
+  IN  UINT8                              DeviceAddress,
+  IN  UINT8                              EndPointAddress,
+  IN  UINT8                              DeviceSpeed,
+  IN  UINTN                              MaximumPacketLength,
+  IN  OUT VOID                           *Data,
+  IN  OUT UINTN                          *DataLength,
+  IN  OUT UINT8                          *DataToggle,
+  IN  UINTN                              TimeOut,
+  IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR *Translator,
+  OUT UINT32                             *TransferResult
+  )
 {
   DWUSB_OTGHC_DEV *DwHc;
   EFI_STATUS Status;
@@ -1232,17 +1216,17 @@ DwHcSyncInterruptTransfer (
 EFI_STATUS
 EFIAPI
 DwHcIsochronousTransfer (
-                         IN  EFI_USB2_HC_PROTOCOL                *This,
-                         IN  UINT8                               DeviceAddress,
-                         IN  UINT8                               EndPointAddress,
-                         IN  UINT8                               DeviceSpeed,
-                         IN  UINTN                               MaximumPacketLength,
-                         IN  UINT8                               DataBuffersNumber,
-                         IN  OUT VOID                            *Data[EFI_USB_MAX_ISO_BUFFER_NUM],
-                         IN  UINTN                               DataLength,
-                         IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
-                         OUT UINT32                              *TransferResult
-                         )
+  IN  EFI_USB2_HC_PROTOCOL               *This,
+  IN  UINT8                              DeviceAddress,
+  IN  UINT8                              EndPointAddress,
+  IN  UINT8                              DeviceSpeed,
+  IN  UINTN                              MaximumPacketLength,
+  IN  UINT8                              DataBuffersNumber,
+  IN  OUT VOID                           *Data[EFI_USB_MAX_ISO_BUFFER_NUM],
+  IN  UINTN                              DataLength,
+  IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR *Translator,
+  OUT UINT32                             *TransferResult
+  )
 {
   DEBUG((EFI_D_ERROR, "Iso\n"));
   return EFI_UNSUPPORTED;
@@ -1251,18 +1235,18 @@ DwHcIsochronousTransfer (
 EFI_STATUS
 EFIAPI
 DwHcAsyncIsochronousTransfer (
-                              IN  EFI_USB2_HC_PROTOCOL                *This,
-                              IN  UINT8                               DeviceAddress,
-                              IN  UINT8                               EndPointAddress,
-                              IN  UINT8                               DeviceSpeed,
-                              IN  UINTN                               MaximumPacketLength,
-                              IN  UINT8                               DataBuffersNumber,
-                              IN  OUT VOID                            *Data[EFI_USB_MAX_ISO_BUFFER_NUM],
-                              IN  UINTN                               DataLength,
-                              IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR  *Translator,
-                              IN  EFI_ASYNC_USB_TRANSFER_CALLBACK     IsochronousCallBack,
-                              IN  VOID                                *Context
-                              )
+  IN  EFI_USB2_HC_PROTOCOL               *This,
+  IN  UINT8                              DeviceAddress,
+  IN  UINT8                              EndPointAddress,
+  IN  UINT8                              DeviceSpeed,
+  IN  UINTN                              MaximumPacketLength,
+  IN  UINT8                              DataBuffersNumber,
+  IN  OUT VOID                           *Data[EFI_USB_MAX_ISO_BUFFER_NUM],
+  IN  UINTN                              DataLength,
+  IN  EFI_USB2_HC_TRANSACTION_TRANSLATOR *Translator,
+  IN  EFI_ASYNC_USB_TRANSFER_CALLBACK    IsochronousCallBack,
+  IN  VOID                               *Context
+  )
 {
   DEBUG((EFI_D_ERROR, "AsyncIso\n"));
   return EFI_UNSUPPORTED;
@@ -1274,8 +1258,8 @@ DwHcAsyncIsochronousTransfer (
 
 VOID
 InitFslspClkSel (
-                 IN DWUSB_OTGHC_DEV *DwHc
-                 )
+  IN  DWUSB_OTGHC_DEV *DwHc
+  )
 {
   UINT32  PhyClk;
 
@@ -1288,10 +1272,10 @@ InitFslspClkSel (
 
 VOID
 DwFlushTxFifo (
-               IN DWUSB_OTGHC_DEV *DwHc,
-               IN EFI_EVENT Timeout,
-               IN INT32 Num
-               )
+  IN  DWUSB_OTGHC_DEV *DwHc,
+  IN EFI_EVENT Timeout,
+  IN INT32 Num
+  )
 {
   UINT32 Status;
 
@@ -1307,9 +1291,9 @@ DwFlushTxFifo (
 
 VOID
 DwFlushRxFifo (
-               IN DWUSB_OTGHC_DEV *DwHc,
-               IN EFI_EVENT Timeout
-               )
+  IN  DWUSB_OTGHC_DEV *DwHc,
+  IN  EFI_EVENT Timeout
+  )
 {
   UINT32 Status;
 
@@ -1324,9 +1308,9 @@ DwFlushRxFifo (
 
 EFI_STATUS
 DwHcInit (
-          IN DWUSB_OTGHC_DEV *DwHc,
-          IN EFI_EVENT Timeout
-          )
+  IN  DWUSB_OTGHC_DEV *DwHc,
+  IN  EFI_EVENT Timeout
+  )
 {
   UINT32 NpTxFifoSz = 0;
   UINT32 pTxFifoSz = 0;
@@ -1391,9 +1375,9 @@ DwHcInit (
 
 EFI_STATUS
 DwCoreInit (
-            IN DWUSB_OTGHC_DEV *DwHc,
-            IN EFI_EVENT Timeout
-            )
+  IN  DWUSB_OTGHC_DEV *DwHc,
+  IN  EFI_EVENT Timeout
+  )
 {
   UINT32 AhbCfg = 0;
   UINT32 UsbCfg = 0;
@@ -1438,100 +1422,57 @@ DwCoreInit (
   return EFI_SUCCESS;
 }
 
-DWUSB_OTGHC_DEV *
-CreateDwUsbHc (
-               VOID
-               )
+VOID
+DestroyDwUsbHc(
+  IN  DWUSB_OTGHC_DEV *DwHc
+  )
 {
-  DWUSB_OTGHC_DEV *DwHc;
-  UINT32          Pages;
-  UINTN           BufferSize;
-  EFI_STATUS      Status;
-
-  DwHc = AllocateZeroPool (sizeof(DWUSB_OTGHC_DEV));
+  UINT32 Pages;
+  EFI_TPL PreviousTpl;
 
   if (DwHc == NULL) {
-    return NULL;
+    return;
   }
-
-  DwHc->Signature                                 = DWUSB_OTGHC_DEV_SIGNATURE;
-  DwHc->DwUsbOtgHc.GetCapability                  = DwHcGetCapability;
-  DwHc->DwUsbOtgHc.Reset                          = DwHcReset;
-  DwHc->DwUsbOtgHc.GetState                       = DwHcGetState;
-  DwHc->DwUsbOtgHc.SetState                       = DwHcSetState;
-  DwHc->DwUsbOtgHc.ControlTransfer                = DwHcControlTransfer;
-  DwHc->DwUsbOtgHc.BulkTransfer                   = DwHcBulkTransfer;
-  DwHc->DwUsbOtgHc.AsyncInterruptTransfer         = DwHcAsyncInterruptTransfer;
-  DwHc->DwUsbOtgHc.SyncInterruptTransfer          = DwHcSyncInterruptTransfer;
-  DwHc->DwUsbOtgHc.IsochronousTransfer            = DwHcIsochronousTransfer;
-  DwHc->DwUsbOtgHc.AsyncIsochronousTransfer       = DwHcAsyncIsochronousTransfer;
-  DwHc->DwUsbOtgHc.GetRootHubPortStatus           = DwHcGetRootHubPortStatus;
-  DwHc->DwUsbOtgHc.SetRootHubPortFeature          = DwHcSetRootHubPortFeature;
-  DwHc->DwUsbOtgHc.ClearRootHubPortFeature        = DwHcClearRootHubPortFeature;
-  DwHc->DwUsbOtgHc.MajorRevision                  = 0x02;
-  DwHc->DwUsbOtgHc.MinorRevision                  = 0x00;
-  DwHc->DwUsbBase                                 = BCM2836_USB_DW2_BASE_ADDRESS;
-
-  CopyMem (&DwHc->DevicePath, &DwHcDevicePath, sizeof(DwHcDevicePath));
-
-  Pages = EFI_SIZE_TO_PAGES (DWC2_STATUS_BUF_SIZE);
-  DwHc->StatusBuffer = AllocatePages(Pages);
-  if (DwHc->StatusBuffer == NULL) {
-    DEBUG ((EFI_D_ERROR, "CreateDwUsbHc: No pages available for StatusBuffer\n"));
-    return NULL;
-  }
-
-  Pages = EFI_SIZE_TO_PAGES (DWC2_DATA_BUF_SIZE);
-  Status = DmaAllocateBuffer (EfiBootServicesData, Pages, (VOID **) &DwHc->AlignedBuffer);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((EFI_D_ERROR, "CreateDwUsbHc: No pages available for AlignedBuffer\n"));
-    return NULL;
-  }
-
-  BufferSize = EFI_PAGES_TO_SIZE (Pages);
-  Status = DmaMap (MapOperationBusMasterCommonBuffer, DwHc->AlignedBuffer, &BufferSize,
-                   &DwHc->AlignedBufferBusAddress, &DwHc->AlignedBufferMapping);
-  if (EFI_ERROR (Status)) {
-    return NULL;
-  }
-
-  InitializeListHead (&DwHc->DeferredList);
-
-  return DwHc;
-}
-
-VOID
-EFIAPI
-DwUsbHcExitBootService (
-                        EFI_EVENT     Event,
-                        VOID          *Context
-                        )
-{
-  DWUSB_OTGHC_DEV *DwHc;
-
-  DwHc = (DWUSB_OTGHC_DEV *) Context;
 
   if (DwHc->PeriodicEvent != NULL) {
-    EFI_TPL PreviousTpl;
     PreviousTpl = gBS->RaiseTPL(TPL_NOTIFY);
     gBS->CloseEvent (DwHc->PeriodicEvent);
     gBS->RestoreTPL(PreviousTpl);
   }
 
-  MmioAndThenOr32 (DwHc->DwUsbBase + HPRT0,
-                   ~(DWC2_HPRT0_PRTENA | DWC2_HPRT0_PRTCONNDET |
-                     DWC2_HPRT0_PRTENCHNG | DWC2_HPRT0_PRTOVRCURRCHNG),
-                   DWC2_HPRT0_PRTRST);
+  if (DwHc->ExitBootServiceEvent != NULL) {
+    gBS->CloseEvent (DwHc->ExitBootServiceEvent);
+  }
 
-  MicroSecondDelay (50000);
+  Pages = EFI_SIZE_TO_PAGES (DWC2_DATA_BUF_SIZE);
+  DmaUnmap (DwHc->AlignedBufferMapping);
+  DmaFreeBuffer (Pages, DwHc->AlignedBuffer);
 
-  MmioWrite32 (DwHc->DwUsbBase + GRSTCTL, DWC2_GRSTCTL_CSFTRST);
-  MicroSecondDelay (100000);
+  Pages = EFI_SIZE_TO_PAGES (DWC2_STATUS_BUF_SIZE);
+  FreePages (DwHc->StatusBuffer, Pages);
+
+  gBS->FreePool (DwHc);
+}
+
+STATIC
+VOID
+EFIAPI
+DwUsbHcExitBootService (
+  IN  EFI_EVENT Event,
+  IN  VOID *Context
+  )
+{
+  DWUSB_OTGHC_DEV *DwHc;
+
+  DwHc = (DWUSB_OTGHC_DEV *) Context;
+  DwHcQuiesce (DwHc);
 }
 
 STATIC
 UINT32
-FramesPassed (DWUSB_OTGHC_DEV *DwHc)
+FramesPassed (
+  IN  DWUSB_OTGHC_DEV *DwHc
+  )
 {
   UINT32 MicroFrameStart = DwHc->LastMicroFrame;
   UINT32 MicroFrameEnd =
@@ -1587,63 +1528,62 @@ DwHcPeriodicHandler (
   }
 }
 
-
-/**
-   UEFI Driver Entry Point API
-
-   @param  ImageHandle       EFI_HANDLE.
-   @param  SystemTable       EFI_SYSTEM_TABLE.
-
-   @return EFI_SUCCESS       Success.
-   EFI_DEVICE_ERROR  Fail.
-**/
-
 EFI_STATUS
-EFIAPI
-DwUsbHostEntryPoint (
-                     IN EFI_HANDLE           ImageHandle,
-                     IN EFI_SYSTEM_TABLE     *SystemTable
-                     )
+CreateDwUsbHc (
+  OUT DWUSB_OTGHC_DEV **OutDwHc
+  )
 {
-  EFI_STATUS                      Status;
-  DWUSB_OTGHC_DEV                 *DwHc;
-  UINT32                          Pages;
-  STATIC RASPBERRY_PI_FIRMWARE_PROTOCOL *FwProtocol;
+  DWUSB_OTGHC_DEV *DwHc;
+  UINT32          Pages;
+  UINTN           BufferSize;
+  EFI_STATUS      Status;
 
-  Status = gBS->LocateProtocol (&gRaspberryPiFirmwareProtocolGuid, NULL,
-                                (VOID **)&FwProtocol);
-  ASSERT_EFI_ERROR (Status);
+  DwHc = AllocateZeroPool (sizeof(DWUSB_OTGHC_DEV));
+  if (DwHc == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
 
-  Status = FwProtocol->SetPowerState(RPI_FW_POWER_STATE_USB_HCD, TRUE, TRUE);
+  DwHc->Signature                                 = DWUSB_OTGHC_DEV_SIGNATURE;
+  DwHc->DwUsbOtgHc.GetCapability                  = DwHcGetCapability;
+  DwHc->DwUsbOtgHc.Reset                          = DwHcReset;
+  DwHc->DwUsbOtgHc.GetState                       = DwHcGetState;
+  DwHc->DwUsbOtgHc.SetState                       = DwHcSetState;
+  DwHc->DwUsbOtgHc.ControlTransfer                = DwHcControlTransfer;
+  DwHc->DwUsbOtgHc.BulkTransfer                   = DwHcBulkTransfer;
+  DwHc->DwUsbOtgHc.AsyncInterruptTransfer         = DwHcAsyncInterruptTransfer;
+  DwHc->DwUsbOtgHc.SyncInterruptTransfer          = DwHcSyncInterruptTransfer;
+  DwHc->DwUsbOtgHc.IsochronousTransfer            = DwHcIsochronousTransfer;
+  DwHc->DwUsbOtgHc.AsyncIsochronousTransfer       = DwHcAsyncIsochronousTransfer;
+  DwHc->DwUsbOtgHc.GetRootHubPortStatus           = DwHcGetRootHubPortStatus;
+  DwHc->DwUsbOtgHc.SetRootHubPortFeature          = DwHcSetRootHubPortFeature;
+  DwHc->DwUsbOtgHc.ClearRootHubPortFeature        = DwHcClearRootHubPortFeature;
+  DwHc->DwUsbOtgHc.MajorRevision                  = 0x02;
+  DwHc->DwUsbOtgHc.MinorRevision                  = 0x00;
+  DwHc->DwUsbBase                                 = BCM2836_USB_DW2_BASE_ADDRESS;
+
+  Pages = EFI_SIZE_TO_PAGES (DWC2_STATUS_BUF_SIZE);
+  DwHc->StatusBuffer = AllocatePages(Pages);
+  if (DwHc->StatusBuffer == NULL) {
+    DEBUG ((EFI_D_ERROR, "CreateDwUsbHc: No pages available for StatusBuffer\n"));
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  Pages = EFI_SIZE_TO_PAGES (DWC2_DATA_BUF_SIZE);
+  Status = DmaAllocateBuffer (EfiBootServicesData, Pages, (VOID **) &DwHc->AlignedBuffer);
   if (EFI_ERROR (Status)) {
-    DEBUG((DEBUG_ERROR, "Couldn't power on USB HCD\n"));
+    DEBUG ((EFI_D_ERROR, "CreateDwUsbHc: DmaAllocateBuffer: %r\n", Status));
     return Status;
   }
 
-  DwHc = CreateDwUsbHc ();
-
-  if (DwHc == NULL) {
-    Status = EFI_OUT_OF_RESOURCES;
-    goto out;
-  }
-
-  /*
-   * UsbBusDxe as of b4e96b82b4e2e47e95014b51787ba5b43abac784 expects
-   * the HCD to do this. There is no agent invoking DwHcReset anymore.
-   */
-  DwHcReset(&DwHc->DwUsbOtgHc, 0);
-  DwHcSetState(&DwHc->DwUsbOtgHc, EfiUsbHcStateOperational);
-
-  Status = gBS->InstallMultipleProtocolInterfaces (
-                                                   &DwHc->DeviceHandle,
-                                                   &gEfiUsb2HcProtocolGuid,        &DwHc->DwUsbOtgHc,
-                                                   &gEfiDevicePathProtocolGuid,    &DwHc->DevicePath,
-                                                   NULL
-                                                   );
-
+  BufferSize = EFI_PAGES_TO_SIZE (Pages);
+  Status = DmaMap (MapOperationBusMasterCommonBuffer, DwHc->AlignedBuffer, &BufferSize,
+                   &DwHc->AlignedBufferBusAddress, &DwHc->AlignedBufferMapping);
   if (EFI_ERROR (Status)) {
-    goto FREE_DWUSBHC;
+    DEBUG ((EFI_D_ERROR, "CreateDwUsbHc: DmaMap: %r\n", Status));
+    return Status;
   }
+
+  InitializeListHead (&DwHc->DeferredList);
 
   Status = gBS->CreateEventEx (
                                EVT_NOTIFY_SIGNAL,
@@ -1655,7 +1595,8 @@ DwUsbHostEntryPoint (
                                );
 
   if (EFI_ERROR (Status)) {
-    goto UNINSTALL_PROTOCOL;
+    DEBUG ((EFI_D_ERROR, "CreateDwUsbHc: DwUsbHcExitBootService: %r\n", Status));
+    return Status;
   }
 
   Status = gBS->CreateEvent (
@@ -1665,89 +1606,41 @@ DwUsbHostEntryPoint (
                              DwHc, &DwHc->PeriodicEvent
                              );
   if (Status != EFI_SUCCESS) {
-    DEBUG ((EFI_D_ERROR, "DwUsbHostEntryPoint: failed to create periodic event: %r\n", Status));
-    goto CLEANUP_EVENTS;
+    DEBUG ((EFI_D_ERROR, "CreateDwUsbHc: DwHcPeriodicHandler: %r\n", Status));
+    return Status;
   }
 
   Status = gBS->SetTimer (DwHc->PeriodicEvent, TimerPeriodic,
                           EFI_TIMER_PERIOD_MILLISECONDS(1));
   if (Status != EFI_SUCCESS) {
-    DEBUG ((EFI_D_ERROR, "DwUsbHostEntryPoint: failed to set timer: %r\n", Status));
-    goto CLEANUP_EVENTS;
+    DEBUG ((EFI_D_ERROR, "CreateDwUsbHc: PeriodicEvent: %r\n", Status));
+    return Status;
   }
 
-  return Status;
-
- CLEANUP_EVENTS:
-  if (DwHc->PeriodicEvent != NULL) {
-    gBS->CloseEvent (DwHc->PeriodicEvent);
-  }
-  if (DwHc->ExitBootServiceEvent != NULL) {
-    gBS->CloseEvent (DwHc->ExitBootServiceEvent);
-  }
- UNINSTALL_PROTOCOL:
-  gBS->UninstallMultipleProtocolInterfaces (
-                                            &DwHc->DeviceHandle,
-                                            &gEfiUsb2HcProtocolGuid,        &DwHc->DwUsbOtgHc,
-                                            &gEfiDevicePathProtocolGuid,    &DwHc->DevicePath,
-                                            NULL
-                                            );
- FREE_DWUSBHC:
-  Pages = EFI_SIZE_TO_PAGES (DWC2_STATUS_BUF_SIZE);
-  FreePages (DwHc->StatusBuffer, Pages);
-  Pages = EFI_SIZE_TO_PAGES (DWC2_DATA_BUF_SIZE);
-  DmaUnmap (DwHc->AlignedBufferMapping);
-  DmaFreeBuffer (Pages, DwHc->AlignedBuffer);
-  gBS->FreePool (DwHc);
- out:
-  return Status;
+  *OutDwHc = DwHc;
+  return EFI_SUCCESS;
 }
 
-EFI_STATUS
-EFIAPI
-DwUsbHostExitPoint (
-                    IN EFI_HANDLE ImageHandle
-                    )
+VOID
+DwHcQuiesce (
+  IN  DWUSB_OTGHC_DEV *DwHc
+  )
 {
-  EFI_STATUS              Status;
-  EFI_USB2_HC_PROTOCOL    *DwUsbHc;
-  DWUSB_OTGHC_DEV         *DwHc;
-  UINT32                  Pages;
-
-  Status = EFI_SUCCESS;
-
-  Status = gBS->LocateProtocol (&gEfiUsb2HcProtocolGuid, NULL, (VOID **) &DwUsbHc);
-
-  if (EFI_ERROR (Status)) {
-    return Status;
-  }
-
-  DwHc  = DWHC_FROM_THIS(DwUsbHc);
-
   if (DwHc->PeriodicEvent != NULL) {
+    EFI_TPL PreviousTpl;
+    PreviousTpl = gBS->RaiseTPL(TPL_NOTIFY);
     gBS->CloseEvent (DwHc->PeriodicEvent);
-  }
-  if (DwHc->ExitBootServiceEvent != NULL) {
-    gBS->CloseEvent (DwHc->ExitBootServiceEvent);
-  }
-
-  gBS->UninstallMultipleProtocolInterfaces (
-                                            &DwHc->DeviceHandle,
-                                            &gEfiUsb2HcProtocolGuid,        &DwHc->DwUsbOtgHc,
-                                            &gEfiDevicePathProtocolGuid,    &DwHc->DevicePath,
-                                            NULL
-                                            );
-
-  if (EFI_ERROR (Status)) {
-    return Status;
+    DwHc->PeriodicEvent = NULL;
+    gBS->RestoreTPL(PreviousTpl);
   }
 
-  Pages = EFI_SIZE_TO_PAGES (DWC2_STATUS_BUF_SIZE);
-  FreePages (DwHc->StatusBuffer, Pages);
-  Pages = EFI_SIZE_TO_PAGES (DWC2_DATA_BUF_SIZE);
-  DmaUnmap (DwHc->AlignedBufferMapping);
-  DmaFreeBuffer (Pages, DwHc->AlignedBuffer);
-  FreePool (DwHc);
+  MmioAndThenOr32 (DwHc->DwUsbBase + HPRT0,
+                   ~(DWC2_HPRT0_PRTENA | DWC2_HPRT0_PRTCONNDET |
+                     DWC2_HPRT0_PRTENCHNG | DWC2_HPRT0_PRTOVRCURRCHNG),
+                   DWC2_HPRT0_PRTRST);
 
-  return Status;
+  MicroSecondDelay (50000);
+
+  MmioWrite32 (DwHc->DwUsbBase + GRSTCTL, DWC2_GRSTCTL_CSFTRST);
+  MicroSecondDelay (100000);
 }
