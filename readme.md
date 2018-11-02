@@ -8,7 +8,7 @@ based on [Ard Bisheuvel's 64-bit](http://www.workofard.com/2017/02/uefi-on-the-p
 and [Microsoft's 32-bit](https://github.com/ms-iot/RPi-UEFI/tree/ms-iot/Pi3BoardPkg) implementations.
 
 Initially, this was supposed to be an easy walk in the park, where
-the Microsoft drivers just sorta slid into Ard's UEFI implementation,
+the Microsoft drivers somewhat slid into Ard's UEFI implementation,
 and I would call it a day. Instead, it turned out to be a severely more
 frustrating experience :-).
 
@@ -337,10 +337,10 @@ enough. Finally, you may wish to be able to boot your Pi
 headless, yet be able to attach a display to it later for
 debugging.
 
-To accomodate these issues, the following extra lines
+To accommodate these issues, the following extra lines
 are recommended for your `config.txt`:
 - `hdmi_force_hotplug=1` to allow plugging in video after system is booted.
-- `hdmi_group=1` and `hdmi_mode=4` to force a specific mode, both to accomodate late-plugged screens or buggy/slow screens. See [official documentation](https://www.raspberrypi.org/documentation/configuration/config-txt/video.md) to make sense of these parameters (example above sets up 720p 60Hz).
+- `hdmi_group=1` and `hdmi_mode=4` to force a specific mode, both to accommodate late-plugged screens or buggy/slow screens. See [official documentation](https://www.raspberrypi.org/documentation/configuration/config-txt/video.md) to make sense of these parameters (example above sets up 720p 60Hz).
 
 While the VC firmware is reponsible for setting the physical resolution,
 the virtual resolution the GPU framebuffer uses may be different and it
