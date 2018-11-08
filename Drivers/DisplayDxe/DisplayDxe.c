@@ -483,6 +483,16 @@ DriverStart (
     mLastMode = ELES(mGopModeData) - 1;
   } else {
     mLastMode = 0;
+    /*
+     * mBootWidth x mBootHeight may not be sensible,
+     * so clean it up, since we won't be adding
+     * any other extra vmodes.
+     */
+    if (mBootWidth < 640 ||
+        mBootHeight < 480) {
+      mBootWidth = 640;
+      mBootHeight = 480;
+    }
   }
 
   mGopModeData[mLastMode].Width = mBootWidth;
