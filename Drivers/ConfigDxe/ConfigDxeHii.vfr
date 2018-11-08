@@ -355,8 +355,8 @@ formset
             prompt      = STRING_TOKEN(STR_DISPLAY_VMODES_PROMPT),
             help        = STRING_TOKEN(STR_DISPLAY_VMODES_HELP),
             flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-            option text = STRING_TOKEN(STR_DISPLAY_VMODES_ENABLE), value = 1, flags = 0;
-            option text = STRING_TOKEN(STR_DISPLAY_VMODES_DISABLE), value = 0, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_DISPLAY_VMODES_ENABLE), value = 1, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_DISPLAY_VMODES_DISABLE), value = 0, flags = 0;
         endoneof;
 
         oneof varid = DisplayEnableSShot.Enable,
