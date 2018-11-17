@@ -574,6 +574,17 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   FatPkg/EnhancedFatDxe/Fat.inf
 
   #
+  # EBC. Why not... Sadly, went nowhere because Intel
+  # thought they had to monetize the EBC compiler, and no
+  # one else (yet) ported an OSS C compiler to support
+  # the architecture.
+  #
+  # But hey, at least there's an OSS assembler now!
+  # https://github.com/pbatard/fasmg-ebc
+  #
+  MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
+
+  #
   # ACPI Support
   #
   MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
