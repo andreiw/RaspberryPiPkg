@@ -1,4 +1,4 @@
-From 0baaf25eb1003469d7ae6ba118ca25bb73632449 Mon Sep 17 00:00:00 2001
+From daaa69596ed5ec0a775b604bd3ad9b7a3a1351b0 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Fri, 18 May 2018 22:54:14 -0400
 Subject: [PATCH 5/5] Ax88772b: not a runtime driver
@@ -13,7 +13,7 @@ Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
  1 file changed, 2 insertions(+), 15 deletions(-)
 
 diff --git a/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf b/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
-index 32a62f6..8607a0f 100644
+index 87f453d..c0277e6 100644
 --- a/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
 +++ b/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
 @@ -18,7 +18,7 @@

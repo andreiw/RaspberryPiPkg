@@ -1,4 +1,4 @@
-From 38630180c0ba90420f012fb386e5a2ca1dd41f18 Mon Sep 17 00:00:00 2001
+From d4ee1d4aa0a2bda6ec26512fcf5c612ada03a26c Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Mon, 14 May 2018 01:10:50 -0400
 Subject: [PATCH 4/5] BootGraphicsResourceTableDxe: properly handle SetBootLogo
