@@ -135,6 +135,7 @@ the additional directions under [`Binary/atf/readme.md`](Binary/atf/readme.md).
 # Using
 
 ## Basic
+**Please USE AN ADEQUATE POWER SUPPLY. Many people have had problems with poor performance,(the cpu undeclocking its self to 0.6GHZ)and other errors and issues caused by an inadequite power supply (Recomended: 5v, 2.5A). If you see a lightning bolt in the top right corner of the screen it means you have an inadiquite power supply.**
 
 UEFI boot media can be a uSD card or USB mass storage, if you've enabled USB booting previously in the OTP (i.e. via `program_usb_boot_mode=1`).
 
