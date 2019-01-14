@@ -27,7 +27,7 @@ pass for an SBSA + SBBR system ;-).
 
 # Latest Status
 
-* 2019 Jan 14th: boot option cleanup, EBC, release.
+* 2019 Jan 14th: boot option cleanup, EBC, release, SPCR fix (Windows EMS support)
 * 2018 Nov 17th: Display, USB, GraphicsConsole, VirtualRealTimeClockLib improvements, edk2 rebase.
 * 2018 Oct 1st: Rhxp and PEP devices in ACPI, (untested) JTAG support via debug configuration menu.
 * 2018 Sep 29th: MsftFunctionConfig ACPI descriptors.
