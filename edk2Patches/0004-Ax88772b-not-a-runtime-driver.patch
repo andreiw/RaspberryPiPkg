@@ -1,7 +1,7 @@
-From daaa69596ed5ec0a775b604bd3ad9b7a3a1351b0 Mon Sep 17 00:00:00 2001
+From 4a30f86718e571643d9f3c5eff7a59064f2070fd Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Fri, 18 May 2018 22:54:14 -0400
-Subject: [PATCH 5/5] Ax88772b: not a runtime driver
+Subject: [PATCH 4/4] Ax88772b: not a runtime driver
 
 No need to tie up precious memory.
 
@@ -9,11 +9,11 @@ Also fix the depex and library deps.
 
 Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
 ---
- .../Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf         | 17 ++---------------
+ .../Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf | 17 ++---------------
  1 file changed, 2 insertions(+), 15 deletions(-)
 
 diff --git a/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf b/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
-index 87f453d..c0277e6 100644
+index 87f453d8bd..c0277e6624 100644
 --- a/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
 +++ b/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
 @@ -18,7 +18,7 @@
@@ -60,5 +60,5 @@ index 87f453d..c0277e6 100644
 +  TRUE
 \ No newline at end of file
 -- 
-2.5.3
+2.17.1
 

@@ -1,7 +1,7 @@
-From d4ee1d4aa0a2bda6ec26512fcf5c612ada03a26c Mon Sep 17 00:00:00 2001
+From 367d54664c0572c64f42209c5652a50977e72c5e Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Mon, 14 May 2018 01:10:50 -0400
-Subject: [PATCH 4/5] BootGraphicsResourceTableDxe: properly handle SetBootLogo
+Subject: [PATCH 3/4] BootGraphicsResourceTableDxe: properly handle SetBootLogo
  with NULL buffer
 
 SetBootLogo would not free the previous logo memory, which in turn
@@ -19,11 +19,11 @@ This new behavior means a few things:
 
 Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
 ---
- .../BootGraphicsResourceTableDxe.c                 | 54 +++++++++-------------
+ .../BootGraphicsResourceTableDxe.c            | 54 ++++++++-----------
  1 file changed, 22 insertions(+), 32 deletions(-)
 
 diff --git a/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c b/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
-index cfd4be0..e672281 100644
+index cfd4be0ebf..e672281ec5 100644
 --- a/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
 +++ b/MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c
 @@ -145,14 +145,12 @@ EDKII_BOOT_LOGO2_PROTOCOL mBootLogo2ProtocolTemplate = {
@@ -64,10 +64,11 @@ index cfd4be0..e672281 100644
      return EFI_SUCCESS;
    }
  
-@@ -311,19 +320,6 @@ SetBootLogo2 (
+@@ -310,19 +319,6 @@ SetBootLogo2 (
+     return EFI_UNSUPPORTED;
    }
  
-   //
+-  //
 -  // Update state
 -  //
 -  mAcpiBgrtBufferChanged = TRUE;
@@ -80,10 +81,9 @@ index cfd4be0..e672281 100644
 -    mLogoBltBuffer = NULL;
 -  }
 -
--  //
+   //
    // Allocate new logo buffer
    //
-   mLogoBltBuffer = AllocateCopyPool (BufferSize, BltBuffer);
 @@ -335,7 +331,6 @@ SetBootLogo2 (
    mLogoDestY   = DestinationY;
    mLogoWidth   = Width;
@@ -144,5 +144,5 @@ index cfd4be0..e672281 100644
  }
  
 -- 
-2.5.3
+2.17.1
 

@@ -1,7 +1,7 @@
-From 64028b985ca2834cbdb7d48c9d0c4f104ef1596a Mon Sep 17 00:00:00 2001
+From 892d1ec7bb1dc6b7af1a700c86834c4fa7e6fcc8 Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sat, 21 Apr 2018 22:57:53 -0400
-Subject: [PATCH 3/5] BdsDxe: allow PlatformBootManagerWaitCallback to handle
+Subject: [PATCH 2/4] BdsDxe: allow PlatformBootManagerWaitCallback to handle
  remaining timeout == 0
 
 - Properly finish drawing 100% bar.
@@ -13,7 +13,7 @@ Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/MdeModulePkg/Universal/BdsDxe/BdsEntry.c b/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
-index 8946d79..c61323d 100644
+index 8946d79ab2..c61323d9cc 100644
 --- a/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
 +++ b/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
 @@ -347,6 +347,8 @@ BdsWait (
@@ -26,5 +26,5 @@ index 8946d79..c61323d 100644
  }
  
 -- 
-2.5.3
+2.17.1
 

@@ -1,7 +1,7 @@
-From 9cad0d7d02794cfc7f8dcd78c32ebf66370621ca Mon Sep 17 00:00:00 2001
+From 12637ab24ca4a728f83c60a69a8c55ed996ba6ee Mon Sep 17 00:00:00 2001
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 Date: Sun, 1 Apr 2018 02:58:31 -0400
-Subject: [PATCH 2/5] BaseTools/tools_def: support ASLC files on AArch64
+Subject: [PATCH 1/4] BaseTools/tools_def: support ASLC files on AArch64
 
 These weren't being built correctly.
 
@@ -11,7 +11,7 @@ Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/BaseTools/Conf/tools_def.template b/BaseTools/Conf/tools_def.template
-index e0e68fd..57f21c3 100755
+index e0e68fd7fb..57f21c39b2 100755
 --- a/BaseTools/Conf/tools_def.template
 +++ b/BaseTools/Conf/tools_def.template
 @@ -4152,10 +4152,10 @@ DEFINE GCC_IA32_X64_DLINK_COMMON   = DEF(GCC_DLINK_FLAGS_COMMON) --gc-sections
@@ -29,5 +29,5 @@ index e0e68fd..57f21c3 100755
  DEFINE GCC_ASM_FLAGS               = -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
  DEFINE GCC_PP_FLAGS                = -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 -- 
-2.5.3
+2.17.1
 
