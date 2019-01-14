@@ -1,7 +1,7 @@
 64-bit Tiano Core UEFI for the Raspberry Pi 3
 =============================================
 
-Last updated Nov 17th, 2018.
+Last updated Jan 14th, 2018.
 
 This is a port of 64-bit Tiano Core UEFI firmware for the Pi 3/3B+ platforms,
 based on [Ard Bisheuvel's 64-bit](http://www.workofard.com/2017/02/uefi-on-the-pi/)
@@ -27,6 +27,7 @@ pass for an SBSA + SBBR system ;-).
 
 # Latest Status
 
+* 2019 Jan 14th: boot option cleanup, EBC, release.
 * 2018 Nov 17th: Display, USB, GraphicsConsole, VirtualRealTimeClockLib improvements, edk2 rebase.
 * 2018 Oct 1st: Rhxp and PEP devices in ACPI, (untested) JTAG support via debug configuration menu.
 * 2018 Sep 29th: MsftFunctionConfig ACPI descriptors.
@@ -164,8 +165,9 @@ USB keyboard support has been validated with a few keyboards:
 - Microsoft Natural Ergonomic Keyboard 4000
 - An Apple keyboard (chicklet, USB2 hub)
 
-The boot order is hardcoded to first be the USB ports and then the uSD card.
-If there are no bootable media, you should be looking at the UEFI Shell.
+The first time you boot, you will be looking at the UEFI Shell. 'exit'
+and modify the boot order. The boot order will persist across reboots.
+
 ESC enters setup. F1 always boots the UEFI Shell.
 
 ![FrontPage](readme1.png)
