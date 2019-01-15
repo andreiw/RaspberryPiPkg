@@ -92,6 +92,8 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
             Name (_HID, "BCM2848")
             Name (_CID, Package() { "DWC_OTG", "DWC2_OTG"})
             Name (_UID, 0x0)
+            Name (_CCA, 0x0)
+
             Method (_STA)
             {
                 Return(0xf)
