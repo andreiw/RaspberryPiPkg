@@ -56,14 +56,60 @@ typedef struct {
 } PLATFORM_USB_DEV;
 
 typedef struct {
-  VENDOR_DEVICE_PATH            Custom;
-  EFI_DEVICE_PATH_PROTOCOL      EndDevicePath;
+  VENDOR_DEVICE_PATH       Custom;
+  EFI_DEVICE_PATH_PROTOCOL EndDevicePath;
 } PLATFORM_SD_DEV;
+
+#define ARASAN_MMC_DXE_FILE_GUID { \
+          0x100c2cfa, 0xb586, 0x4198, \
+          { 0x9b, 0x4c, 0x16, 0x83, 0xd1, 0x95, 0xb1, 0xda } \
+          }
+
+#define SDHOST_MMC_DXE_FILE_GUID { \
+          0x58abd787, 0xf64d, 0x4ca2, \
+          { 0xa0, 0x34, 0xb9, 0xac, 0x2d, 0x5a, 0xd0, 0xcf } \
+          }
 
 #define SERIAL_DXE_FILE_GUID { \
           0xD3987D4B, 0x971A, 0x435F, \
           { 0x8C, 0xAF, 0x49, 0x67, 0xEB, 0x62, 0x72, 0x41 } \
           }
+
+STATIC PLATFORM_SD_DEV mArasan = {
+  //
+  // VENDOR_DEVICE_PATH ArasanMMCHostDxe
+  //
+  {
+    { HARDWARE_DEVICE_PATH, HW_VENDOR_DP, DP_NODE_LEN (VENDOR_DEVICE_PATH) },
+    ARASAN_MMC_DXE_FILE_GUID
+  },
+
+  //
+  // EFI_DEVICE_PATH_PROTOCOL End
+  //
+  {
+    END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE,
+    DP_NODE_LEN (EFI_DEVICE_PATH_PROTOCOL)
+  }
+};
+
+STATIC PLATFORM_SD_DEV mSDHost = {
+  //
+  // VENDOR_DEVICE_PATH SdHostDxe
+  //
+  {
+    { HARDWARE_DEVICE_PATH, HW_VENDOR_DP, DP_NODE_LEN (VENDOR_DEVICE_PATH) },
+    SDHOST_MMC_DXE_FILE_GUID
+  },
+
+  //
+  // EFI_DEVICE_PATH_PROTOCOL End
+  //
+  {
+    END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE,
+    DP_NODE_LEN (EFI_DEVICE_PATH_PROTOCOL)
+  }
+};
 
 STATIC PLATFORM_SERIAL_CONSOLE mSerialConsole = {
   //
@@ -365,9 +411,62 @@ PlatformRegisterFvBootOption (
   return OptionIndex;
 }
 
+STATIC VOID
+RemoveStaleBootOptions (
+  VOID
+  )
+{
+  EFI_BOOT_MANAGER_LOAD_OPTION *BootOptions;
+  UINTN                        BootOptionCount;
+  UINTN                        Index;
+  EFI_STATUS                   Status;
 
-STATIC
-VOID
+  BootOptions = EfiBootManagerGetLoadOptions (&BootOptionCount,
+                                              LoadOptionTypeBoot);
+
+  for (Index = 0; Index < BootOptionCount; ++Index) {
+    EFI_DEVICE_PATH_PROTOCOL *DevicePath = BootOptions[Index].FilePath;
+
+    if (CompareMem (&mArasan, DevicePath, GetDevicePathSize (DevicePath)) == 0) {
+      if (PcdGet32 (PcdSdIsArasan)) {
+        continue;
+      }
+    } else if (CompareMem (&mSDHost, DevicePath, GetDevicePathSize (DevicePath)) == 0) {
+      if (!PcdGet32 (PcdSdIsArasan)) {
+        continue;
+      }
+    } else {
+      continue;
+    }
+
+    //
+    // Delete the boot options corresponding to stale SD controllers.
+    //
+    Status = EfiBootManagerDeleteLoadOptionVariable (
+               BootOptions[Index].OptionNumber, LoadOptionTypeBoot);
+    DEBUG_CODE (
+      CHAR16 *DevicePathString;
+
+      DevicePathString = ConvertDevicePathToText(BootOptions[Index].FilePath,
+                           FALSE, FALSE);
+      DEBUG ((
+        EFI_ERROR (Status) ? EFI_D_WARN : EFI_D_INFO,
+        "%a: removing stale Boot#%04x %s: %r\n",
+        __FUNCTION__,
+        (UINT32)BootOptions[Index].OptionNumber,
+        DevicePathString == NULL ? L"<unavailable>" : DevicePathString,
+        Status
+        ));
+      if (DevicePathString != NULL) {
+        FreePool (DevicePathString);
+      }
+      );
+  }
+
+  EfiBootManagerFreeLoadOptions (BootOptions, BootOptionCount);
+}
+
+STATIC VOID
 PlatformRegisterOptionsAndKeys (
   VOID
   )
@@ -378,6 +477,8 @@ PlatformRegisterOptionsAndKeys (
   EFI_INPUT_KEY                Esc;
   EFI_BOOT_MANAGER_LOAD_OPTION BootOption;
   INTN ShellOption;
+
+  RemoveStaleBootOptions ();
 
   ShellOption = PlatformRegisterFvBootOption (&gUefiShellFileGuid, L"UEFI Shell",
                                               LOAD_OPTION_ACTIVE);

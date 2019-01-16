@@ -70,6 +70,7 @@
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut
   gRaspberryPiTokenSpaceGuid.PcdHypEnable
   gRaspberryPiTokenSpaceGuid.PcdDebugShowUEFIExit
+  gRaspberryPiTokenSpaceGuid.PcdSdIsArasan
 
 [Guids]
   gEfiFileInfoGuid
