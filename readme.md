@@ -416,9 +416,7 @@ More-or-less matches MS-IoT ones. Good enough to boot WinPE, but unclear how fun
 
 # Licensing
 
-All of the code is BSD licensed, with the exception of:
-1) `DwUsbHostDxe`, which I've documented as being GPL 2.0 licensed, since
-   it appears to be directly related to the U-Boot driver.
+All of the code is BSD licensed.
 
 # Contact
 

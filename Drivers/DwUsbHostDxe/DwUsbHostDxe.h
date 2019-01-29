@@ -1,11 +1,15 @@
 /** @file
  *
- *  Copyright (c) 2017 - 2018, Andrey Warkentin <andrey.warkentin@gmail.com>
+ *  Copyright (c) 2017 - 2019, Andrey Warkentin <andrey.warkentin@gmail.com>
  *  Copyright (c) 2015 - 2016, Linaro Limited. All rights reserved.
- *  Copyright (C) 2012 Oleksandr Tymoshenko <gonzo@freebsd.org>
- *  Copyright (C) 2014 Marek Vasut <marex@denx.de>
  *
- *  SPDX-License-Identifier: GPL-2.0+
+ *  This program and the accompanying materials
+ *  are licensed and made available under the terms and conditions of the BSD License
+ *  which accompanies this distribution.  The full text of the license may be found at
+ *  http://opensource.org/licenses/bsd-license.php
+ *
+ *  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
  *
  **/
 
