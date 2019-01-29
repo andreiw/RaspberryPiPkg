@@ -96,10 +96,19 @@
 #string STR_DISPLAY_FORM_TITLE      #language en-US "Display"
 #string STR_DISPLAY_FORM_SUBTITLE   #language en-US "UEFI video driver settings"
 
-#string STR_DISPLAY_VMODES_PROMPT   #language en-US "Resolutions"
-#string STR_DISPLAY_VMODES_HELP     #language en-US "Support for non-native modes"
-#string STR_DISPLAY_VMODES_ENABLE   #language en-US "Also support 640x480, 800x600, 1024x768, 720p and 1080p"
-#string STR_DISPLAY_VMODES_DISABLE  #language en-US "Only native resolution"
+#string STR_DISPLAY_VMODES_640_PROMPT #language en-US "Virtual 640 x 480"
+#string STR_DISPLAY_VMODES_640_HELP   #language en-US "Support a scaled 640x480 mode"
+#string STR_DISPLAY_VMODES_800_PROMPT #language en-US "Virtual 800 x 600"
+#string STR_DISPLAY_VMODES_800_HELP   #language en-US "Support a scaled 800x600 mode"
+#string STR_DISPLAY_VMODES_1024_PROMPT #language en-US "Virtual 1024 x 768"
+#string STR_DISPLAY_VMODES_1024_HELP   #language en-US "Support a scaled 1024 x 768 mode"
+#string STR_DISPLAY_VMODES_720_PROMPT #language en-US "Virtual 720p"
+#string STR_DISPLAY_VMODES_720_HELP   #language en-US "Support a scaled 720p mode"
+#string STR_DISPLAY_VMODES_1080_PROMPT #language en-US "Virtual 1080p"
+#string STR_DISPLAY_VMODES_1080_HELP   #language en-US "Support a scaled 1080p mode"
+
+#string STR_DISPLAY_VMODES_REAL_PROMPT #language en-US "Native resolution"
+#string STR_DISPLAY_VMODES_REAL_HELP   #language en-US "Native resolution"
 
 #string STR_DISPLAY_SSHOT_PROMPT    #language en-US "Screenshot Support"
 #string STR_DISPLAY_SSHOT_HELP      #language en-US "Save screen capture as a BMP on the first writable file system found"

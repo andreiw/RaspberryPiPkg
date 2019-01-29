@@ -15,14 +15,23 @@
 #include <Guid/HiiPlatformSetupFormset.h>
 #include "ConfigDxeFormSetGuid.h"
 
+#pragma pack(1)
 typedef struct {
   /*
-   * 0 - One mode for the boot resolution.
-   * 1 - Adds additional "typical" resolutions like
-   *     640x480, 800x600, 1024 x 768, 720p and 1080p.
+   * One bit for each scaled resolution supported,
+   * these are ordered exactly like mGopModeData
+   * in DisplayDxe.
+   *
+   * 800x600, 640x480, 1024 x 768, 720p, 1080p, native.
    */
-   UINT32 Enable;
-} DISPLAY_ENABLE_VMODES_VARSTORE_DATA;
+   UINT8 v800   : 1;
+   UINT8 v640   : 1;
+   UINT8 v1024  : 1;
+   UINT8 v720p  : 1;
+   UINT8 v1080p : 1;
+   UINT8 Physical : 1;
+} DISPLAY_ENABLE_SCALED_VMODES_VARSTORE_DATA;
+#pragma pack()
 
 typedef struct {
   /*
@@ -202,9 +211,9 @@ formset
       name  = DebugShowUEFIExit,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
-    efivarstore DISPLAY_ENABLE_VMODES_VARSTORE_DATA,
+    efivarstore DISPLAY_ENABLE_SCALED_VMODES_VARSTORE_DATA,
       attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
-      name  = DisplayEnableVModes,
+      name  = DisplayEnableScaledVModes,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
     efivarstore DISPLAY_ENABLE_SSHOT_VARSTORE_DATA,
@@ -351,13 +360,47 @@ formset
         title  = STRING_TOKEN(STR_DISPLAY_FORM_TITLE);
         subtitle text = STRING_TOKEN(STR_DISPLAY_FORM_SUBTITLE);
 
-        oneof varid = DisplayEnableVModes.Enable,
-            prompt      = STRING_TOKEN(STR_DISPLAY_VMODES_PROMPT),
-            help        = STRING_TOKEN(STR_DISPLAY_VMODES_HELP),
-            flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-            option text = STRING_TOKEN(STR_DISPLAY_VMODES_ENABLE), value = 1, flags = DEFAULT;
-            option text = STRING_TOKEN(STR_DISPLAY_VMODES_DISABLE), value = 0, flags = 0;
-        endoneof;
+        checkbox varid = DisplayEnableScaledVModes.v640,
+            prompt      = STRING_TOKEN(STR_DISPLAY_VMODES_640_PROMPT),
+            help        = STRING_TOKEN(STR_DISPLAY_VMODES_640_HELP),
+            flags       = CHECKBOX_DEFAULT | CHECKBOX_DEFAULT_MFG | RESET_REQUIRED,
+            default     = TRUE,
+        endcheckbox;
+
+        checkbox varid = DisplayEnableScaledVModes.v800,
+            prompt      = STRING_TOKEN(STR_DISPLAY_VMODES_800_PROMPT),
+            help        = STRING_TOKEN(STR_DISPLAY_VMODES_800_HELP),
+            flags       = CHECKBOX_DEFAULT | CHECKBOX_DEFAULT_MFG | RESET_REQUIRED,
+            default     = TRUE,
+        endcheckbox;
+
+        checkbox varid = DisplayEnableScaledVModes.v1024,
+            prompt      = STRING_TOKEN(STR_DISPLAY_VMODES_1024_PROMPT),
+            help        = STRING_TOKEN(STR_DISPLAY_VMODES_1024_HELP),
+            flags       = CHECKBOX_DEFAULT | CHECKBOX_DEFAULT_MFG | RESET_REQUIRED,
+            default     = TRUE,
+        endcheckbox;
+
+        checkbox varid = DisplayEnableScaledVModes.v720p,
+            prompt      = STRING_TOKEN(STR_DISPLAY_VMODES_720_PROMPT),
+            help        = STRING_TOKEN(STR_DISPLAY_VMODES_720_HELP),
+            flags       = CHECKBOX_DEFAULT | CHECKBOX_DEFAULT_MFG | RESET_REQUIRED,
+            default     = TRUE,
+        endcheckbox;
+
+        checkbox varid = DisplayEnableScaledVModes.v1080p,
+            prompt      = STRING_TOKEN(STR_DISPLAY_VMODES_1080_PROMPT),
+            help        = STRING_TOKEN(STR_DISPLAY_VMODES_1080_HELP),
+            flags       = CHECKBOX_DEFAULT | CHECKBOX_DEFAULT_MFG | RESET_REQUIRED,
+            default     = TRUE,
+        endcheckbox;
+
+        checkbox varid = DisplayEnableScaledVModes.Physical,
+            prompt      = STRING_TOKEN(STR_DISPLAY_VMODES_REAL_PROMPT),
+            help        = STRING_TOKEN(STR_DISPLAY_VMODES_REAL_HELP),
+            flags       = CHECKBOX_DEFAULT | CHECKBOX_DEFAULT_MFG | RESET_REQUIRED,
+            default     = TRUE,
+        endcheckbox;
 
         oneof varid = DisplayEnableSShot.Enable,
             prompt      = STRING_TOKEN(STR_DISPLAY_SSHOT_PROMPT),

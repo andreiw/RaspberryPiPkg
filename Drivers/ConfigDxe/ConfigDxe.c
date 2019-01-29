@@ -97,6 +97,7 @@ SetupVariables (
   )
 {
   UINTN Size;
+  UINT8 Var8;
   UINT32 Var32;
   EFI_STATUS Status;
 
@@ -210,12 +211,13 @@ SetupVariables (
     PcdSet32 (PcdDebugShowUEFIExit, PcdGet32 (PcdDebugShowUEFIExit));
   }
 
-  Size = sizeof (UINT32);
-  Status = gRT->GetVariable(L"DisplayEnableVModes",
+  Size = sizeof (UINT8);
+  Status = gRT->GetVariable(L"DisplayEnableScaledVModes",
                             &gConfigDxeFormSetGuid,
-                            NULL,  &Size, &Var32);
+                            NULL,  &Size, &Var8);
   if (EFI_ERROR (Status)) {
-    PcdSet32 (PcdDisplayEnableVModes, PcdGet32 (PcdDisplayEnableVModes));
+    PcdSet8 (PcdDisplayEnableScaledVModes,
+              PcdGet8 (PcdDisplayEnableScaledVModes));
   }
 
   Size = sizeof (UINT32);
