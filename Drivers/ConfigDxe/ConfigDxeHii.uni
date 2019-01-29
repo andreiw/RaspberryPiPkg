@@ -69,8 +69,8 @@
 
 #string STR_MMC_DISMULTI_PROMPT  #language en-US "Multi-Block Support"
 #string STR_MMC_DISMULTI_HELP    #language en-US "Use CMD18/CMD25 for transfers when possible"
-#string STR_MMC_DISMULTI_N       #language en-US "Multi-block transfers"
-#string STR_MMC_DISMULTI_Y       #language en-US "Single-block transfers"
+#string STR_MMC_DISMULTI_N       #language en-US "Multi-block Transfers"
+#string STR_MMC_DISMULTI_Y       #language en-US "Single-block Transfers"
 
 #string STR_MMC_FORCE1BIT_PROMPT #language en-US "uSD Max Bus Width"
 #string STR_MMC_FORCE1BIT_HELP   #language en-US "Tweak for bad media"
@@ -114,6 +114,10 @@
 #string STR_DISPLAY_SSHOT_HELP      #language en-US "Save screen capture as a BMP on the first writable file system found"
 #string STR_DISPLAY_SSHOT_ENABLE    #language en-US "Control-Alt-F12"
 #string STR_DISPLAY_SSHOT_DISABLE   #language en-US "Not Enabled"
+#string STR_DISPLAY_LOGO_PROMPT     #language en-US "Boot Logo"
+#string STR_DISPLAY_LOGO_HELP       #language en-US "Pick logo shown at boot"
+#string STR_DISPLAY_LOGO_0          #language en-US "Purple/Green Logo"
+#string STR_DISPLAY_LOGO_1          #language en-US "Gray/Gold Logo"
 
 /*
  * Debugging settings go here.

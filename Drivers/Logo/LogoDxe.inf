@@ -34,18 +34,21 @@
 #
 
 [Sources]
-  Logo.bmp
+  Logo0.bmp
+  Logo1.bmp
   Logo.c
   Logo.idf
 
 [Packages]
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
+  RaspberryPiPkg/RaspberryPiPkg.dec
 
 [LibraryClasses]
   UefiBootServicesTableLib
   UefiDriverEntryPoint
   DebugLib
+  PcdLib
 
 [Protocols]
   gEfiHiiDatabaseProtocolGuid        ## CONSUMES
@@ -56,6 +59,9 @@
 [Depex]
   gEfiHiiDatabaseProtocolGuid AND
   gEfiHiiImageExProtocolGuid
+
+[Pcd]
+  gRaspberryPiTokenSpaceGuid.PcdDisplayLogoIndex
 
 [UserExtensions.TianoCore."ExtraFiles"]
   LogoDxeExtra.uni

@@ -228,6 +228,14 @@ SetupVariables (
     PcdSet32 (PcdDisplayEnableSShot, PcdGet32 (PcdDisplayEnableSShot));
   }
 
+  Size = sizeof (UINT8);
+  Status = gRT->GetVariable(L"DisplayLogoIndex",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var8);
+  if (EFI_ERROR (Status)) {
+    PcdSet8 (PcdDisplayLogoIndex, PcdGet8 (PcdDisplayLogoIndex));
+  }
+
   return EFI_SUCCESS;
 }
   

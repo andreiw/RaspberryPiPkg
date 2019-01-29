@@ -28,7 +28,8 @@
 #
 
 [Binaries]
-  BIN|Logo.bmp|*
+  BIN|Logo0.bmp|*
+  BIN|Logo1.bmp|*
 
 [UserExtensions.TianoCore."ExtraFiles"]
   LogoExtra.uni

@@ -29,9 +29,18 @@ typedef struct {
 
 EFI_HII_IMAGE_EX_PROTOCOL *mHiiImageEx;
 EFI_HII_HANDLE            mHiiHandle;
-LOGO_ENTRY                mLogos[] = {
+LOGO_ENTRY                mLogos0[] = {
   {
-    IMAGE_TOKEN (IMG_LOGO),
+    IMAGE_TOKEN (IMG_LOGO0),
+    EdkiiPlatformLogoDisplayAttributeCenter,
+    0,
+    0
+  }
+};
+
+LOGO_ENTRY                mLogos1[] = {
+  {
+    IMAGE_TOKEN (IMG_LOGO1),
     EdkiiPlatformLogoDisplayAttributeCenter,
     0,
     0
@@ -62,22 +71,33 @@ GetImage (
      OUT INTN                                  *OffsetY
   )
 {
+  UINT32 LogosLen;
+  LOGO_ENTRY *Logos;
   UINT32 Current;
+
+  if (PcdGet8(PcdDisplayLogoIndex) == 0) {
+    Logos = mLogos0;
+    LogosLen = ARRAY_SIZE (mLogos0);
+  } else {
+    Logos = mLogos1;
+    LogosLen = ARRAY_SIZE (mLogos1);
+  }
+
   if (Instance == NULL || Image == NULL ||
       Attribute == NULL || OffsetX == NULL || OffsetY == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
   Current = *Instance;
-  if (Current >= ARRAY_SIZE (mLogos)) {
+  if (Current >= LogosLen) {
     return EFI_NOT_FOUND;
   }
 
   (*Instance)++;
-  *Attribute = mLogos[Current].Attribute;
-  *OffsetX   = mLogos[Current].OffsetX;
-  *OffsetY   = mLogos[Current].OffsetY;
-  return mHiiImageEx->GetImageEx (mHiiImageEx, mHiiHandle, mLogos[Current].ImageId, Image);
+  *Attribute = Logos[Current].Attribute;
+  *OffsetX   = Logos[Current].OffsetX;
+  *OffsetY   = Logos[Current].OffsetY;
+  return mHiiImageEx->GetImageEx (mHiiImageEx, mHiiHandle, Logos[Current].ImageId, Image);
 }
 
 EDKII_PLATFORM_LOGO_PROTOCOL mPlatformLogo = {

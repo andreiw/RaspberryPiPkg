@@ -74,6 +74,7 @@
   gRaspberryPiTokenSpaceGuid.PcdDebugShowUEFIExit
   gRaspberryPiTokenSpaceGuid.PcdDisplayEnableScaledVModes
   gRaspberryPiTokenSpaceGuid.PcdDisplayEnableSShot
+  gRaspberryPiTokenSpaceGuid.PcdDisplayLogoIndex
 
 [FeaturePcd]
 
