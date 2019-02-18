@@ -322,7 +322,7 @@ READ_LOCK_STATUS   = TRUE
   # FDT (GUID matches mRaspberryPiFfsFileGuid in RaspberryPiPlatformDxe)
   #
   FILE FREEFORM = DF5DA223-1D27-47C3-8D1B-9A41B55A18BC {
-    SECTION RAW = RaspberryPiPkg/Binary/leap422.dtb
+    SECTION RAW = RaspberryPiPkg/Binary/photon30ga.dtb
   }
 
 [FV.FVMAIN_COMPACT]
