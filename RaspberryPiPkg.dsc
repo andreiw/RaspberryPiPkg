@@ -442,6 +442,7 @@ DEFINE HYP_LOG_MASK = 0xffffffff
   #
 
   gRaspberryPiTokenSpaceGuid.PcdCpuClock|L"CpuClock"|gConfigDxeFormSetGuid|0x0|0
+  gRaspberryPiTokenSpaceGuid.PcdCustomCpuClockRate|L"CustomCpuClockRate"|gConfigDxeFormSetGuid|0x0|600
 
   #
   # SD-related.

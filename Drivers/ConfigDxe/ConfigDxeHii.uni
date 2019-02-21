@@ -54,6 +54,10 @@
 #string STR_CHIPSET_CLOCK_CPU_NA     #language en-US "Don't Override"
 #string STR_CHIPSET_CLOCK_CPU_600MHZ #language en-US "Min (600MHz)"
 #string STR_CHIPSET_CLOCK_CPU_MAX    #language en-US "Max"
+#string STR_CHIPSET_CLOCK_CPU_CUSTOM #language en-US "Custom"
+
+#string STR_CHIPSET_CUSTOM_CPU_CLOCK_RATE_PROMPT #language en-US "CPU Clock Rate (MHz)"
+#string STR_CHIPSET_CUSTOM_CPU_CLOCK_RATE_HELP   #language en-US "Adjust the CPU speed.\nMin value: 100 MHz\nMax value: 1600 MHz\n\nWarning! Overclocking can make the system unbootable!"
 
 #string STR_CHIPSET_SD_PROMPT        #language en-US "uSD Routing"
 #string STR_CHIPSET_SD_HELP          #language en-US "Choose host controller to drive uSD slot"
