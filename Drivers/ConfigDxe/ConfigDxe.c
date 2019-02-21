@@ -148,6 +148,14 @@ SetupVariables (
   }
 
   Size = sizeof (UINT32);
+  Status = gRT->GetVariable(L"CustomCpuClockRate",
+                            &gConfigDxeFormSetGuid,
+                            NULL,  &Size, &Var32);
+  if (EFI_ERROR (Status)) {
+    PcdSet32 (PcdCustomCpuClockRate, PcdGet32 (PcdCustomCpuClockRate));
+  }
+
+  Size = sizeof (UINT32);
   Status = gRT->GetVariable(L"SdIsArasan",
                             &gConfigDxeFormSetGuid,
                             NULL,  &Size, &Var32);
@@ -249,6 +257,7 @@ ApplyVariables (
   UINTN Gpio48Group;
   EFI_STATUS Status;
   UINT32 CpuClock = PcdGet32 (PcdCpuClock);
+  UINT32 CustomCpuClockRate = PcdGet32 (PcdCustomCpuClockRate);
   UINT32 Rate = 0;
 
   if (CpuClock != 0) {
@@ -262,6 +271,8 @@ ApplyVariables (
         DEBUG((EFI_D_ERROR, "Couldn't get the max CPU speed, leaving as is: %r\n",
                Status));
       }
+    } else if (CpuClock == 3) {
+      Rate = CustomCpuClockRate * 1000000;
     } else {
       Rate = 600 * 1000000;
     }
@@ -269,7 +280,7 @@ ApplyVariables (
 
   if (Rate != 0) {
     DEBUG((EFI_D_INFO, "Setting CPU speed to %uHz\n", Rate));
-    Status = mFwProtocol->SetClockRate(RPI_FW_CLOCK_RATE_ARM, Rate);
+    Status = mFwProtocol->SetClockRate(RPI_FW_CLOCK_RATE_ARM, Rate, 1);
     if (Status != EFI_SUCCESS) {
       DEBUG((EFI_D_ERROR, "Couldn't set the CPU speed: %r\n",
              Status));
