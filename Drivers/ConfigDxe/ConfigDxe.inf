@@ -64,6 +64,7 @@
   gRaspberryPiTokenSpaceGuid.PcdHypWindowsDebugHook
   gRaspberryPiTokenSpaceGuid.PcdHypWin2000Mask
   gRaspberryPiTokenSpaceGuid.PcdCpuClock
+  gRaspberryPiTokenSpaceGuid.PcdCustomCpuClockRate
   gRaspberryPiTokenSpaceGuid.PcdSdIsArasan
   gRaspberryPiTokenSpaceGuid.PcdMmcForce1Bit
   gRaspberryPiTokenSpaceGuid.PcdMmcForceDefaultSpeed
