@@ -169,12 +169,12 @@ USB keyboard support has been validated with a few keyboards:
 - Microsoft Natural Ergonomic Keyboard 4000
 - An Apple keyboard (chicklet, USB2 hub)
 
-The first time you boot, you will be looking at the UEFI Shell. 'exit'
-and modify the boot order. The boot order will persist across reboots.
+The boot order is SD card first, then USB. You can change it in setup. 
+The boot order will persist across reboots.
 The boot manager will only list devices available to boot from
 (older versions had USB Port 0, USB Port 1, etc).
 
-ESC enters setup. F1 always boots the UEFI Shell.
+ESC enters setup. F1 boots the UEFI Shell.
 
 ![FrontPage](readme1.png)
 
