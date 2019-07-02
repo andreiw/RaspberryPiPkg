@@ -32,12 +32,12 @@ BUILD_EPOCH=`date +%s`
 #
 # 1 - Use ACPI Standard PinFunction resource for pin muxing.
 #     Supported by Windows 10 v1903+
-#     Requires an updated build of iasl compiler.
+#     Requires iASL 20170531+
 #
 # 0 - Use Microsoft's proprietary MsftFunctionConfig for pin muxing. (Default)
 #     Supported by earlier versions of Windows 10
 #
-ACPI_PINFUNCTION=1
+ACPI_PINFUNCTION=0
 
 COMMON_OPTS="-DBUILD_EPOCH=$BUILD_EPOCH -DBUILD_DATE=$BUILD_DATE -DBUILD_COMMIT=$BUILD_COMMIT -DACPI_PINFUNCTION=$ACPI_PINFUNCTION"
 TARGET="-a AARCH64 -t GCC5 -p RaspberryPiPkg/RaspberryPiPkg.dsc"
