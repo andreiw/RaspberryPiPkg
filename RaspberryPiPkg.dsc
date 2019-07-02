@@ -72,6 +72,11 @@ DEFINE HYP_LOG_MASK = 0xffffffff
 !endif
 !endif
 
+[BuildOptions]
+!if $(ACPI_PINFUNCTION) == 1
+  *_*_AARCH64_ASLPP_FLAGS     = -D ACPI_PINFUNCTION
+!endif
+
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
   GCC:*_*_AARCH64_DLINK_FLAGS = -z common-page-size=0x10000
 

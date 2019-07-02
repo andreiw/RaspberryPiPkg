@@ -12,6 +12,12 @@
 #
 ##
 
+ifeq ($(ACPI_PINFUNCTION), 1)
+	IASL_FLAGS = -DACPI_PINFUNCTION
+else
+	IASL_FLAGS =
+endif
+
 all: acpi_offsets
 genc: acpi_offsets
 genmake: acpi_offsets
@@ -27,7 +33,7 @@ clean_acpi_offsets:
 	rm $(WORKSPACE)/RaspberryPiPkg/Include/DSDT.offset.h
 
 acpi_offsets:
-	$(IASL_PREFIX)iasl -so $(WORKSPACE)/RaspberryPiPkg/AcpiTables/DSDT.asl
+	$(IASL_PREFIX)iasl $(IASL_FLAGS) -so $(WORKSPACE)/RaspberryPiPkg/AcpiTables/DSDT.asl
 	rm -f $(WORKSPACE)/RaspberryPiPkg/AcpiTables/*.aml        
 	mv $(WORKSPACE)/RaspberryPiPkg/AcpiTables/DSDT.offset.h $(WORKSPACE)/RaspberryPiPkg/Include
 
