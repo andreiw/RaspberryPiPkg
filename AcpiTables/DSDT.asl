@@ -312,7 +312,26 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
                 {
                     Memory32Fixed(ReadWrite, 0x3F804000, 0x20)
                     Interrupt(ResourceConsumer, Level, ActiveHigh, Shared) {0x55}
+
+                    #ifdef ACPI_PINFUNCTION
                     PinFunction(Exclusive, PullUp, BCM_ALT0, "\\_SB.GPI0", 0, ResourceConsumer, , ) {2, 3}
+                    #else
+                    //
+                    // MsftFunctionConfig is encoded as the VendorLong.
+                    //
+                    // MsftFunctionConfig(Exclusive, PullUp, BCM_ALT0, "\\_SB.GPI0", 0, ResourceConsumer, ) {2, 3}
+                    //
+                    VendorLong  ()      // Length = 0x31
+                    {
+                        /* 0000 */  0x00, 0x60, 0x44, 0xD5, 0xF3, 0x1F, 0x11, 0x60,  // .`D....`
+                        /* 0008 */  0x4A, 0xB8, 0xB0, 0x9C, 0x2D, 0x23, 0x30, 0xDD,  // J...-#0.
+                        /* 0010 */  0x2F, 0x8D, 0x1D, 0x00, 0x01, 0x10, 0x00, 0x01,  // /.......
+                        /* 0018 */  0x04, 0x00, 0x12, 0x00, 0x00, 0x16, 0x00, 0x20,  // ........ 
+                        /* 0020 */  0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x5C,  // ........
+                        /* 0028 */  0x5F, 0x53, 0x42, 0x2E, 0x47, 0x50, 0x49, 0x30,  // _SB.GPI0
+                        /* 0030 */  0x00                                             // .
+                    }
+                    #endif
                 })
                 Return(RBUF)
             }
@@ -361,9 +380,55 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
                 Name (RBUF, ResourceTemplate () {
                     MEMORY32FIXED(ReadWrite, 0x3F204000, 0x20, )
                     Interrupt(ResourceConsumer, Level, ActiveHigh, Shared) {0x56}
+
+                    #ifdef ACPI_PINFUNCTION
                     PinFunction(Exclusive, PullDown, BCM_ALT0, "\\_SB.GPI0", 0, ResourceConsumer, , ) {9, 10, 11} // MISO, MOSI, SCLK
                     PinFunction(Exclusive, PullUp, BCM_ALT0, "\\_SB.GPI0", 0, ResourceConsumer, , ) {8}     // CE0
                     PinFunction(Exclusive, PullUp, BCM_ALT0, "\\_SB.GPI0", 0, ResourceConsumer, , ) {7}     // CE1
+                    #else
+                    //
+                    // MsftFunctionConfig is encoded as the VendorLong.
+                    //
+                    // MsftFunctionConfig(Exclusive, PullDown, BCM_ALT0, "\\_SB.GPI0", 0, ResourceConsumer, ) {9, 10, 11} // MISO, MOSI, SCLK
+                    VendorLong  ()      // Length = 0x33
+                    {
+                        /* 0000 */  0x00, 0x60, 0x44, 0xD5, 0xF3, 0x1F, 0x11, 0x60,  // .`D....`
+                        /* 0008 */  0x4A, 0xB8, 0xB0, 0x9C, 0x2D, 0x23, 0x30, 0xDD,  // J...-#0.
+                        /* 0010 */  0x2F, 0x8D, 0x1F, 0x00, 0x01, 0x10, 0x00, 0x02,  // /.......
+                        /* 0018 */  0x04, 0x00, 0x12, 0x00, 0x00, 0x18, 0x00, 0x22,  // .......\"
+                        /* 0020 */  0x00, 0x00, 0x00, 0x09, 0x00, 0x0A, 0x00, 0x0B,  // ........
+                        /* 0028 */  0x00, 0x5C, 0x5F, 0x53, 0x42, 0x2E, 0x47, 0x50,  // .\_SB.GP
+                        /* 0030 */  0x49, 0x30, 0x00                                 // I0.
+                    }
+
+                    //
+                    // MsftFunctionConfig is encoded as the VendorLong.
+                    //
+                    // MsftFunctionConfig(Exclusive, PullUp, BCM_ALT0, "\\_SB.GPI0", 0, ResourceConsumer, ) {8}     // CE0
+                    VendorLong  ()      // Length = 0x2F
+                    {
+                        /* 0000 */  0x00, 0x60, 0x44, 0xD5, 0xF3, 0x1F, 0x11, 0x60,  // .`D....`
+                        /* 0008 */  0x4A, 0xB8, 0xB0, 0x9C, 0x2D, 0x23, 0x30, 0xDD,  // J...-#0.
+                        /* 0010 */  0x2F, 0x8D, 0x1B, 0x00, 0x01, 0x10, 0x00, 0x01,  // /.......
+                        /* 0018 */  0x04, 0x00, 0x12, 0x00, 0x00, 0x14, 0x00, 0x1E,  // ........
+                        /* 0020 */  0x00, 0x00, 0x00, 0x08, 0x00, 0x5C, 0x5F, 0x53,  // .....\_S
+                        /* 0028 */  0x42, 0x2E, 0x47, 0x50, 0x49, 0x30, 0x00         // B.GPI0.
+                    }
+
+                    //
+                    // MsftFunctionConfig is encoded as the VendorLong.
+                    //
+                    // MsftFunctionConfig(Exclusive, PullUp, BCM_ALT0, "\\_SB.GPI0", 0, ResourceConsumer, ) {7}     // CE1
+                    VendorLong  ()      // Length = 0x2F
+                    {
+                        /* 0000 */  0x00, 0x60, 0x44, 0xD5, 0xF3, 0x1F, 0x11, 0x60,  // .`D....`
+                        /* 0008 */  0x4A, 0xB8, 0xB0, 0x9C, 0x2D, 0x23, 0x30, 0xDD,  // J...-#0.
+                        /* 0010 */  0x2F, 0x8D, 0x1B, 0x00, 0x01, 0x10, 0x00, 0x01,  // /.......
+                        /* 0018 */  0x04, 0x00, 0x12, 0x00, 0x00, 0x14, 0x00, 0x1E,  // ........
+                        /* 0020 */  0x00, 0x00, 0x00, 0x07, 0x00, 0x5C, 0x5F, 0x53,  // .....\_S
+                        /* 0028 */  0x42, 0x2E, 0x47, 0x50, 0x49, 0x30, 0x00         // B.GPI0.
+                    }
+                    #endif
                 })
                 Return(RBUF)
             }
@@ -384,8 +449,40 @@ DefinitionBlock ("DSDT.aml", "DSDT", 5, "MSFT", "EDK2", 2)
                 Name (RBUF, ResourceTemplate () {
                     MEMORY32FIXED(ReadWrite, 0x3F215080, 0x40,)
                     Interrupt(ResourceConsumer, Level, ActiveHigh, Shared,) {0x3D}
+
+                    #ifdef ACPI_PINFUNCTION
                     PinFunction(Exclusive, PullDown, BCM_ALT4, "\\_SB.GPI0", 0, ResourceConsumer, , ) {19, 20, 21} // MISO, MOSI, SCLK
                     PinFunction(Exclusive, PullDown, BCM_ALT4, "\\_SB.GPI0", 0, ResourceConsumer, , ) {16} // CE2
+                    #else
+                    //
+                    // MsftFunctionConfig is encoded as the VendorLong.
+                    //
+                    // MsftFunctionConfig(Exclusive, PullDown, BCM_ALT4, "\\_SB.GPI0", 0, ResourceConsumer, ) {19, 20, 21} // MISO, MOSI, SCLK
+                    VendorLong  ()      // Length = 0x33
+                    {
+                        /* 0000 */  0x00, 0x60, 0x44, 0xD5, 0xF3, 0x1F, 0x11, 0x60,  // .`D....`
+                        /* 0008 */  0x4A, 0xB8, 0xB0, 0x9C, 0x2D, 0x23, 0x30, 0xDD,  // J...-#0.
+                        /* 0010 */  0x2F, 0x8D, 0x1F, 0x00, 0x01, 0x10, 0x00, 0x02,  // /.......
+                        /* 0018 */  0x03, 0x00, 0x12, 0x00, 0x00, 0x18, 0x00, 0x22,  // .......\"
+                        /* 0020 */  0x00, 0x00, 0x00, 0x13, 0x00, 0x14, 0x00, 0x15,  // ........
+                        /* 0028 */  0x00, 0x5C, 0x5F, 0x53, 0x42, 0x2E, 0x47, 0x50,  // .\_SB.GP
+                        /* 0030 */  0x49, 0x30, 0x00                                 // I0.
+                    }
+
+                    //
+                    // MsftFunctionConfig is encoded as the VendorLong.
+                    //
+                    // MsftFunctionConfig(Exclusive, PullDown, BCM_ALT4, "\\_SB.GPI0", 0, ResourceConsumer, ) {16} // CE2
+                    VendorLong  ()      // Length = 0x2F
+                    {
+                        /* 0000 */  0x00, 0x60, 0x44, 0xD5, 0xF3, 0x1F, 0x11, 0x60,  // .`D....`
+                        /* 0008 */  0x4A, 0xB8, 0xB0, 0x9C, 0x2D, 0x23, 0x30, 0xDD,  // J...-#0.
+                        /* 0010 */  0x2F, 0x8D, 0x1B, 0x00, 0x01, 0x10, 0x00, 0x02,  // /.......
+                        /* 0018 */  0x03, 0x00, 0x12, 0x00, 0x00, 0x14, 0x00, 0x1E,  // ........
+                        /* 0020 */  0x00, 0x00, 0x00, 0x10, 0x00, 0x5C, 0x5F, 0x53,  // .....\_S
+                        /* 0028 */  0x42, 0x2E, 0x47, 0x50, 0x49, 0x30, 0x00         // B.GPI0.
+                    }
+                    #endif
                 })
                 Return(RBUF)
             }
