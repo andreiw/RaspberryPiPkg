@@ -54,7 +54,7 @@ EFI_STATUS DwHcInit (IN DWUSB_OTGHC_DEV *DwHc,
 EFI_STATUS DwCoreInit (IN DWUSB_OTGHC_DEV *DwHc,
                        IN EFI_EVENT Timeout);
 
-UINT32
+EFI_STATUS
 Wait4Bit (
   IN  EFI_EVENT Timeout,
   IN  UINT32    Reg,
@@ -71,14 +71,11 @@ Wait4Bit (
     }
 
     if ((Value & Mask) == Mask) {
-      return 0;
+      return EFI_SUCCESS;
     }
   } while (EFI_ERROR (gBS->CheckEvent (Timeout)));
 
-  DEBUG ((EFI_D_ERROR, "Wait4Bit: %a timeout (reg:0x%x, value:0x%x, mask:0x%x)\n",
-          Set ? "set" : "clear", Reg, Set ? Value  : ~Value, Mask));
-
-  return 1;
+  return EFI_TIMEOUT;
 }
 
 CHANNEL_HALT_REASON
@@ -92,14 +89,13 @@ Wait4Chhltd (
   IN  SPLIT_CONTROL   *Split
   )
 {
-  INT32   Ret;
+  EFI_STATUS Status;
   UINT32  Hcint, Hctsiz;
   UINT32  HcintCompHltAck = DWC2_HCINT_XFERCOMP;
 
   MicroSecondDelay (100);
-  Ret = Wait4Bit (Timeout, DwHc->DwUsbBase + HCINT(Channel), DWC2_HCINT_CHHLTD, 1);
-  if (Ret) {
-    DEBUG((DEBUG_ERROR, "Channel %u did not halt\n", Channel));
+  Status  = Wait4Bit (Timeout, DwHc->DwUsbBase + HCINT(Channel), DWC2_HCINT_CHHLTD, 1);
+  if (EFI_ERROR (Status)) {
     return XFER_NOT_HALTED;
   }
 
@@ -205,7 +201,7 @@ DwCoreReset (
   IN  EFI_EVENT Timeout
   )
 {
-  UINT32  Status;
+  EFI_STATUS Status;
 
   Status = Wait4Bit (Timeout, DwHc->DwUsbBase + GRSTCTL, DWC2_GRSTCTL_AHBIDLE, 1);
   if (Status) {
@@ -318,13 +314,22 @@ restart_channel:
     Ret = Wait4Chhltd (DwHc, Timeout, Channel, &Sub, Pid, IgnoreAck, &Split);
 
     if (Ret == XFER_NOT_HALTED) {
-      /*
-       * FIXME: do proper channel reset.
-       */
-      MmioWrite32 (DwHc->DwUsbBase + HCCHAR(Channel), DWC2_HCCHAR_CHDIS);
-
       *TransferResult = EFI_USB_ERR_TIMEOUT;
-      Status = EFI_DEVICE_ERROR;
+      MmioOr32 (DwHc->DwUsbBase + HCCHAR (Channel), DWC2_HCCHAR_CHDIS);
+      Status = gBS->SetTimer (Timeout, TimerRelative,
+                              EFI_TIMER_PERIOD_MILLISECONDS (1));
+      ASSERT_EFI_ERROR (Status);
+      if (EFI_ERROR (Status)) {
+        break;
+      }
+      Status = Wait4Bit (Timeout, DwHc->DwUsbBase + HCINT (Channel),
+                         DWC2_HCINT_CHHLTD, 1);
+      if (Status == EFI_SUCCESS) {
+        Status = EFI_TIMEOUT;
+      } else {
+        DEBUG ((DEBUG_ERROR, "Channel %u did not halt\n", Channel));
+        Status = EFI_DEVICE_ERROR;
+      }
       break;
     } else if (Ret == XFER_STALL) {
       *TransferResult = EFI_USB_ERR_STALL;
@@ -1281,7 +1286,7 @@ DwFlushTxFifo (
   IN INT32 Num
   )
 {
-  UINT32 Status;
+  EFI_STATUS Status;
 
   MmioWrite32 (DwHc->DwUsbBase + GRSTCTL, DWC2_GRSTCTL_TXFFLSH |
                (Num << DWC2_GRSTCTL_TXFNUM_OFFSET));
@@ -1299,7 +1304,7 @@ DwFlushRxFifo (
   IN  EFI_EVENT Timeout
   )
 {
-  UINT32 Status;
+  EFI_STATUS Status;
 
   MmioWrite32 (DwHc->DwUsbBase + GRSTCTL, DWC2_GRSTCTL_RXFFLSH);
 
