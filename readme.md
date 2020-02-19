@@ -1,3 +1,12 @@
+DEPRECATED - DO NOT USE
+=======================
+
+This repo isn't just resting - it's dead. Why? Because it's been upstreamed to the master TianoCore UEFI branch - https://github.com/tianocore/edk2-platforms/tree/master/Platform/RaspberryPi/RPi3
+
+This is going to remain up only for historical purpose.
+
+Also see https://rpi4-uefi.dev
+
 64-bit Tiano Core UEFI for the Raspberry Pi 3
 =============================================
 
